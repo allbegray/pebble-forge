@@ -16,6 +16,8 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Spring Security 7.0.8
 - 버전 0.1.0-SNAPSHOT, 아직 배포하지 않음
 
+현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
+
 테스트는 78개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
@@ -214,7 +216,16 @@ pebble.forge.language.enabled=true
 
 ```shell
 ./gradlew test
+./gradlew build
+./gradlew publishToMavenLocal
 ```
+
+## 프로젝트 문서
+
+- [변경 기록](CHANGELOG.md)
+- [기여 가이드](CONTRIBUTING.md)
+- [보안 정책](SECURITY.md)
+- [릴리스 체크리스트](docs/RELEASING.md)
 
 ## 라이선스
 

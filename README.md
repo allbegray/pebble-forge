@@ -16,6 +16,8 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Spring Security 7.0.8
 - Version 0.1.0-SNAPSHOT, not published
 
+The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
+
 78 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
@@ -210,7 +212,16 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 
 ```shell
 ./gradlew test
+./gradlew build
+./gradlew publishToMavenLocal
 ```
+
+## Project
+
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Release checklist](docs/RELEASING.md)
 
 ## License
 
