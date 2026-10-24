@@ -23,15 +23,17 @@ import java.util.Map;
  */
 public final class ForNode extends AbstractRenderableNode {
 
-    private final String variableName;
+    private final String keyVariableName;
+    private final String valueVariableName;
     private final Expression<?> iterableExpression;
     private final BodyNode body;
     private final BodyNode elseBody;
 
-    ForNode(int lineNumber, String variableName, Expression<?> iterableExpression,
-            BodyNode body, BodyNode elseBody) {
+    ForNode(int lineNumber, String keyVariableName, String valueVariableName,
+            Expression<?> iterableExpression, BodyNode body, BodyNode elseBody) {
         super(lineNumber);
-        this.variableName = variableName;
+        this.keyVariableName = keyVariableName;
+        this.valueVariableName = valueVariableName;
         this.iterableExpression = iterableExpression;
         this.body = body;
         this.elseBody = elseBody;
@@ -80,10 +82,23 @@ public final class ForNode extends AbstractRenderableNode {
                     loop.first = false;
                 }
 
-                loop.revindex = new LazyRevIndex(index, length);
+                int currentIndex = index;
+                loop.revindex = new LazyRevIndex(currentIndex, length);
                 loop.index = index++;
                 scope.put("loop", loop);
-                scope.put(variableName, iterator.next());
+
+                Object item = iterator.next();
+                if (keyVariableName != null) {
+                    if (item instanceof Map.Entry<?, ?> entry) {
+                        scope.put(keyVariableName, entry.getKey());
+                        scope.put(valueVariableName, entry.getValue());
+                    } else {
+                        scope.put(keyVariableName, currentIndex);
+                        scope.put(valueVariableName, item);
+                    }
+                } else {
+                    scope.put(valueVariableName, item);
+                }
 
                 if (!iterator.hasNext()) {
                     loop.last = true;
@@ -112,7 +127,11 @@ public final class ForNode extends AbstractRenderableNode {
     }
 
     public String getIterationVariable() {
-        return variableName;
+        return valueVariableName;
+    }
+
+    public String getKeyVariableName() {
+        return keyVariableName;
     }
 
     public Expression<?> getIterable() {

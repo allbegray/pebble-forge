@@ -25,7 +25,14 @@ final class ForTokenParser implements TokenParser {
         int lineNumber = token.getLineNumber();
 
         stream.next();
-        String variableName = parser.getExpressionParser().parseNewVariableName();
+        String firstVariable = parser.getExpressionParser().parseNewVariableName();
+        String keyVariable = null;
+        String valueVariable = firstVariable;
+        if (stream.current().test(Token.Type.PUNCTUATION, ",")) {
+            stream.next();
+            keyVariable = firstVariable;
+            valueVariable = parser.getExpressionParser().parseNewVariableName();
+        }
         stream.expect(Token.Type.NAME, "in");
         Expression<?> iterable = parser.getExpressionParser().parseExpression();
         stream.expect(Token.Type.EXECUTE_END);
@@ -59,6 +66,6 @@ final class ForTokenParser implements TokenParser {
 
         stream.next();
         stream.expect(Token.Type.EXECUTE_END);
-        return new ForNode(lineNumber, variableName, iterable, body, elseBody);
+        return new ForNode(lineNumber, keyVariable, valueVariable, iterable, body, elseBody);
     }
 }

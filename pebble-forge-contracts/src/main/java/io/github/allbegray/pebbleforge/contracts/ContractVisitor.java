@@ -126,6 +126,9 @@ final class ContractVisitor extends AbstractNodeVisitor {
             return;
         }
         if (node instanceof ForNode forNode) {
+            if (forNode.getKeyVariableName() != null) {
+                scan.declaredVariables.add(forNode.getKeyVariableName());
+            }
             scan.declaredVariables.add(forNode.getIterationVariable());
             scan.declaredVariables.add("loop");
             return;

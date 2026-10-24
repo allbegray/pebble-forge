@@ -143,6 +143,24 @@ class LanguageExtensionTest {
     }
 
     @Test
+    void forDestructuresMapEntries() throws Exception {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        map.put("a", 1);
+        map.put("b", 2);
+
+        assertThat(render("""
+                {% for key, value in map %}{{ key }}={{ value }};{% endfor %}
+                """, Map.of("map", map))).isEqualTo("a=1;b=2;");
+    }
+
+    @Test
+    void forDestructuresIndexesFromLists() throws Exception {
+        assertThat(render("""
+                {% for index, value in items %}{{ index }}:{{ value }};{% endfor %}
+                """, Map.of("items", List.of("a", "b")))).isEqualTo("0:a;1:b;");
+    }
+
+    @Test
     void forIteratesMaps() throws Exception {
         Map<String, Integer> map = new LinkedHashMap<>();
         map.put("a", 1);
