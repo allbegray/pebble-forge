@@ -1,1 +1,1 @@
-io.pebbleforge.spring.boot.autoconfigure.PebbleForgeAutoConfiguration
+io.github.allbegray.pebbleforge.spring.boot.autoconfigure.PebbleForgeAutoConfiguration

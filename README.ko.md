@@ -6,6 +6,8 @@ Pebble Forge는 Pebble 4 확장팩입니다. Pebble 템플릿을 그대로 유�
 
 이름은 임시 이름입니다. Pebble 포크가 아니라 확장 라이브러리입니다.
 
+Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. GitHub 계정 `allbegray`와 Maven Central의 `io.github.*` 네임스페이스에 맞췄습니다.
+
 ## 상태
 
 - Java 21
@@ -28,7 +30,7 @@ Pebble Forge는 Pebble 4 확장팩입니다. Pebble 템플릿을 그대로 유�
 ## 코어
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
 ```
 
 ```java
@@ -107,7 +109,7 @@ PebbleEngine engine = PebbleForge.engine()
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
 ```
 
 이 스타터는 Spring Boot 4.0.6을 대상으로 합니다. 모듈 디렉터리와 아티팩트 이름에 `boot-4`를 넣어 메이저 버전 경계를 분명히 했습니다. Spring Boot 3 연동이 필요하면 별도 모듈로 만들어야 합니다.

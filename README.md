@@ -6,6 +6,8 @@ Pebble Forge is an extension pack for Pebble 4. It keeps Pebble templates valid 
 
 The name is a working title. The project is an extension library, not a Pebble fork.
 
+The Maven group and Java package are `io.github.allbegray.pebbleforge`. They match the GitHub account `allbegray` and the Maven Central `io.github.*` namespace.
+
 ## Status
 
 - Java 21
@@ -28,7 +30,7 @@ The name is a working title. The project is an extension library, not a Pebble f
 ## Core
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
 ```
 
 ```java
@@ -103,7 +105,7 @@ The sandbox is an in-process capability guard, not a CPU quota. A template can s
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
 ```
 
 The starter targets Spring Boot 4.0.6. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.

@@ -13,7 +13,7 @@ dependencies {
 }
 
 application {
-    mainClass = "io.pebbleforge.demo.Demo"
+    mainClass = "io.github.allbegray.pebbleforge.demo.Demo"
 }
 
 tasks.withType<JavaCompile>().configureEach {
