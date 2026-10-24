@@ -13,6 +13,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, roles, authorities, username, and CSRF.
 - Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
+- Source-frame diagnostics with include traces for template errors.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
 ### Fixed

@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 97개입니다. 코어, 계약 검사, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 105개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -26,6 +26,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 | --- | --- |
 | `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, `PebbleForge.engine()` 빌더 |
 | `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
+| `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include 추적 |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle 태스크 |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
@@ -155,6 +156,41 @@ page.peb:8: WARNING: Component [card] does not declare prop [footer]
 
 Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 
+### 진단
+
+`pebble-forge-diagnostics`는 Pebble 오류를 소스 프레임과 include 경로로 바꿉니다.
+
+```java
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .extension(new DiagnosticsExtension())
+        .build();
+
+try {
+    engine.getTemplate("page").evaluate(writer, model);
+} catch (PebbleException error) {
+    System.err.println(TemplateDiagnostics.builder()
+            .loader(loader)
+            .build()
+            .render(error)
+            .format());
+}
+```
+
+```text
+Root attribute [missing] does not exist (components/card.peb:2)
+page.peb:3 includes components/card.peb
+  2 | second
+> 3 | {% include "components/card.peb" %}
+    | ^
+components/card.peb:2
+  1 | card
+> 2 | {{ missing }}
+    | ^
+```
+
+`DiagnosticsExtension`가 include 스택을 기록합니다. 이 확장이 없으면 실패한 템플릿의 프레임만 보여줍니다. extends 체인은 아직 캡처하지 않습니다. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
+
 ### 샌드박스
 
 `SandboxPolicy.strict()`가 코어 샌드박스의 기본 정책입니다.
@@ -244,7 +280,7 @@ pebble.forge.language.enabled=true
 ./gradlew :pebble-forge-demo:run
 ```
 
-데모는 이름 있는 슬롯을 가진 컴포넌트를 렌더합니다. 샌드박스가 슬롯 안의 HTML을 이스케이프하는 것과 `raw` 필터를 차단하는 것, 그리고 `switch`, `with`, `break`, `continue`가 동작하는 것을 보여줍니다.
+데모는 이름 있는 슬롯을 가진 컴포넌트를 렌더합니다. 샌드박스가 슬롯 안의 HTML을 이스케이프하는 것과 `raw` 필터를 차단하는 것, `switch`, `with`, `break`, `continue`가 동작하는 것, 그리고 include 오류의 소스 프레임 진단을 보여줍니다.
 
 ## 빌드
 
@@ -259,6 +295,7 @@ pebble.forge.language.enabled=true
 - [변경 기록](CHANGELOG.md)
 - [기여 가이드](CONTRIBUTING.md)
 - [계약 검사](docs/CONTRACTS.md)
+- [진단](docs/DIAGNOSTICS.md)
 - [보안 정책](SECURITY.md)
 - [릴리스 체크리스트](docs/RELEASING.md)
 

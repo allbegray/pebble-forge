@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-97 tests cover the core, contracts, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+105 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -26,6 +26,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | --- | --- |
 | `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
+| `pebble-forge-diagnostics` | Source frames and include traces for template errors |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
@@ -155,6 +156,41 @@ The default template root is `src/main/resources/templates`. The default suffix 
 
 The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
+### Diagnostics
+
+The diagnostics module turns a Pebble error into source frames and an include path.
+
+```java
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .extension(new DiagnosticsExtension())
+        .build();
+
+try {
+    engine.getTemplate("page").evaluate(writer, model);
+} catch (PebbleException error) {
+    System.err.println(TemplateDiagnostics.builder()
+            .loader(loader)
+            .build()
+            .render(error)
+            .format());
+}
+```
+
+```text
+Root attribute [missing] does not exist (components/card.peb:2)
+page.peb:3 includes components/card.peb
+  2 | second
+> 3 | {% include "components/card.peb" %}
+    | ^
+components/card.peb:2
+  1 | card
+> 2 | {{ missing }}
+    | ^
+```
+
+`DiagnosticsExtension` records the include stack. Without it, the report shows the failing template only. The extends chain is not captured yet. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+
 ### Sandbox
 
 `SandboxPolicy.strict()` is the default policy.
@@ -240,7 +276,7 @@ The extension registers only when Spring Security Core, Spring Security Web, Spr
 ./gradlew :pebble-forge-demo:run
 ```
 
-The demo renders a component with named slots. It shows the sandbox escaping HTML in slot data, blocking the `raw` filter, and rendering `switch`, `with`, `break`, and `continue`.
+The demo renders a component with named slots. It shows the sandbox escaping HTML in slot data, blocking the `raw` filter, rendering `switch`, `with`, `break`, and `continue`, and printing a source-frame diagnostic for an include error.
 
 ## Build
 
@@ -255,6 +291,7 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [Contract checks](docs/CONTRACTS.md)
+- [Diagnostics](docs/DIAGNOSTICS.md)
 - [Security policy](SECURITY.md)
 - [Release checklist](docs/RELEASING.md)
 

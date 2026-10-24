@@ -14,9 +14,9 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 97개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
-- 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
-- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, Spring Boot 4, Spring Security 함수가 들어가 있다.
+- 테스트는 105개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
+- 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
+- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
 - 라이선스, CI, Maven 배포 설정은 아직 없다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
@@ -41,7 +41,7 @@
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | Done | PF-001, PF-002 |
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | Done | 없음 |
 | PF-101 | P1 | 타입 계약 검사 모듈 | XL | 진행 중 | PF-004 |
-| PF-102 | P1 | 소스 프레임 진단 | L | 설계 필요 | 없음 |
+| PF-102 | P1 | 소스 프레임 진단 | L | 진행 중 | 없음 |
 | PF-103 | P1 | 핫 리로드 | M | 설계 필요 | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | 대기 | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | 설계 필요 | 없음 |
@@ -141,9 +141,11 @@
 ### PF-102 소스 프레임 진단
 
 - 크기: L
-- 상태: 설계 필요
+- 상태: 진행 중. 소스 프레임, include 스택, 중첩 include, 파싱 오류, 소스 없음 처리를 구현했다.
 - 문제: Pebble 오류는 줄 번호와 파일 이름은 있지만 소스 일부와 include 경로를 보여주지 않는다.
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
+- 현재 구현: `DiagnosticsExtension` include 추적, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, 8개 테스트. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다.
+- 남은 것: extends 체인 캡처, Spring Boot 오류 페이지 연동, CLI와 Gradle 진단 태스크.
 - 완료 기준: 중첩 include 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
 - 메모: 렌더 시점 예외를 감싸는 방식과 파싱 시점 예외를 그대로 두는 방식을 비교한다.
 

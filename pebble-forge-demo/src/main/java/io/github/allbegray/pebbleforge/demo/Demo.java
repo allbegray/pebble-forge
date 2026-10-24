@@ -2,6 +2,8 @@ package io.github.allbegray.pebbleforge.demo;
 
 import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
+import io.github.allbegray.pebbleforge.diagnostics.DiagnosticsExtension;
+import io.github.allbegray.pebbleforge.diagnostics.TemplateDiagnostics;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.error.PebbleException;
@@ -31,6 +33,7 @@ public final class Demo {
                         .allowFilters("escape", "length", "upper")
                         .maxRenderedChars(200_000)
                         .build())
+                .extension(new DiagnosticsExtension())
                 .build();
 
         Map<String, Object> page = Map.of(
@@ -54,10 +57,21 @@ public final class Demo {
         System.out.println("=== language extensions ===");
         System.out.println(render(engine, "language-demo",
                 Map.of("numbers", List.of(1, 2, 3, 4, 5, 6))));
+
+        System.out.println("=== diagnostics ===");
+        try {
+            render(engine, "diagnostics-demo", Map.of());
+        } catch (PebbleException e) {
+            System.out.println(TemplateDiagnostics.builder()
+                    .loader(loader)
+                    .build()
+                    .render(e)
+                    .format());
+        }
     }
 
     private static String render(PebbleEngine engine, String template, Map<String, Object> model)
-            throws Exception {
+            throws java.io.IOException {
         StringWriter writer = new StringWriter();
         engine.getTemplate(template).evaluate(writer, model);
         return writer.toString();

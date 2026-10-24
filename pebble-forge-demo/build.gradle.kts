@@ -9,6 +9,7 @@ java {
 
 dependencies {
     implementation(project(":pebble-forge-core"))
+    implementation(project(":pebble-forge-diagnostics"))
     runtimeOnly("ch.qos.logback:logback-classic:1.5.33")
 }
 

@@ -70,6 +70,11 @@ pebble-forge-contracts
 ├── ContractChecker          parses templates and validates reads and component calls
 └── ContractDiagnostic       errors and warnings with template and line
 
+pebble-forge-diagnostics
+├── DiagnosticsExtension       records the include stack on failure
+├── TemplateDiagnostics        builds source frames from a PebbleException
+└── DiagnosticReport           structured frames and terminal formatting
+
 pebble-forge-gradle-plugin
 └── CheckPebbleTemplatesTask checks every template under the configured root
 
@@ -276,6 +281,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Language | 23 | Switch, break, continue, with, sandbox on and off |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
+| Diagnostics | 8 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
 | Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
@@ -309,6 +315,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
 | Contracts | Build-time presence checks for model variables and component props | Catches common errors without a full Java type checker |
+| Diagnostics | Custom include parser plus a source-frame formatter | Captures the include path without replacing the renderer |
 | Test style | Real templates, real engine, real output | Proves the feature, not a mock |
 
 ## Accepted limits
@@ -323,6 +330,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
+- Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
 
 ## Open questions
 
@@ -333,3 +341,4 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Should the component root be one directory or a list of loaders? A list is needed for shared component libraries.
 - Should component depth use per-engine state instead of a static thread-local?
 - Should the Spring integration cover WebFlux and reactive CSRF?
+- Should diagnostics capture the extends hierarchy and integrate with Spring Boot error handling?
