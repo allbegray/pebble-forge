@@ -132,6 +132,7 @@
 - 문제: Pebble은 동적이라서 모델 변수와 컴포넌트 props 오류가 렌더 시점에야 드러난다. JTE, Qute, Rocker의 장점과 가장 큰 격차다.
 - 범위: `pebble-forge-contracts` 모듈을 새로 만든다. 모델 스키마와 컴포넌트 props 계약을 입력으로 받고, 템플릿을 파싱해서 변수 읽기, 컴포넌트 호출, include와 extends를 검사한다. Gradle 태스크 `checkPebbleTemplates`를 제공한다.
 - 현재 구현: AST 기반 변수 존재 검사, 컴포넌트 props 검사, 동적 이름 경고, Gradle DSL 스키마, `checkPebbleTemplates` 태스크, TestKit 3개. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
+- 1차 구현 커밋: `f177277` AST 접근자, `1d53d5d` contracts 모듈과 Gradle 플러그인.
 - 남은 것: JSON/YAML 스키마, 흐름 기반 지역 변수 분석, include와 extends 스코프 전파, 타입 검사, Plugin Portal 배포.
 - 완료 기준: 좋은 fixture는 통과하고, 없는 변수나 잘못된 props를 쓰는 fixture는 파일과 줄 번호를 담아 빌드를 실패시킨다. 지원 문법 밖의 표현식은 오탐 대신 경고로 처리한다.
 - 의존: PF-004.
