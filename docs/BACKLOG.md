@@ -56,6 +56,17 @@
 | PF-207 | P2 | 코드 품질 도구 | S | 보류 | PF-003 |
 | PF-208 | P2 | Spring Boot 데모 앱 | M | 보류 | 없음 |
 
+## 완료
+
+| ID | 커밋 |
+| --- | --- |
+| PF-001 | `3be7c93` Apache-2.0 LICENSE |
+| PF-002 | `20a7384`, `28ee531` Maven 배포와 Central Portal 설정 |
+| PF-003 | `3d24f85` CI와 Dependabot. 첫 push에서 초록색 확인 필요 |
+| PF-004 | `3233407` `for` 호환성 테스트 9개 |
+| PF-005 | `79f8123` CHANGELOG, RELEASING, CONTRIBUTING |
+| PF-006 | `79f8123` SECURITY.md |
+
 ## P0. 공개 0.1 릴리스
 
 ### PF-001 라이선스와 저장소 메타데이터
