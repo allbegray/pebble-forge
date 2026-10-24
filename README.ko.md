@@ -16,7 +16,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Spring Security 7.0.8
 - 버전 0.1.0-SNAPSHOT, 아직 배포하지 않음
 
-테스트는 43개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 68개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -83,13 +83,49 @@ PebbleEngine engine = PebbleForge.engine()
 
 슬롯은 미리 렌더링하고 안전한 문자열로 표시합니다. `{{ slot("body") }}`처럼 직접 출력하세요. 슬롯을 문자열과 이어 붙이거나 필터에 넘기면 일반 문자열로 바뀌어 다시 이스케이프됩니다.
 
+### 템플릿 언어 확장
+
+Pebble Forge는 Pebble에 없는 태그를 추가합니다.
+
+| 태그 | 동작 |
+| --- | --- |
+| `switch`, `case`, `default`, `endswitch` | 처음 일치하는 case 하나만 렌더합니다. fall-through는 없습니다. |
+| `break`, `continue` | `for` 반복을 제어합니다. `break`는 `switch`도 빠져나갑니다. |
+| `with { ... }` | 추가 변수를 가진 스코프에서 본문을 렌더합니다. |
+
+```twig
+{% with {"role": page.role} %}
+  {% switch role %}
+    {% case "admin" %}Admin
+    {% case "user" %}User
+    {% default %}Guest
+  {% endswitch %}
+{% endwith %}
+
+{% for item in items %}
+  {% if item.hidden %}{% continue %}{% endif %}
+  {% if item.stop %}{% break %}{% endif %}
+  {{ item.name }}
+{% endfor %}
+```
+
+`for`는 break와 continue를 이해하는 버전으로 교체됩니다. `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, `else` 분기는 그대로 유지합니다.
+
+`break`와 `continue`는 템플릿 소스 기준으로 판정합니다. 반드시 `for`나 `switch` 안에 있어야 합니다. 매크로 안에 있는 `break`를 루프 밖에서 호출하는 경우는 이 보장에 포함되지 않습니다.
+
+템플릿을 순수 Pebble로 파싱해야 한다면 언어 확장을 끄면 됩니다.
+
+```java
+PebbleForge.engine().languageExtensions(false)
+```
+
 ### 샌드박스
 
 `SandboxPolicy.strict()`가 코어 샌드박스의 기본 정책입니다.
 
 | 항목 | 기본값 |
 | --- | --- |
-| 태그 | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props` |
+| 태그 | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props`, `switch`, `break`, `continue`, `with` |
 | 필터 | `escape`, `default`, `length`, `join`, `upper`, `lower`, `capitalize`, `title`, `trim`, `replace`, `slice`, `first`, `last`, `reverse`, `sort`, `split`, `abs`, `numberformat`, `date`, `abbreviate`, `urlencode` |
 | 함수 | `slot`, `i18n`, `max`, `min` |
 | 테스트 | `empty`, `null`, `iterable`, `even`, `odd`, `map` |
@@ -128,7 +164,10 @@ pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
+pebble.forge.language.enabled=true
 ```
+
+언어 확장은 기본으로 켜집니다. 순수 Pebble로 파싱하려면 `pebble.forge.language.enabled=false`로 두세요.
 
 `SandboxPolicy` 빈을 직접 정의하면 프로퍼티로 만든 정책을 대체합니다. `PebbleEngine` 빈을 직접 정의하면 스타터는 적용되지 않습니다. `pebbleLoader`나 `springExtension` 빈을 직접 정의하면 그 빈을 사용합니다.
 
@@ -169,7 +208,7 @@ pebble.forge.security.enabled=true
 ./gradlew :pebble-forge-demo:run
 ```
 
-데모는 이름 있는 슬롯을 가진 컴포넌트를 렌더합니다. 샌드박스가 슬롯 안의 HTML을 이스케이프하는 것과 `raw` 필터를 차단하는 것을 보여줍니다.
+데모는 이름 있는 슬롯을 가진 컴포넌트를 렌더합니다. 샌드박스가 슬롯 안의 HTML을 이스케이프하는 것과 `raw` 필터를 차단하는 것, 그리고 `switch`, `with`, `break`, `continue`가 동작하는 것을 보여줍니다.
 
 ## 빌드
 

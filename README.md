@@ -16,7 +16,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Spring Security 7.0.8
 - Version 0.1.0-SNAPSHOT, not published
 
-43 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+68 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -83,13 +83,49 @@ A body without explicit `slot` tags becomes the default slot.
 
 Slots are pre-rendered and marked safe. Emit them directly with `{{ slot("body") }}`. Concatenating or filtering a slot turns it back into a plain string and escapes it again.
 
+### Language extensions
+
+Pebble Forge adds tags that Pebble does not ship.
+
+| Tag | Behavior |
+| --- | --- |
+| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. It does not fall through. |
+| `break`, `continue` | Controls a `for` loop. `break` also exits a `switch`. |
+| `with { ... }` | Renders a body with extra scoped variables. |
+
+```twig
+{% with {"role": page.role} %}
+  {% switch role %}
+    {% case "admin" %}Admin
+    {% case "user" %}User
+    {% default %}Guest
+  {% endswitch %}
+{% endwith %}
+
+{% for item in items %}
+  {% if item.hidden %}{% continue %}{% endif %}
+  {% if item.stop %}{% break %}{% endif %}
+  {{ item.name }}
+{% endfor %}
+```
+
+`for` is replaced with a break and continue aware version. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch.
+
+`break` and `continue` are lexical. They must appear inside a `for` or `switch` in the template source. A macro that contains `break` and is called outside a loop is outside this guarantee.
+
+Disable the language extensions when a template must parse as plain Pebble.
+
+```java
+PebbleForge.engine().languageExtensions(false)
+```
+
 ### Sandbox
 
 `SandboxPolicy.strict()` is the default policy.
 
 | Capability | Default |
 | --- | --- |
-| Tags | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props` |
+| Tags | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props`, `switch`, `break`, `continue`, `with` |
 | Filters | `escape`, `default`, `length`, `join`, `upper`, `lower`, `capitalize`, `title`, `trim`, `replace`, `slice`, `first`, `last`, `reverse`, `sort`, `split`, `abs`, `numberformat`, `date`, `abbreviate`, `urlencode` |
 | Functions | `slot`, `i18n`, `max`, `min` |
 | Tests | `empty`, `null`, `iterable`, `even`, `odd`, `map` |
@@ -124,7 +160,10 @@ pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
+pebble.forge.language.enabled=true
 ```
+
+The language extension is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble.
 
 A `SandboxPolicy` bean replaces the policy built from properties. If you define your own `PebbleEngine`, the starter backs off. If you define your own `pebbleLoader` or `springExtension`, the starter uses it.
 
@@ -165,7 +204,7 @@ The extension registers only when Spring Security Core, Spring Security Web, Spr
 ./gradlew :pebble-forge-demo:run
 ```
 
-The demo renders a component with named slots. It shows the sandbox escaping HTML in slot data and blocking the `raw` filter.
+The demo renders a component with named slots. It shows the sandbox escaping HTML in slot data, blocking the `raw` filter, and rendering `switch`, `with`, `break`, and `continue`.
 
 ## Build
 

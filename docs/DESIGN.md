@@ -1,6 +1,6 @@
 # Pebble Forge
 
-Pebble Forge is an extension pack for [Pebble 4](https://pebbletemplates.io). It keeps Pebble templates valid and adds the features that other template engines do better. The 0.1 release ships components with named slots, a capability sandbox, and Spring Boot and Spring Security integration.
+Pebble Forge is an extension pack for [Pebble 4](https://pebbletemplates.io). It keeps Pebble templates valid and adds the features that other template engines do better. The 0.1 release ships components with named slots, a capability sandbox, language extensions, and Spring Boot and Spring Security integration.
 
 The name is a working title.
 
@@ -54,6 +54,11 @@ pebble-forge-core
 │   ├── SlotNode             captures a named block
 │   ├── PropsNode            validates required props and applies defaults
 │   └── SlotFunction         returns captured slot HTML without double escaping
+├── language
+│   ├── LanguageExtension    switch, break, continue, with, and a break-aware for
+│   ├── ForNode              for loop that catches break and continue signals
+│   ├── SwitchNode           first matching case, no fall-through
+│   └── WithNode             scoped variable map
 └── sandbox
     ├── SandboxPolicy        allowlists, limits, path rules
     ├── SandboxedExtension   filters a user extension
@@ -123,13 +128,45 @@ The component body renders in the caller's context. Props and slots render in th
 
 Slots are captured as pre-rendered `SafeString` values. `ComponentNode.accept` walks the body so autoescaping applies to slot content before capture. Direct output of `slot()` escapes once. Concatenating or filtering a slot turns it back into a plain string and escapes it again.
 
+## Language extensions
+
+Pebble Forge adds three language features that Pebble does not ship.
+
+| Tag | Behavior |
+| --- | --- |
+| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. It does not fall through. |
+| `break`, `continue` | Controls a `for` loop. `break` also exits a `switch`. |
+| `with { ... }` | Renders a body with extra scoped variables. |
+
+```twig
+{% with {"role": page.role} %}
+  {% switch role %}
+    {% case "admin" %}Admin
+    {% case "user" %}User
+    {% default %}Guest
+  {% endswitch %}
+{% endwith %}
+
+{% for item in items %}
+  {% if item.hidden %}{% continue %}{% endif %}
+  {% if item.stop %}{% break %}{% endif %}
+  {{ item.name }}
+{% endfor %}
+```
+
+`for` is replaced with a break and continue aware node. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch.
+
+`break` and `continue` are lexical. The parser tracks loop and switch nesting while it parses. A tag outside a loop or switch fails at parse time. A macro that contains `break` and is called outside a loop is outside this guarantee.
+
+`PebbleForge.engine().languageExtensions(false)` disables the language extension. The Boot starter exposes the same switch as `pebble.forge.language.enabled`.
+
 ## Sandbox
 
 The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 
 | Capability | Default |
 | --- | --- |
-| Tags | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props` |
+| Tags | `if`, `for`, `set`, `verbatim`, `include`, `component`, `slot`, `props`, `switch`, `break`, `continue`, `with` |
 | Filters | `escape`, `default`, `length`, `join`, `upper`, `lower`, `capitalize`, `title`, `trim`, `replace`, `slice`, `first`, `last`, `reverse`, `sort`, `split`, `abs`, `numberformat`, `date`, `abbreviate`, `urlencode` |
 | Functions | `slot`, `i18n`, `max`, `min` |
 | Tests | `empty`, `null`, `iterable`, `even`, `odd`, `map` |
@@ -170,9 +207,10 @@ pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
+pebble.forge.language.enabled=true
 ```
 
-A `SandboxPolicy` bean replaces the policy built from properties. If an application defines its own `PebbleEngine`, the starter backs off. If it defines its own `pebbleLoader` or `springExtension`, the starter uses those beans.
+The language switch is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble. A `SandboxPolicy` bean replaces the policy built from properties. If an application defines its own `PebbleEngine`, the starter backs off. If it defines its own `pebbleLoader` or `springExtension`, the starter uses those beans.
 
 The property-built sandbox policy adds `SpringWebFunctions`, which allows `message`, `href`, and the form binding result functions. It also allows `extends` and `block` so layouts work. A hand-written policy calls `SpringWebFunctions.allow(builder)` and allows the layout tags it uses.
 
@@ -213,9 +251,10 @@ Version 0.1 contains these features and the tests that prove them.
 
 1. Components with props, default props, named slots, a default slot, a depth limit, and a clear missing-prop error.
 2. A sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, and an output limit.
-3. A Spring Boot starter that replaces the official engine bean and keeps the official view resolvers.
-4. Safe Spring Security functions and sandbox allowlist helpers.
-5. A runnable demo that renders a component inside a sandbox policy.
+3. Language extensions for `switch`, `break`, `continue`, and `with`.
+4. A Spring Boot starter that replaces the official engine bean and keeps the official view resolvers.
+5. Safe Spring Security functions and sandbox allowlist helpers.
+6. A runnable demo that renders a component, a sandbox rejection, and the language tags.
 
 The next releases add typed contracts, diagnostics with source frames, hot reload, and context-aware escaping. Natural HTML authoring is a separate dialect loader. It does not belong in the first release because it needs a real HTML parser and a source map back to the original template.
 
@@ -224,9 +263,10 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 | Area | Tests | What it proves |
 | --- | --- | --- |
 | Components | 11 | Real templates, real engine, exact output |
+| Language | 23 | Switch, break, continue, with, for compatibility, sandbox on and off |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
 | Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
-| Boot auto-config | 6 | Application context, official auto-config ordering, policy override |
+| Boot auto-config | 8 | Application context, official auto-config ordering, policy override, language switch |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |
 
 ## Non-goals
@@ -244,8 +284,9 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 | --- | --- | --- |
 | Maven group and Java package | `io.github.allbegray.pebbleforge` | Matches the future GitHub account and the Maven Central `io.github.*` namespace |
 | Fork or depend | Depend on Pebble 4.1.2 | Keeps compatibility and upgrade path |
-| Feature shape | Opt-in extensions | Plain Pebble stays plain |
+| Feature shape | Extensions with explicit toggles | Components and sandbox are opt-in. Language extensions are on by default and can be disabled. |
 | Components | Template-defined, rendered through `includeTemplate` | Reuses Pebble caching, inheritance, and locale |
+| Language extensions | Token parsers plus a custom break-aware `for` node | Pebble has no switch, break, continue, or with. Catching signals inside the loop is the only way to continue correctly. |
 | Slots | Captured as pre-rendered `SafeString` | No double escaping, no new AST evaluator |
 | Component suffix | Configurable, empty when the loader owns the suffix | Avoids a double suffix |
 | Sandbox default | Deny by allowlist | A missing entry fails closed |
@@ -258,6 +299,9 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 ## Accepted limits
 
 - Slot output cannot be concatenated or filtered without a second escape. Emit slots directly.
+- `switch` has no fall-through. Each case is independent.
+- `break` and `continue` are validated lexically. A macro that contains `break` and is called outside a loop can still let the signal escape.
+- The break-aware `for` replaces Pebble's built-in `for`. It mirrors the current loop variables, map, array, enumeration, parallel, and `else` behavior. A future Pebble change to `for` must be mirrored here.
 - Component depth uses a static thread-local counter. Nested renders across different engines on the same thread share that counter. The counter resets at depth zero.
 - A sandbox policy is fixed per engine. One engine that serves multiple trust levels applies the same policy to all of them. Build separate engines for separate trust levels.
 - The output limit caps written output. Slot capture uses a separate cap per slot, so many large slots can allocate memory before the main output limit fails.

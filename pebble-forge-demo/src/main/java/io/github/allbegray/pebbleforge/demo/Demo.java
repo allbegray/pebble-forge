@@ -8,6 +8,7 @@ import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.loader.ClasspathLoader;
 
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 
 public final class Demo {
@@ -49,6 +50,10 @@ public final class Demo {
         } catch (PebbleException e) {
             System.out.println(e.getClass().getSimpleName() + ": " + e.getMessage());
         }
+
+        System.out.println("=== language extensions ===");
+        System.out.println(render(engine, "language-demo",
+                Map.of("numbers", List.of(1, 2, 3, 4, 5, 6))));
     }
 
     private static String render(PebbleEngine engine, String template, Map<String, Object> model)
