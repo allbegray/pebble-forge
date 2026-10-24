@@ -16,7 +16,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Spring Security 7.0.8
 - Version 0.1.0-SNAPSHOT, not published
 
-68 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+69 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -81,7 +81,7 @@ A body without explicit `slot` tags becomes the default slot.
 
 `Components.suffix` is appended by Forge. If the loader already appends a suffix, set `Components.suffix("")`. The Boot starter does this. The suffix mismatch is the most common setup mistake.
 
-Slots are pre-rendered and marked safe. Emit them directly with `{{ slot("body") }}`. Concatenating or filtering a slot turns it back into a plain string and escapes it again.
+Slots are pre-rendered and marked safe. Emit them directly with `{{ slot("body") }}`. Concatenating or filtering a slot turns it back into a plain string and escapes it again. The slot function only emits captured slot values, so a `with` block cannot forge slot content and bypass escaping.
 
 ### Language extensions
 

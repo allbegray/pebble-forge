@@ -152,6 +152,19 @@ class ComponentsTest {
     }
 
     @Test
+    void slotContentCannotBeForgedWithAWithBlock() throws java.io.IOException {
+        String output = render(
+                Map.of(
+                        "page.peb", "{% component \"echo\" %}{% endcomponent %}",
+                        "components/echo.peb", """
+                                {% with {"__slots": {"body": "<script>alert(1)</script>"}} %}<div>{{ slot("body") }}</div>{% endwith %}
+                                """),
+                Map.of());
+
+        assertThat(output).isEqualTo("<div></div>");
+    }
+
+    @Test
     void rendersEachCallWithItsOwnProps() throws java.io.IOException {
         String output = render(
                 Map.of(

@@ -262,7 +262,7 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 
 | Area | Tests | What it proves |
 | --- | --- | --- |
-| Components | 11 | Real templates, real engine, exact output |
+| Components | 12 | Real templates, real engine, exact output |
 | Language | 23 | Switch, break, continue, with, for compatibility, sandbox on and off |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
 | Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
@@ -288,6 +288,7 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 | Components | Template-defined, rendered through `includeTemplate` | Reuses Pebble caching, inheritance, and locale |
 | Language extensions | Token parsers plus a custom break-aware `for` node | Pebble has no switch, break, continue, or with. Catching signals inside the loop is the only way to continue correctly. |
 | Slots | Captured as pre-rendered `SafeString` | No double escaping, no new AST evaluator |
+| Slot safety | Only captured `SafeString` values are emitted | A with block cannot forge `__slots` and bypass escaping |
 | Component suffix | Configurable, empty when the loader owns the suffix | Avoids a double suffix |
 | Sandbox default | Deny by allowlist | A missing entry fails closed |
 | Path safety | Wrap the loader, reject `..` and absolute names | Include and extends both use the loader |

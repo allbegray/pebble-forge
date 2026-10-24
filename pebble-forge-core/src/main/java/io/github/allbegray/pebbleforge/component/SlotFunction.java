@@ -31,9 +31,9 @@ public final class SlotFunction implements Function {
             return new SafeString("");
         }
         Object value = map.get(name);
-        if (value == null) {
-            return new SafeString("");
+        if (value instanceof SafeString safe) {
+            return safe;
         }
-        return value instanceof SafeString ? value : new SafeString(String.valueOf(value));
+        return new SafeString("");
     }
 }

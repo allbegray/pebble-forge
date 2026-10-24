@@ -16,7 +16,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Spring Security 7.0.8
 - 버전 0.1.0-SNAPSHOT, 아직 배포하지 않음
 
-테스트는 68개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 69개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -81,7 +81,7 @@ PebbleEngine engine = PebbleForge.engine()
 
 `Components.suffix`는 Forge가 붙입니다. 로더가 이미 `.peb`를 붙인다면 `Components.suffix("")`로 두세요. Spring Boot 스타터는 이렇게 설정합니다. 접미사가 두 번 붙는 문제가 가장 흔한 설정 실수입니다.
 
-슬롯은 미리 렌더링하고 안전한 문자열로 표시합니다. `{{ slot("body") }}`처럼 직접 출력하세요. 슬롯을 문자열과 이어 붙이거나 필터에 넘기면 일반 문자열로 바뀌어 다시 이스케이프됩니다.
+슬롯은 미리 렌더링하고 안전한 문자열로 표시합니다. `{{ slot("body") }}`처럼 직접 출력하세요. 슬롯을 문자열과 이어 붙이거나 필터에 넘기면 일반 문자열로 바뀌어 다시 이스케이프됩니다. 슬롯 함수는 실제로 캡처한 슬롯 값만 출력하므로, `with` 블록으로 슬롯 내용을 위조해서 이스케이프를 우회할 수 없습니다.
 
 ### 템플릿 언어 확장
 
