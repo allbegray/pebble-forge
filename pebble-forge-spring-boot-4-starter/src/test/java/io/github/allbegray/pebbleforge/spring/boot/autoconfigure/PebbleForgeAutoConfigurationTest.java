@@ -99,6 +99,13 @@ class PebbleForgeAutoConfigurationTest {
     }
 
     @Test
+    void enablesDevMode() {
+        runner.withPropertyValues("pebble.forge.dev-mode=true").run(context ->
+                assertThat(context.getBean(PebbleEngine.class).getLoader())
+                        .isInstanceOf(io.github.allbegray.pebbleforge.reload.ReloadingLoader.class));
+    }
+
+    @Test
     void canDisableLanguageExtensions() {
         runner.withPropertyValues("pebble.forge.language.enabled=false").run(context ->
                 assertThatThrownBy(() -> render(context.getBean(PebbleEngine.class), "language",

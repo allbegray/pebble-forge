@@ -14,9 +14,9 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 105개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
+- 테스트는 110개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 9, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
-- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, Spring Boot 4, Spring Security 함수가 들어가 있다.
+- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
 - 라이선스, CI, Maven 배포 설정은 아직 없다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
@@ -42,7 +42,7 @@
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | Done | 없음 |
 | PF-101 | P1 | 타입 계약 검사 모듈 | XL | 진행 중 | PF-004 |
 | PF-102 | P1 | 소스 프레임 진단 | L | 진행 중 | 없음 |
-| PF-103 | P1 | 핫 리로드 | M | 설계 필요 | 없음 |
+| PF-103 | P1 | 핫 리로드 | M | Done | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | 대기 | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | 설계 필요 | 없음 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
@@ -153,7 +153,7 @@
 ### PF-103 핫 리로드
 
 - 크기: M
-- 상태: 설계 필요
+- 상태: Done. 콘텐츠 해시 캐시 키, `devMode(true)`, `pebble.forge.dev-mode`, 4개 테스트.
 - 문제: Pebble 캐시 때문에 템플릿을 수정해도 엔진을 다시 만들기 전까지 반영되지 않는다. JTE와 Qute의 개발 모드와 격차가 있다.
 - 범위: 파일 기반 로더에서 수정 시간을 확인하고 캐시를 무효화하는 dev mode를 만든다. `PebbleForge.devMode(true)`와 Boot 프로퍼티를 제공한다.
 - 완료 기준: 임시 디렉터리의 템플릿을 수정한 뒤 같은 엔진의 다음 렌더가 새 내용을 출력한다. jar 안의 classpath 리소스는 대상이 아니라는 점을 문서화한다.
@@ -220,9 +220,8 @@
 
 1. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
 2. PF-101의 다음 스키마. 지금은 Gradle DSL을 쓴다. JSON과 YAML을 언제 추가할지 정한다.
-3. PF-103의 핫 리로드 범위. 파일 로더만인지, classpath 개발 디렉터리까지인지.
-4. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
-5. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지.
+3. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
+4. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지.
 
 ## 릴리스 기준
 

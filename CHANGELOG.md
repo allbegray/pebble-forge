@@ -14,6 +14,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Spring Security functions for authentication, roles, authorities, username, and CSRF.
 - Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include traces for template errors.
+- Development mode that reloads edited templates through a content-hash cache key.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
 ### Fixed

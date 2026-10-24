@@ -59,6 +59,8 @@ pebble-forge-core
 │   ├── ForNode              for loop that catches break and continue signals
 │   ├── SwitchNode           first matching case, no fall-through
 │   └── WithNode             scoped variable map
+├── reload
+│   └── ReloadingLoader      hashes template content into the cache key
 └── sandbox
     ├── SandboxPolicy        allowlists, limits, path rules
     ├── SandboxedExtension   filters a user extension
@@ -221,6 +223,7 @@ pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
+pebble.forge.dev-mode=false
 ```
 
 The language switch is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble. A `SandboxPolicy` bean replaces the policy built from properties. If an application defines its own `PebbleEngine`, the starter backs off. If it defines its own `pebbleLoader` or `springExtension`, the starter uses those beans.
@@ -280,12 +283,13 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Components | 12 | Real templates, real engine, exact output |
 | Language | 23 | Switch, break, continue, with, sandbox on and off |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
+| Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
 | Diagnostics | 8 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
 | Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
-| Boot auto-config | 8 | Application context, official auto-config ordering, policy override, language switch |
+| Boot auto-config | 9 | Application context, official auto-config ordering, policy override, language switch, dev mode |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |
 
 ## Non-goals
@@ -316,6 +320,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
 | Contracts | Build-time presence checks for model variables and component props | Catches common errors without a full Java type checker |
 | Diagnostics | Custom include parser plus a source-frame formatter | Captures the include path without replacing the renderer |
+| Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
 | Test style | Real templates, real engine, real output | Proves the feature, not a mock |
 
 ## Accepted limits
@@ -331,6 +336,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
+- Dev mode reads and hashes each template on lookup and leaves old cache keys behind. It is for development, not long-running production processes. Classpath resources inside a jar cannot change.
 
 ## Open questions
 

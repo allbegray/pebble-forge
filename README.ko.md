@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 105개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 110개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -191,6 +191,30 @@ components/card.peb:2
 
 `DiagnosticsExtension`가 include 스택을 기록합니다. 이 확장이 없으면 실패한 템플릿의 프레임만 보여줍니다. extends 체인은 아직 캡처하지 않습니다. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
 
+### 개발 모드
+
+개발 모드는 템플릿 소스가 바뀌면 같은 엔진에서 다시 읽습니다.
+
+```java
+FileLoader loader = new FileLoader("/srv/templates");
+loader.setSuffix(".peb");
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .devMode(true)
+        .build();
+```
+
+로더가 템플릿 소스의 해시를 캐시 키에 넣습니다. 파일이 바뀌면 새 키가 생기고 다음 렌더에서 다시 파싱합니다. 이전 키는 엔진을 버릴 때까지 캐시에 남습니다. 개발 환경에서 쓰고, 오래 실행되는 프로덕션 프로세스에서는 끄세요.
+
+jar 안의 classpath 리소스는 실행 중에 바뀌지 않습니다. 실시간 리로드가 필요하면 디렉터리를 가리키는 로더를 사용하세요.
+
+Spring Boot에서는 같은 스위치를 씁니다.
+
+```properties
+pebble.forge.dev-mode=true
+```
+
 ### 샌드박스
 
 `SandboxPolicy.strict()`가 코어 샌드박스의 기본 정책입니다.
@@ -237,6 +261,7 @@ pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
+pebble.forge.dev-mode=false
 ```
 
 언어 확장은 기본으로 켜집니다. 순수 Pebble로 파싱하려면 `pebble.forge.language.enabled=false`로 두세요.

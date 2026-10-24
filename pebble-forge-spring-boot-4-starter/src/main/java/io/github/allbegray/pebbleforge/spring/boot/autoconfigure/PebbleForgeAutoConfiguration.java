@@ -67,7 +67,8 @@ public class PebbleForgeAutoConfiguration {
                 .cacheActive(properties.getServlet().isCache())
                 .strictVariables(properties.isStrictVariables())
                 .greedyMatchMethod(properties.isGreedyMatchMethod())
-                .languageExtensions(forgeProperties.getLanguage().isEnabled());
+                .languageExtensions(forgeProperties.getLanguage().isEnabled())
+                .devMode(forgeProperties.isDevMode());
 
         if (pebbleLoader instanceof ClasspathLoader) {
             // The official view resolver only strips the leading slash when it sees a raw

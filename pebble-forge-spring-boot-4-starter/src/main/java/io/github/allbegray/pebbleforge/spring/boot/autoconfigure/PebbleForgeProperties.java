@@ -12,6 +12,15 @@ public class PebbleForgeProperties {
     private final Sandbox sandbox = new Sandbox();
     private final Security security = new Security();
     private final Language language = new Language();
+    private boolean devMode;
+
+    public boolean isDevMode() {
+        return devMode;
+    }
+
+    public void setDevMode(boolean devMode) {
+        this.devMode = devMode;
+    }
 
     public Components getComponents() {
         return components;

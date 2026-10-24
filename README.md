@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-105 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+110 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -191,6 +191,30 @@ components/card.peb:2
 
 `DiagnosticsExtension` records the include stack. Without it, the report shows the failing template only. The extends chain is not captured yet. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 
+### Development mode
+
+Development mode reloads a template when its source changes. The same engine is reused.
+
+```java
+FileLoader loader = new FileLoader("/srv/templates");
+loader.setSuffix(".peb");
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .devMode(true)
+        .build();
+```
+
+The loader hashes the template source into the cache key. A changed file gets a new key, so the next render parses it again. Old keys stay in the cache until the engine is discarded. Use this in development, not in a long-running production process.
+
+Classpath resources inside a jar cannot change at runtime. Point the loader at a directory when you want live reload.
+
+Spring Boot uses the same switch.
+
+```properties
+pebble.forge.dev-mode=true
+```
+
 ### Sandbox
 
 `SandboxPolicy.strict()` is the default policy.
@@ -233,6 +257,7 @@ pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
+pebble.forge.dev-mode=false
 ```
 
 The language extension is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble.

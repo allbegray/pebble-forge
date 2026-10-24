@@ -3,6 +3,7 @@ package io.github.allbegray.pebbleforge;
 import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.component.ComponentsExtension;
 import io.github.allbegray.pebbleforge.language.LanguageExtension;
+import io.github.allbegray.pebbleforge.reload.ReloadingLoader;
 import io.github.allbegray.pebbleforge.sandbox.SandboxAttributeExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxExtensionCustomizer;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
@@ -41,6 +42,7 @@ public final class PebbleForge {
         private Components components;
         private SandboxPolicy sandbox;
         private boolean language = true;
+        private boolean devMode;
         private boolean strictVariables = true;
         private Boolean autoEscaping;
         private int maxRenderedChars = -1;
@@ -67,6 +69,11 @@ public final class PebbleForge {
 
         public Builder languageExtensions(boolean enabled) {
             this.language = enabled;
+            return this;
+        }
+
+        public Builder devMode(boolean devMode) {
+            this.devMode = devMode;
             return this;
         }
 
@@ -126,6 +133,9 @@ public final class PebbleForge {
             }
 
             Loader<?> effectiveLoader = loader == null ? new ClasspathLoader() : loader;
+            if (devMode) {
+                effectiveLoader = ReloadingLoader.wrap(effectiveLoader);
+            }
             if (sandbox != null) {
                 effectiveLoader = new SandboxedLoader<>(effectiveLoader, sandbox);
                 delegate.methodAccessValidator(sandbox.methodAccessValidator());

@@ -17,7 +17,7 @@ implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-start
 - Runs before Pebble's `PebbleAutoConfiguration`.
 - Replaces the `pebbleEngine` bean with one built by `PebbleForge`.
 - Reuses `PebbleProperties`, the `pebbleLoader` bean, `SpringExtension`, every `Extension` bean, and the official view resolvers.
-- Binds `pebble.forge.*` properties for components, sandbox, Spring Security, and language extensions.
+- Binds `pebble.forge.*` properties for components, sandbox, Spring Security, language extensions, and dev mode.
 - Registers `SpringSecurityExtension` when the servlet and Spring Security classes are present.
 - Normalizes `pebble.prefix` when the effective loader is a `ClasspathLoader`, because sandboxing wraps the loader and the official view resolver no longer sees the raw type.
 
@@ -36,6 +36,7 @@ pebble.forge.sandbox.force-auto-escaping=true
 
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
+pebble.forge.dev-mode=false
 ```
 
 A `SandboxPolicy` bean replaces the policy built from properties.
