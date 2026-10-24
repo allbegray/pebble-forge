@@ -95,6 +95,13 @@ class LanguageExtensionTest {
     }
 
     @Test
+    void withOnlyHidesOuterVariables() throws Exception {
+        assertThat(render("""
+                {% set outer = "x" %}{% with {"inner": "y"} only %}{{ inner }}{{ outer | default("missing") }}{% endwith %}
+                """, Map.of())).isEqualTo("ymissing");
+    }
+
+    @Test
     void withScopesNewVariables() throws Exception {
         assertThat(render("""
                 {% with {"temp": "x"} %}{{ temp }}{% endwith %}{{ temp | default("missing") }}

@@ -21,11 +21,13 @@ public final class WithNode extends AbstractRenderableNode {
 
     private final Expression<?> valuesExpression;
     private final BodyNode body;
+    private final boolean isolated;
 
-    WithNode(int lineNumber, Expression<?> valuesExpression, BodyNode body) {
+    WithNode(int lineNumber, Expression<?> valuesExpression, BodyNode body, boolean isolated) {
         super(lineNumber);
         this.valuesExpression = valuesExpression;
         this.body = body;
+        this.isolated = isolated;
     }
 
     @Override
@@ -56,11 +58,44 @@ public final class WithNode extends AbstractRenderableNode {
         }
 
         ScopeChain scope = context.getScopeChain();
+        if (isolated) {
+            renderIsolated(scope, values, self, writer, context);
+            return;
+        }
+
         scope.pushScope(values);
         try {
             body.render(self, writer, context);
         } finally {
             scope.popScope();
+        }
+    }
+
+    private void renderIsolated(ScopeChain scope, Map<String, Object> values,
+            PebbleTemplateImpl self, Writer writer, EvaluationContextImpl context)
+            throws IOException {
+        Map<String, Object> local = new LinkedHashMap<>(values);
+        copyIfVisible(scope, context, local, "__slots");
+        copyIfVisible(scope, context, local, "__component");
+        copyIfVisible(scope, context, local, "locale");
+        copyIfVisible(scope, context, local, "template");
+        copyIfVisible(scope, context, local, "_context");
+
+        scope.pushLocalScope();
+        try {
+            for (Map.Entry<String, Object> entry : local.entrySet()) {
+                scope.put(entry.getKey(), entry.getValue());
+            }
+            body.render(self, writer, context);
+        } finally {
+            scope.popScope();
+        }
+    }
+
+    private static void copyIfVisible(ScopeChain scope, EvaluationContextImpl context,
+            Map<String, Object> target, String name) {
+        if (scope.containsKey(name)) {
+            target.put(name, context.getVariable(name));
         }
     }
 
@@ -79,5 +114,9 @@ public final class WithNode extends AbstractRenderableNode {
 
     public BodyNode getBody() {
         return body;
+    }
+
+    public boolean isIsolated() {
+        return isolated;
     }
 }

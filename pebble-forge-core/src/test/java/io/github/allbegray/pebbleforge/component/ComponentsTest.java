@@ -165,6 +165,19 @@ class ComponentsTest {
     }
 
     @Test
+    void withOnlyPreservesSlotContent() throws java.io.IOException {
+        String output = render(
+                Map.of(
+                        "page.peb", "{% component \"echo\" %}<b>slot</b>{% endcomponent %}",
+                        "components/echo.peb", """
+                                {% with {"x": 1} only %}{{ slot() }}{{ x }}{% endwith %}
+                                """),
+                Map.of());
+
+        assertThat(output).isEqualTo("<b>slot</b>1");
+    }
+
+    @Test
     void rendersEachCallWithItsOwnProps() throws java.io.IOException {
         String output = render(
                 Map.of(

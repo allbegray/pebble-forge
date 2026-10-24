@@ -26,8 +26,16 @@ final class WithTokenParser implements TokenParser {
 
         stream.next();
         Expression<?> values = null;
-        if (!stream.current().test(Token.Type.EXECUTE_END)) {
+        boolean isolated = false;
+        if (stream.current().test(Token.Type.NAME, "only")) {
+            stream.next();
+            isolated = true;
+        } else if (!stream.current().test(Token.Type.EXECUTE_END)) {
             values = parser.getExpressionParser().parseExpression();
+            if (stream.current().test(Token.Type.NAME, "only")) {
+                stream.next();
+                isolated = true;
+            }
             if (stream.current().test(Token.Type.PUNCTUATION, "=")) {
                 throw new ParserException(
                         null,
@@ -50,6 +58,6 @@ final class WithTokenParser implements TokenParser {
 
         stream.next();
         stream.expect(Token.Type.EXECUTE_END);
-        return new WithNode(lineNumber, values, body);
+        return new WithNode(lineNumber, values, body, isolated);
     }
 }
