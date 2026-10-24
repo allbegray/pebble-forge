@@ -71,7 +71,12 @@ final class SwitchTokenParser implements TokenParser {
                             stream.getFilename());
                 }
                 stream.next();
-                Expression<?> value = parser.getExpressionParser().parseExpression();
+                List<Expression<?>> values = new ArrayList<>();
+                values.add(parser.getExpressionParser().parseExpression());
+                while (stream.current().test(Token.Type.PUNCTUATION, ",")) {
+                    stream.next();
+                    values.add(parser.getExpressionParser().parseExpression());
+                }
                 stream.expect(Token.Type.EXECUTE_END);
 
                 int previousBreakableDepth = LanguageParserState.breakableDepth();
@@ -83,7 +88,7 @@ final class SwitchTokenParser implements TokenParser {
                 } finally {
                     LanguageParserState.setBreakableDepth(previousBreakableDepth);
                 }
-                cases.add(new SwitchNode.Case(value, body));
+                cases.add(new SwitchNode.Case(values, body));
                 continue;
             }
 

@@ -33,10 +33,12 @@ public final class SwitchNode extends AbstractRenderableNode {
             throws IOException {
         Object subjectValue = subject.evaluate(self, context);
         for (Case entry : cases) {
-            Object caseValue = entry.value().evaluate(self, context);
-            if (OperatorUtils.equals(subjectValue, caseValue)) {
-                renderBody(entry.body(), self, writer, context);
-                return;
+            for (Expression<?> value : entry.values()) {
+                Object caseValue = value.evaluate(self, context);
+                if (OperatorUtils.equals(subjectValue, caseValue)) {
+                    renderBody(entry.body(), self, writer, context);
+                    return;
+                }
             }
         }
         if (defaultBody != null) {
@@ -57,7 +59,9 @@ public final class SwitchNode extends AbstractRenderableNode {
         visitor.visit(this);
         subject.accept(visitor);
         for (Case entry : cases) {
-            entry.value().accept(visitor);
+            for (Expression<?> value : entry.values()) {
+                value.accept(visitor);
+            }
             entry.body().accept(visitor);
         }
         if (defaultBody != null) {
@@ -77,6 +81,10 @@ public final class SwitchNode extends AbstractRenderableNode {
         return defaultBody;
     }
 
-    public record Case(Expression<?> value, BodyNode body) {
+    public record Case(List<Expression<?>> values, BodyNode body) {
+
+        public Case {
+            values = List.copyOf(values);
+        }
     }
 }

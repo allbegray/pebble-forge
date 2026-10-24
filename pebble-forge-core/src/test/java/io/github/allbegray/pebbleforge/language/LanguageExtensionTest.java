@@ -46,6 +46,13 @@ class LanguageExtensionTest {
     }
 
     @Test
+    void matchesAnyValueInAMultiValueCase() throws Exception {
+        assertThat(render("""
+                {% switch role %}{% case "admin", "owner" %}A{% default %}D{% endswitch %}
+                """, Map.of("role", "owner"))).isEqualTo("A");
+    }
+
+    @Test
     void breakStopsTheLoop() throws Exception {
         assertThat(render("""
                 {% for n in numbers %}{% if n == 3 %}{% break %}{% endif %}{{ n }}{% endfor %}
