@@ -1,0 +1,4 @@
+{% extends "layout" %}
+{% block content %}
+<main>{% component "card" with {"name": name} %}{% endcomponent %}{% if isAuthenticated() %}<span>signed-in</span>{% endif %}</main>
+{% endblock %}
