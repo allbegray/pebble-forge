@@ -12,6 +12,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, roles, authorities, username, and CSRF.
+- Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
 ### Fixed

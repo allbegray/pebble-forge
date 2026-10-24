@@ -18,13 +18,15 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 78개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 97개입니다. 코어, 계약 검사, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
 | 모듈 | 역할 |
 | --- | --- |
-| `pebble-forge-core` | 컴포넌트, 샌드박스, `PebbleForge.engine()` 빌더 |
+| `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, `PebbleForge.engine()` 빌더 |
+| `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle 태스크 |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
 | `pebble-forge-demo` | 컴포넌트와 샌드박스를 실행하는 데모 |
@@ -120,6 +122,38 @@ Pebble Forge는 Pebble에 없는 태그를 추가합니다.
 ```java
 PebbleForge.engine().languageExtensions(false)
 ```
+
+### 계약 검사
+
+`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다.
+
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.contracts")
+}
+
+pebbleForgeContracts {
+    variables.add("page")
+    variables.add("items")
+    componentRoot.set("components")
+}
+```
+
+```shell
+./gradlew checkPebbleTemplates
+```
+
+없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 알 수 없는 prop이나 동적 컴포넌트 이름은 경고로 남습니다.
+
+```text
+page.peb:4: ERROR: Variable [page] is not declared in the model schema
+page.peb:8: ERROR: Component [card] requires prop [title]
+page.peb:8: WARNING: Component [card] does not declare prop [footer]
+```
+
+기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
+
+Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 
 ### 샌드박스
 
@@ -224,6 +258,7 @@ pebble.forge.language.enabled=true
 
 - [변경 기록](CHANGELOG.md)
 - [기여 가이드](CONTRIBUTING.md)
+- [계약 검사](docs/CONTRACTS.md)
 - [보안 정책](SECURITY.md)
 - [릴리스 체크리스트](docs/RELEASING.md)
 

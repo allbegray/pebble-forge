@@ -14,9 +14,9 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 78개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
-- 모듈은 `pebble-forge-core`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
-- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, Spring Boot 4, Spring Security 함수가 들어가 있다.
+- 테스트는 97개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
+- 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
+- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
 - 라이선스, CI, Maven 배포 설정은 아직 없다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
@@ -40,7 +40,7 @@
 | PF-004 | P0 | `for` 호환성 매트릭스 | M | Done | 없음 |
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | Done | PF-001, PF-002 |
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | Done | 없음 |
-| PF-101 | P1 | 타입 계약 검사 모듈 | XL | 설계 필요 | PF-004 |
+| PF-101 | P1 | 타입 계약 검사 모듈 | XL | 진행 중 | PF-004 |
 | PF-102 | P1 | 소스 프레임 진단 | L | 설계 필요 | 없음 |
 | PF-103 | P1 | 핫 리로드 | M | 설계 필요 | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | 대기 | PF-004 |
@@ -128,9 +128,11 @@
 ### PF-101 타입 계약 검사 모듈
 
 - 크기: XL
-- 상태: 설계 필요
+- 상태: 진행 중. 1차 구현으로 `pebble-forge-contracts`와 `checkPebbleTemplates` Gradle 태스크를 추가했다.
 - 문제: Pebble은 동적이라서 모델 변수와 컴포넌트 props 오류가 렌더 시점에야 드러난다. JTE, Qute, Rocker의 장점과 가장 큰 격차다.
 - 범위: `pebble-forge-contracts` 모듈을 새로 만든다. 모델 스키마와 컴포넌트 props 계약을 입력으로 받고, 템플릿을 파싱해서 변수 읽기, 컴포넌트 호출, include와 extends를 검사한다. Gradle 태스크 `checkPebbleTemplates`를 제공한다.
+- 현재 구현: AST 기반 변수 존재 검사, 컴포넌트 props 검사, 동적 이름 경고, Gradle DSL 스키마, `checkPebbleTemplates` 태스크, TestKit 3개. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
+- 남은 것: JSON/YAML 스키마, 흐름 기반 지역 변수 분석, include와 extends 스코프 전파, 타입 검사, Plugin Portal 배포.
 - 완료 기준: 좋은 fixture는 통과하고, 없는 변수나 잘못된 props를 쓰는 fixture는 파일과 줄 번호를 담아 빌드를 실패시킨다. 지원 문법 밖의 표현식은 오탐 대신 경고로 처리한다.
 - 의존: PF-004.
 - 결정: 첫 범위는 전체 Java 타입 시스템이 아니라 변수 존재와 컴포넌트 props 검사로 제한한다. 동적 include와 동적 컴포넌트 이름은 경고로 남긴다.
@@ -213,7 +215,7 @@
 ## 결정이 필요한 것
 
 1. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
-2. PF-101의 스키마 형식. JSON, YAML, Java DSL 중 무엇을 먼저 지원할지.
+2. PF-101의 다음 스키마. 지금은 Gradle DSL을 쓴다. JSON과 YAML을 언제 추가할지 정한다.
 3. PF-103의 핫 리로드 범위. 파일 로더만인지, classpath 개발 디렉터리까지인지.
 4. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
 5. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지.

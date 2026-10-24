@@ -1,6 +1,6 @@
 # Releasing Pebble Forge
 
-This document is the release checklist. It covers the three published modules. `pebble-forge-demo` is not published.
+This document is the release checklist. It covers the four published modules: core, contracts, spring, and the Boot 4 starter. `pebble-forge-demo` and `pebble-forge-gradle-plugin` are not published yet.
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ The build signs only when both properties exist. Maven Central rejects unsigned 
 ./gradlew nmcpCheckAggregationFiles
 ```
 
-`publishToMavenLocal` must produce all three POMs, jars, sources jars, and javadoc jars.
+`publishToMavenLocal` must produce all four POMs, jars, sources jars, and javadoc jars.
 
 Resolve the core artifact from a separate sample project against `mavenLocal()` and run it. This catches broken POM metadata before the upload.
 
@@ -76,6 +76,7 @@ Wait for Maven Central to index the release, then check the coordinates.
 
 ```text
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-core/0.1.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-contracts/0.1.0/
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring/0.1.0/
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring-boot-4-starter/0.1.0/
 ```

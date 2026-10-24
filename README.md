@@ -18,13 +18,15 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-78 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+97 tests cover the core, contracts, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
 | Module | Purpose |
 | --- | --- |
-| `pebble-forge-core` | Components, sandbox, and the `PebbleForge.engine()` builder |
+| `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
+| `pebble-forge-contracts` | Build-time model variable and component prop checks |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
@@ -120,6 +122,38 @@ Disable the language extensions when a template must parse as plain Pebble.
 ```java
 PebbleForge.engine().languageExtensions(false)
 ```
+
+### Contract checks
+
+The contracts module parses templates at build time and checks model variable reads and component props.
+
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.contracts")
+}
+
+pebbleForgeContracts {
+    variables.add("page")
+    variables.add("items")
+    componentRoot.set("components")
+}
+```
+
+```shell
+./gradlew checkPebbleTemplates
+```
+
+A missing model variable or required component prop fails the build. An unknown prop or a dynamic component name is a warning.
+
+```text
+page.peb:4: ERROR: Variable [page] is not declared in the model schema
+page.peb:8: ERROR: Component [card] requires prop [title]
+page.peb:8: WARNING: Component [card] does not declare prop [footer]
+```
+
+The default template root is `src/main/resources/templates`. The default suffix is `.peb`. Set `allowAnyVariable` to `true` to check only components.
+
+The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
 ### Sandbox
 
@@ -220,6 +254,7 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
+- [Contract checks](docs/CONTRACTS.md)
 - [Security policy](SECURITY.md)
 - [Release checklist](docs/RELEASING.md)
 

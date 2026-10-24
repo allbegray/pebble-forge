@@ -28,6 +28,8 @@ The build targets Java 21.
 | Module | Contents |
 | --- | --- |
 | `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge` builder |
+| `pebble-forge-contracts` | Model variable and component prop contract checks |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
 | `pebble-forge-spring` | Spring Security functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration and properties |
 | `pebble-forge-demo` | Runnable examples |
