@@ -146,6 +146,7 @@
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
 - 현재 구현: `DiagnosticsExtension` include 추적, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, 8개 테스트. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다.
 - 남은 것: extends 체인 캡처, Spring Boot 오류 페이지 연동, CLI와 Gradle 진단 태스크.
+- 1차 구현 커밋: `d61932d` diagnostics 모듈, include 추적, 데모.
 - 완료 기준: 중첩 include 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
 - 메모: 렌더 시점 예외를 감싸는 방식과 파싱 시점 예외를 그대로 두는 방식을 비교한다.
 
