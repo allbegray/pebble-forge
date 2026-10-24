@@ -1,0 +1,14 @@
+{% extends "layout" %}
+
+{% block content %}
+<section class="page">
+  {% component "card" with {"title": page.title, "subtitle": page.summary, "tone": "info"} %}
+    {% slot "body" %}
+      <p>{{ page.body }}</p>
+    {% endslot %}
+    {% slot "footer" %}
+      <small>{{ page.footer }}</small>
+    {% endslot %}
+  {% endcomponent %}
+</section>
+{% endblock %}
