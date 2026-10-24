@@ -212,6 +212,10 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 ./gradlew test
 ```
 
+## Backlog
+
+Next work, release gates, and open decisions are tracked in [docs/BACKLOG.md](docs/BACKLOG.md).
+
 ## Design
 
 The feature matrix, scope decisions, and accepted limits are in [docs/DESIGN.md](docs/DESIGN.md).

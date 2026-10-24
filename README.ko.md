@@ -216,6 +216,10 @@ pebble.forge.language.enabled=true
 ./gradlew test
 ```
 
+## 백로그
+
+다음 작업, 릴리스 기준, 열린 결정은 [docs/BACKLOG.md](docs/BACKLOG.md)에 정리했습니다.
+
 ## 설계
 
 기능 비교, 범위 결정, 허용한 한계는 [docs/DESIGN.md](docs/DESIGN.md)에 정리했습니다.

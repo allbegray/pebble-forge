@@ -258,6 +258,8 @@ Version 0.1 contains these features and the tests that prove them.
 
 The next releases add typed contracts, diagnostics with source frames, hot reload, and context-aware escaping. Natural HTML authoring is a separate dialect loader. It does not belong in the first release because it needs a real HTML parser and a source map back to the original template.
 
+The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKLOG.md).
+
 ## Verification
 
 | Area | Tests | What it proves |
