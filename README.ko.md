@@ -216,6 +216,10 @@ pebble.forge.language.enabled=true
 ./gradlew test
 ```
 
+## 라이선스
+
+Apache License 2.0입니다. [LICENSE](LICENSE)를 참고하세요.
+
 ## 백로그
 
 다음 작업, 릴리스 기준, 열린 결정은 [docs/BACKLOG.md](docs/BACKLOG.md)에 정리했습니다.

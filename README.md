@@ -212,6 +212,10 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 ./gradlew test
 ```
 
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
+
 ## Backlog
 
 Next work, release gates, and open decisions are tracked in [docs/BACKLOG.md](docs/BACKLOG.md).
