@@ -241,6 +241,26 @@ class LanguageExtensionTest {
         assertThat(writer.toString()).isEqualTo("14");
     }
 
+    @Test
+    void sandboxAllowsTheLanguageFollowUps() throws Exception {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        map.put("a", 1);
+        map.put("b", 2);
+
+        PebbleEngine engine = PebbleForge.engine()
+                .loader(new MapLoader(Map.of("page.peb", """
+                        {% for key, value in map %}{{ key }}={{ value }};{% endfor %}\
+                        {% with {"role": "owner"} only %}{% switch role %}{% case "admin", "owner" %}A{% endswitch %}{% endwith %}
+                        """)))
+                .sandbox(SandboxPolicy.strict())
+                .build();
+        StringWriter writer = new StringWriter();
+
+        engine.getTemplate("page.peb").evaluate(writer, Map.of("map", map));
+
+        assertThat(writer.toString()).isEqualTo("a=1;b=2;A");
+    }
+
     private static String render(String template, Map<String, Object> model) throws Exception {
         PebbleEngine engine = engine(template, model);
         StringWriter writer = new StringWriter();
