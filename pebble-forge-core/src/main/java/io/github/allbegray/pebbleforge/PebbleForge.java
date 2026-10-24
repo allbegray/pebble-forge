@@ -2,6 +2,7 @@ package io.github.allbegray.pebbleforge;
 
 import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.component.ComponentsExtension;
+import io.github.allbegray.pebbleforge.language.LanguageExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxAttributeExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxExtensionCustomizer;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
@@ -38,6 +39,7 @@ public final class PebbleForge {
         private Loader<?> loader;
         private Components components;
         private SandboxPolicy sandbox;
+        private boolean language = true;
         private boolean strictVariables = true;
         private Boolean autoEscaping;
         private int maxRenderedChars = -1;
@@ -58,6 +60,11 @@ public final class PebbleForge {
 
         public Builder sandbox(SandboxPolicy sandbox) {
             this.sandbox = Objects.requireNonNull(sandbox, "sandbox");
+            return this;
+        }
+
+        public Builder languageExtensions(boolean enabled) {
+            this.language = enabled;
             return this;
         }
 
@@ -145,6 +152,13 @@ public final class PebbleForge {
                 delegate.extension(sandbox == null
                         ? componentExtension
                         : new SandboxedExtension(componentExtension, sandbox));
+            }
+
+            if (language) {
+                Extension languageExtension = new LanguageExtension();
+                delegate.extension(sandbox == null
+                        ? languageExtension
+                        : new SandboxedExtension(languageExtension, sandbox));
             }
 
             for (Extension extension : extensions) {

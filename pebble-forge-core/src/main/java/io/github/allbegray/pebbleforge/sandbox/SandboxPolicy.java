@@ -13,7 +13,8 @@ import java.util.function.Predicate;
 public final class SandboxPolicy {
 
     private static final Set<String> SAFE_TAGS = Set.of(
-            "if", "for", "set", "verbatim", "include", "component", "slot", "props");
+            "if", "for", "set", "verbatim", "include", "component", "slot", "props",
+            "switch", "break", "continue", "with");
 
     private static final Set<String> SAFE_FILTERS = Set.of(
             "escape", "default", "length", "join", "upper", "lower", "capitalize", "title",
