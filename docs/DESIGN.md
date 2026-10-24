@@ -66,7 +66,7 @@ pebble-forge-spring
     ├── SpringSecurityExtension  safe authentication, authorization, and CSRF functions
     └── SpringSecurityFunctions  sandbox allowlist for the security functions
 
-pebble-forge-spring-boot-starter
+pebble-forge-spring-boot-4-starter
 ├── PebbleForgeAutoConfiguration  replaces the official engine bean
 └── PebbleForgeProperties         binds pebble.forge.*
 
@@ -146,12 +146,12 @@ The sandbox is an in-process capability guard, not a CPU quota. It stops capabil
 
 The path jail is lexical. It rejects traversal in template names. It does not resolve symlinks. Use a loader root with no symlinks, or a custom loader that enforces canonical paths.
 
-## Spring Boot
+## Spring Boot 4
 
-The starter targets Spring Boot 4.0.6, Spring Framework 7.0.7, Spring Security 7.0.8, and Pebble's `pebble-spring-boot-starter:4.1.2`.
+The starter targets Spring Boot 4.0.6, Spring Framework 7.0.7, Spring Security 7.0.8, and Pebble's `pebble-spring-boot-starter:4.1.2`. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-spring-boot-starter:0.1.0-SNAPSHOT")
+implementation("io.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
 ```
 
 `PebbleForgeAutoConfiguration` is ordered before Pebble's `PebbleAutoConfiguration`. It defines a `pebbleEngine` bean with `PebbleForge`, so the official engine bean backs off. It reuses `PebbleProperties`, the `pebbleLoader` bean, the `SpringExtension` bean, every `Extension` bean, and the official servlet or reactive view resolvers.

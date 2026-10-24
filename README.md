@@ -20,7 +20,7 @@ The name is a working title. The project is an extension library, not a Pebble f
 | --- | --- |
 | `pebble-forge-core` | Components, sandbox, and the `PebbleForge.engine()` builder |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
-| `pebble-forge-spring-boot-starter` | Boot auto-configuration, properties, and servlet integration |
+| `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
 
 ## Core
@@ -98,11 +98,13 @@ Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests
 
 The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list or a recursive include. Run hostile templates in a separate process when CPU is hostile. The path jail is lexical. A symlink inside a file loader root can still point outside the root.
 
-## Spring Boot
+## Spring Boot 4
 
 ```kotlin
-implementation("io.pebbleforge:pebble-forge-spring-boot-starter:0.1.0-SNAPSHOT")
+implementation("io.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
 ```
+
+The starter targets Spring Boot 4.0.6. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.
 
 The starter auto-configures before Pebble's `PebbleAutoConfiguration`. It defines `pebbleEngine` with `PebbleForge`, so the official engine backs off. It reuses `PebbleProperties`, the loader bean, `SpringExtension`, every `Extension` bean, and the official view resolvers.
 
