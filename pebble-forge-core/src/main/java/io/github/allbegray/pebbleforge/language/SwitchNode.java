@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Renders the first matching case and does not fall through.
  */
-final class SwitchNode extends AbstractRenderableNode {
+public final class SwitchNode extends AbstractRenderableNode {
 
     private final Expression<?> subject;
     private final List<Case> cases;
@@ -54,6 +54,7 @@ final class SwitchNode extends AbstractRenderableNode {
 
     @Override
     public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
         subject.accept(visitor);
         for (Case entry : cases) {
             entry.value().accept(visitor);
@@ -64,6 +65,18 @@ final class SwitchNode extends AbstractRenderableNode {
         }
     }
 
-    record Case(Expression<?> value, BodyNode body) {
+    public Expression<?> getSubject() {
+        return subject;
+    }
+
+    public List<Case> getCases() {
+        return cases;
+    }
+
+    public BodyNode getDefaultBody() {
+        return defaultBody;
+    }
+
+    public record Case(Expression<?> value, BodyNode body) {
     }
 }

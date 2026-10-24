@@ -103,6 +103,7 @@ public final class ForNode extends AbstractRenderableNode {
 
     @Override
     public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
         iterableExpression.accept(visitor);
         body.accept(visitor);
         if (elseBody != null) {

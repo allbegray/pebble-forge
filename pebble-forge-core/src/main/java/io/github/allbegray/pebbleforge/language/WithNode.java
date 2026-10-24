@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Renders a body with an extra map of scoped variables.
  */
-final class WithNode extends AbstractRenderableNode {
+public final class WithNode extends AbstractRenderableNode {
 
     private final Expression<?> valuesExpression;
     private final BodyNode body;
@@ -66,9 +66,18 @@ final class WithNode extends AbstractRenderableNode {
 
     @Override
     public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
         if (valuesExpression != null) {
             valuesExpression.accept(visitor);
         }
         body.accept(visitor);
+    }
+
+    public Expression<?> getValuesExpression() {
+        return valuesExpression;
+    }
+
+    public BodyNode getBody() {
+        return body;
     }
 }

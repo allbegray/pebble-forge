@@ -25,11 +25,16 @@ public final class PropsNode extends AbstractRenderableNode {
 
     @Override
     public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
         for (Prop prop : props) {
             if (prop.defaultValue() != null) {
                 prop.defaultValue().accept(visitor);
             }
         }
+    }
+
+    public List<Prop> getProps() {
+        return props;
     }
 
     @Override

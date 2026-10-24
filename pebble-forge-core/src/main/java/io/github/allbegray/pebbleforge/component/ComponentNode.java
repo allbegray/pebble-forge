@@ -68,11 +68,24 @@ public final class ComponentNode extends AbstractRenderableNode {
 
     @Override
     public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
         nameExpression.accept(visitor);
         if (propsExpression != null) {
             propsExpression.accept(visitor);
         }
         body.accept(visitor);
+    }
+
+    public Expression<?> getComponentNameExpression() {
+        return nameExpression;
+    }
+
+    public MapExpression getPropsExpression() {
+        return propsExpression;
+    }
+
+    public BodyNode getBody() {
+        return body;
     }
 
     private void renderComponent(
