@@ -265,7 +265,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Area | Tests | What it proves |
 | --- | --- | --- |
 | Components | 12 | Real templates, real engine, exact output |
-| Language | 23 | Switch, break, continue, with, for compatibility, sandbox on and off |
+| Language | 23 | Switch, break, continue, with, sandbox on and off |
+| For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
 | Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
 | Boot auto-config | 8 | Application context, official auto-config ordering, policy override, language switch |

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Builds a PebbleEngine with the optional Pebble Forge extensions.
@@ -47,6 +48,7 @@ public final class PebbleForge {
         private Locale defaultLocale;
         private boolean greedyMatchMethod;
         private MethodAccessValidator methodAccessValidator;
+        private ExecutorService executorService;
 
         public Builder loader(Loader<?> loader) {
             this.loader = Objects.requireNonNull(loader, "loader");
@@ -113,6 +115,11 @@ public final class PebbleForge {
             return this;
         }
 
+        public Builder executorService(ExecutorService executorService) {
+            this.executorService = Objects.requireNonNull(executorService, "executorService");
+            return this;
+        }
+
         public PebbleEngine build() {
             if (sandbox != null) {
                 requireSandboxSupport();
@@ -136,6 +143,9 @@ public final class PebbleForge {
             delegate.greedyMatchMethod(greedyMatchMethod);
             if (defaultLocale != null) {
                 delegate.defaultLocale(defaultLocale);
+            }
+            if (executorService != null) {
+                delegate.executorService(executorService);
             }
             if (methodAccessValidator != null && sandbox == null) {
                 delegate.methodAccessValidator(methodAccessValidator);

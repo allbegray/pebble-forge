@@ -16,7 +16,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Spring Security 7.0.8
 - Version 0.1.0-SNAPSHOT, not published
 
-69 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+78 tests cover the core, the Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 

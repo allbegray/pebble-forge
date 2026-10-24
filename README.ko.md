@@ -16,7 +16,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Spring Security 7.0.8
 - 버전 0.1.0-SNAPSHOT, 아직 배포하지 않음
 
-테스트는 69개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 78개입니다. 코어, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 

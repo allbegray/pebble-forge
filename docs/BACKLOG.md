@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 69개다. 컴포넌트 12, 언어 확장 23, 샌드박스 20, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
+- 테스트는 78개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, Spring Security 5, Boot 컨텍스트 8, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -37,7 +37,7 @@
 | PF-001 | P0 | 라이선스와 저장소 메타데이터 | S | Done | 없음 |
 | PF-002 | P0 | Maven 배포 설정 | M | Done | PF-001 |
 | PF-003 | P0 | GitHub Actions CI | S | 작성 완료 | 없음 |
-| PF-004 | P0 | `for` 호환성 매트릭스 | M | 대기 | 없음 |
+| PF-004 | P0 | `for` 호환성 매트릭스 | M | Done | 없음 |
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | 대기 | PF-001, PF-002 |
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | 대기 | 없음 |
 | PF-101 | P1 | 타입 계약 검사 모듈 | XL | 설계 필요 | PF-004 |
@@ -89,7 +89,7 @@
 ### PF-004 `for` 호환성 매트릭스
 
 - 크기: M
-- 상태: 대기
+- 상태: Done. 9개 테스트가 일반 Pebble과 출력을 비교한다.
 - 문제: 언어 확장이 Pebble의 기본 `for`를 교체한다. `break`와 `continue`를 위해 필요했지만, 기본 동작이 미묘하게 달라지면 기존 템플릿이 깨진다.
 - 범위: List, Set, Map, 배열, Enumeration, 빈 iterable과 `else`, `loop` 변수, 중첩 루프, parallel, strict variables 조합을 테스트한다. 가능하면 같은 입력을 일반 Pebble 엔진과 비교한다.
 - 완료 기준: 매트릭스 테스트가 모두 통과한다. 의도한 차이는 문서에 적는다.
