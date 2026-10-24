@@ -93,7 +93,7 @@ PebbleEngine engine = PebbleForge.engine()
     .build();
 ```
 
-`Components.suffix` is appended by Forge. If the loader already appends a suffix, set the component suffix to `""`. The Spring Boot starter does this. A double suffix is the most common wiring error.
+`Components.suffix` is appended by Forge. If the loader already appends a suffix, set the component suffix to `""`. The Spring Boot starter does this. A double suffix is the most common setup mistake.
 
 ## Components
 
@@ -221,7 +221,7 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 
 ## Verification
 
-| Area | Tests | Surface |
+| Area | Tests | What it proves |
 | --- | --- | --- |
 | Components | 11 | Real templates, real engine, exact output |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
@@ -258,7 +258,7 @@ The next releases add typed contracts, diagnostics with source frames, hot reloa
 
 - Slot output cannot be concatenated or filtered without a second escape. Emit slots directly.
 - Component depth uses a static thread-local counter. Nested renders across different engines on the same thread share that counter. The counter resets at depth zero.
-- A sandbox policy is fixed per engine. One engine that serves multiple trust levels applies the same policy to all of them. Build separate engines for separate trust boundaries.
+- A sandbox policy is fixed per engine. One engine that serves multiple trust levels applies the same policy to all of them. Build separate engines for separate trust levels.
 - The output limit caps written output. Slot capture uses a separate cap per slot, so many large slots can allocate memory before the main output limit fails.
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.

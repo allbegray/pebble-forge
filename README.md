@@ -75,7 +75,7 @@ A component is a normal Pebble template. Props are declared with `props`. Missin
 
 A body without explicit `slot` tags becomes the default slot.
 
-`Components.suffix` is appended by Forge. If the loader already appends a suffix, set `Components.suffix("")`. The Boot starter does this. The suffix mismatch is the most common wiring error.
+`Components.suffix` is appended by Forge. If the loader already appends a suffix, set `Components.suffix("")`. The Boot starter does this. The suffix mismatch is the most common setup mistake.
 
 Slots are pre-rendered and marked safe. Emit them directly with `{{ slot("body") }}`. Concatenating or filtering a slot turns it back into a plain string and escapes it again.
 
