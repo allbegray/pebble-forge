@@ -153,7 +153,7 @@
 ### PF-103 핫 리로드
 
 - 크기: M
-- 상태: Done. 콘텐츠 해시 캐시 키, `devMode(true)`, `pebble.forge.dev-mode`, 4개 테스트.
+- 상태: Done. 콘텐츠 해시 캐시 키, `devMode(true)`, `pebble.forge.dev-mode`, 4개 테스트. 커밋 `cd8a34a`.
 - 문제: Pebble 캐시 때문에 템플릿을 수정해도 엔진을 다시 만들기 전까지 반영되지 않는다. JTE와 Qute의 개발 모드와 격차가 있다.
 - 범위: 파일 기반 로더에서 수정 시간을 확인하고 캐시를 무효화하는 dev mode를 만든다. `PebbleForge.devMode(true)`와 Boot 프로퍼티를 제공한다.
 - 완료 기준: 임시 디렉터리의 템플릿을 수정한 뒤 같은 엔진의 다음 렌더가 새 내용을 출력한다. jar 안의 classpath 리소스는 대상이 아니라는 점을 문서화한다.
