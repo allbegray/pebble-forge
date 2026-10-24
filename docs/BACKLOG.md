@@ -70,7 +70,7 @@
 ### PF-002 Maven 배포 설정
 
 - 크기: M
-- 상태: Done. `publishToMavenLocal`과 staging 저장소로 검증했다.
+- 상태: Done. `publishToMavenLocal`, staging 저장소, `nmcpCheckAggregationFiles`로 검증했다. 실제 Central 업로드는 `CENTRAL_USERNAME`과 `CENTRAL_PASSWORD`가 필요하다.
 - 문제: `maven-publish`가 없어서 소비자가 의존성으로 가져갈 수 없다.
 - 범위: core, spring, boot 4 starter에 `maven-publish`를 적용한다. demo는 배포하지 않는다. POM의 `name`, `description`, `url`, `scm`, `developers`, `licenses`를 채운다. sources jar와 javadoc jar를 만든다. Central Portal 배포와 GPG 서명을 설정한다.
 - 완료 기준: `./gradlew publishToMavenLocal`이 세 모듈의 POM과 jar를 만든다. 별도 샘플 프로젝트가 로컬 저장소에서 의존성을 받아 컴파일한다. Central staging 배포는 자격 증명이 있을 때 검증한다.
