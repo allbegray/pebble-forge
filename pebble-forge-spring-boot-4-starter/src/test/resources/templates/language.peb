@@ -1,0 +1,1 @@
+{% with {"role": "admin"} %}{% switch role %}{% case "admin" %}A{% case "user" %}U{% default %}D{% endswitch %}{% endwith %}

@@ -92,6 +92,22 @@ class PebbleForgeAutoConfigurationTest {
     }
 
     @Test
+    void supportsLanguageExtensions() {
+        runner.withPropertyValues("pebble.forge.sandbox.enabled=true").run(context ->
+                assertThat(render(context.getBean(PebbleEngine.class), "language", Map.of()).strip())
+                        .isEqualTo("A"));
+    }
+
+    @Test
+    void canDisableLanguageExtensions() {
+        runner.withPropertyValues("pebble.forge.language.enabled=false").run(context ->
+                assertThatThrownBy(() -> render(context.getBean(PebbleEngine.class), "language",
+                        Map.of()))
+                        .isInstanceOf(PebbleException.class)
+                        .hasMessageContaining("with"));
+    }
+
+    @Test
     void canDisableTheSecurityExtension() {
         runner.withPropertyValues("pebble.forge.security.enabled=false").run(context ->
                 assertThat(context).doesNotHaveBean("springSecurityExtension"));

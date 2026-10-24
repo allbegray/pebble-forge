@@ -11,6 +11,7 @@ public class PebbleForgeProperties {
     private final Components components = new Components();
     private final Sandbox sandbox = new Sandbox();
     private final Security security = new Security();
+    private final Language language = new Language();
 
     public Components getComponents() {
         return components;
@@ -22,6 +23,10 @@ public class PebbleForgeProperties {
 
     public Security getSecurity() {
         return security;
+    }
+
+    public Language getLanguage() {
+        return language;
     }
 
     public static class Components {
@@ -105,6 +110,19 @@ public class PebbleForgeProperties {
     }
 
     public static class Security {
+
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+    }
+
+    public static class Language {
 
         private boolean enabled = true;
 
