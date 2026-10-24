@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 110개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 116개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -94,27 +94,33 @@ Pebble Forge는 Pebble에 없는 태그를 추가합니다.
 
 | 태그 | 동작 |
 | --- | --- |
-| `switch`, `case`, `default`, `endswitch` | 처음 일치하는 case 하나만 렌더합니다. fall-through는 없습니다. |
+| `switch`, `case`, `default`, `endswitch` | 처음 일치하는 case 하나만 렌더합니다. case에 여러 값을 나열할 수 있습니다. fall-through는 없습니다. |
 | `break`, `continue` | `for` 반복을 제어합니다. `break`는 `switch`도 빠져나갑니다. |
+| `for key, value in ...` | Map 엔트리나 인덱스와 값을 구조 분해합니다. |
 | `with { ... }` | 추가 변수를 가진 스코프에서 본문을 렌더합니다. |
+| `with { ... } only` | 바깥 변수를 숨깁니다. 내부 슬롯 상태, locale, template은 유지합니다. |
 
 ```twig
 {% with {"role": page.role} %}
   {% switch role %}
-    {% case "admin" %}Admin
+    {% case "admin", "owner" %}Admin
     {% case "user" %}User
     {% default %}Guest
   {% endswitch %}
 {% endwith %}
 
-{% for item in items %}
-  {% if item.hidden %}{% continue %}{% endif %}
-  {% if item.stop %}{% break %}{% endif %}
-  {{ item.name }}
+{% for key, value in page.metrics %}
+  {{ key }}: {{ value }}
 {% endfor %}
+
+{% with {"inner": page.value} only %}
+  {{ inner }}
+{% endwith %}
 ```
 
-`for`는 break와 continue를 이해하는 버전으로 교체됩니다. `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, `else` 분기는 그대로 유지합니다.
+`for`는 break와 continue를 이해하는 버전으로 교체됩니다. `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, `else` 분기는 그대로 유지합니다. `for index, value`로 리스트를 구조 분해하면 인덱스는 0부터 시작합니다.
+
+`with only`는 모델과 확장 스코프를 숨깁니다. 내부 슬롯 상태를 격리 스코프에 복사하므로 슬롯 내용은 계속 렌더됩니다.
 
 `break`와 `continue`는 템플릿 소스 기준으로 판정합니다. 반드시 `for`나 `switch` 안에 있어야 합니다. 매크로 안에 있는 `break`를 루프 밖에서 호출하는 경우는 이 보장에 포함되지 않습니다.
 

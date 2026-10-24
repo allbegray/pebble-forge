@@ -100,6 +100,7 @@ The checker caches parsed templates per run, so shared components are checked on
 - Include and extends are not followed recursively. The Gradle task checks every template file, so shared templates are still covered, but include-local variables are not propagated.
 - Dynamic component names and dynamic prop names are warnings.
 - A `with` block must use a map literal for its keys to be visible to the checker. A dynamic map produces incomplete scope information.
+- `with only` isolation is not modeled. A variable visible outside the block can satisfy a read inside it.
 - Macros imported from another template are not expanded.
 - Only the common Pebble node types are traversed. `embed` and `cache` bodies are not fully analyzed yet.
 - Type checking is out of scope for this slice.

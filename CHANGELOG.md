@@ -9,6 +9,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Template-defined components with props, defaults, named slots, a default slot, and a depth limit.
 - Capability sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, and an output limit.
 - `switch`, `break`, `continue`, and `with` template tags.
+- Multi-value switch cases, `for key, value` destructuring, and `with ... only` scope isolation.
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, roles, authorities, username, and CSRF.

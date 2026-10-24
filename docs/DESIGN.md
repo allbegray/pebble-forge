@@ -145,31 +145,37 @@ Slots are captured as pre-rendered `SafeString` values. `ComponentNode.accept` w
 
 ## Language extensions
 
-Pebble Forge adds three language features that Pebble does not ship.
+Pebble Forge adds these language features that Pebble does not ship.
 
 | Tag | Behavior |
 | --- | --- |
-| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. It does not fall through. |
+| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. A case can list several comma-separated values. It does not fall through. |
 | `break`, `continue` | Controls a `for` loop. `break` also exits a `switch`. |
+| `for key, value in ...` | Destructures map entries, or an index and a value for other iterables. |
 | `with { ... }` | Renders a body with extra scoped variables. |
+| `with { ... } only` | Hides outer variables while keeping internal slot state, locale, and template. |
 
 ```twig
 {% with {"role": page.role} %}
   {% switch role %}
-    {% case "admin" %}Admin
+    {% case "admin", "owner" %}Admin
     {% case "user" %}User
     {% default %}Guest
   {% endswitch %}
 {% endwith %}
 
-{% for item in items %}
-  {% if item.hidden %}{% continue %}{% endif %}
-  {% if item.stop %}{% break %}{% endif %}
-  {{ item.name }}
+{% for key, value in page.metrics %}
+  {{ key }}: {{ value }}
 {% endfor %}
+
+{% with {"inner": page.value} only %}
+  {{ inner }}
+{% endwith %}
 ```
 
-`for` is replaced with a break and continue aware node. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch.
+`for` is replaced with a break and continue aware node. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch. A list destructured with `for index, value` uses a zero-based index.
+
+`with only` hides the model and extension scope. Slot content still renders because the internal slot state is copied into the isolated scope.
 
 `break` and `continue` are lexical. The parser tracks loop and switch nesting while it parses. A tag outside a loop or switch fails at parse time. A macro that contains `break` and is called outside a loop is outside this guarantee.
 
@@ -280,8 +286,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 
 | Area | Tests | What it proves |
 | --- | --- | --- |
-| Components | 12 | Real templates, real engine, exact output |
-| Language | 23 | Switch, break, continue, with, sandbox on and off |
+| Components | 13 | Real templates, real engine, exact output, slot isolation |
+| Language | 28 | Switch, break, continue, with, destructuring, multi-value cases, sandbox on and off |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
@@ -321,6 +327,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Contracts | Build-time presence checks for model variables and component props | Catches common errors without a full Java type checker |
 | Diagnostics | Custom include parser plus a source-frame formatter | Captures the include path without replacing the renderer |
 | Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
+| Language follow-ups | Comma-separated case values, key/value destructuring, local-only with | Fits the existing tags without a new expression language |
 | Test style | Real templates, real engine, real output | Proves the feature, not a mock |
 
 ## Accepted limits
@@ -337,6 +344,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Dev mode reads and hashes each template on lookup and leaves old cache keys behind. It is for development, not long-running production processes. Classpath resources inside a jar cannot change.
+- `with only` hides model and extension globals. Internal slot state, locale, and template are preserved. `_context` becomes empty in the isolated scope.
+- `for key, value` uses the map key for entries and a zero-based index for other iterables.
 
 ## Open questions
 

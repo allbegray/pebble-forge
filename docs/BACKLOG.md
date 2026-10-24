@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 110개다. 컴포넌트 12, 언어 확장 23, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 9, Boot 웹 1.
+- 테스트는 116개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 9, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -43,7 +43,7 @@
 | PF-101 | P1 | 타입 계약 검사 모듈 | XL | 진행 중 | PF-004 |
 | PF-102 | P1 | 소스 프레임 진단 | L | 진행 중 | 없음 |
 | PF-103 | P1 | 핫 리로드 | M | Done | 없음 |
-| PF-104 | P1 | 언어 확장 후속 | M | 대기 | PF-004 |
+| PF-104 | P1 | 언어 확장 후속 | M | Done | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | 설계 필요 | 없음 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
 | PF-107 | P1 | Spring Security 함수 확장 | S | 대기 | 없음 |
@@ -162,11 +162,12 @@
 ### PF-104 언어 확장 후속
 
 - 크기: M
-- 상태: 대기
+- 상태: Done. `for key, value`, `with only`, `case` 다중 값, 테스트를 추가했다.
 - 문제: 첫 언어 확장은 최소 문법만 제공한다.
 - 범위: `for key, value in map` 구조 분해, `with only` 스코프 격리, `case` 다중 값 문법, `do` 태그 필요성 검토.
-- 완료 기준: 새 문법마다 파서 테스트, 샌드박스 테스트, README 예제가 있다.
-- 결정: `case` 다중 값은 `case "a", "b"`와 `case "a" or "b"` 중 하나를 고른다. `do`는 `set`으로 대체 가능하므로 후순위다.
+- 현재 구현: `for key, value`는 Map 엔트리와 0부터 시작하는 인덱스를 지원한다. `with only`는 모델과 확장 전역을 숨기고 내부 슬롯 상태, locale, template은 유지한다. `case "a", "b"`를 지원한다. `do`는 `set`으로 대체 가능하므로 추가하지 않았다.
+- 완료 기준: 새 문법마다 파서 테스트, 샌드박스 테스트, README 예제가 있다. 모두 충족했다.
+- 커밋: `d344ff8` `for key, value`, `c5cc808` `with only`, `5aa3bd5` 다중 case, `4553588` 샌드박스 테스트.
 
 ### PF-105 샌드박스 강화
 

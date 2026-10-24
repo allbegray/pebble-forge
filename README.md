@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-110 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+116 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -94,27 +94,33 @@ Pebble Forge adds tags that Pebble does not ship.
 
 | Tag | Behavior |
 | --- | --- |
-| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. It does not fall through. |
+| `switch`, `case`, `default`, `endswitch` | Renders the first matching case. A case can list several values. It does not fall through. |
 | `break`, `continue` | Controls a `for` loop. `break` also exits a `switch`. |
+| `for key, value in ...` | Destructures map entries, or an index and a value for other iterables. |
 | `with { ... }` | Renders a body with extra scoped variables. |
+| `with { ... } only` | Hides outer variables. Internal slot state, locale, and template are kept. |
 
 ```twig
 {% with {"role": page.role} %}
   {% switch role %}
-    {% case "admin" %}Admin
+    {% case "admin", "owner" %}Admin
     {% case "user" %}User
     {% default %}Guest
   {% endswitch %}
 {% endwith %}
 
-{% for item in items %}
-  {% if item.hidden %}{% continue %}{% endif %}
-  {% if item.stop %}{% break %}{% endif %}
-  {{ item.name }}
+{% for key, value in page.metrics %}
+  {{ key }}: {{ value }}
 {% endfor %}
+
+{% with {"inner": page.value} only %}
+  {{ inner }}
+{% endwith %}
 ```
 
-`for` is replaced with a break and continue aware version. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch.
+`for` is replaced with a break and continue aware version. It keeps `loop.index`, `loop.first`, `loop.last`, `loop.length`, `loop.revindex`, and the `else` branch. A list destructured with `for index, value` uses a zero-based index.
+
+`with only` hides the model and extension scope. Slot content still renders because the internal slot state is copied into the isolated scope.
 
 `break` and `continue` are lexical. They must appear inside a `for` or `switch` in the template source. A macro that contains `break` and is called outside a loop is outside this guarantee.
 
