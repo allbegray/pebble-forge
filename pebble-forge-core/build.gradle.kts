@@ -1,6 +1,8 @@
 plugins {
-    `java-library`
+    id("pebble-forge.publishing")
 }
+
+description = "Pebble Forge core components, sandbox, and language extensions."
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

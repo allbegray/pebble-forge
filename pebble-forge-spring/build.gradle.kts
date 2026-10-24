@@ -1,6 +1,8 @@
 plugins {
-    `java-library`
+    id("pebble-forge.publishing")
 }
+
+description = "Spring Security template functions and sandbox helpers for Pebble Forge."
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

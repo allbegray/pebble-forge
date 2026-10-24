@@ -1,6 +1,8 @@
 plugins {
-    `java-library`
+    id("pebble-forge.publishing")
 }
+
+description = "Spring Boot 4 auto-configuration for Pebble Forge."
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

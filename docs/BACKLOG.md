@@ -34,8 +34,8 @@
 
 | ID | 우선순위 | 작업 | 크기 | 상태 | 의존 |
 | --- | --- | --- | --- | --- | --- |
-| PF-001 | P0 | 라이선스와 저장소 메타데이터 | S | 결정 필요 | 없음 |
-| PF-002 | P0 | Maven 배포 설정 | M | 대기 | PF-001, 저장소 URL |
+| PF-001 | P0 | 라이선스와 저장소 메타데이터 | S | Done | 없음 |
+| PF-002 | P0 | Maven 배포 설정 | M | Done | PF-001 |
 | PF-003 | P0 | GitHub Actions CI | S | 대기 | 없음 |
 | PF-004 | P0 | `for` 호환성 매트릭스 | M | 대기 | 없음 |
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | 대기 | PF-001, PF-002 |
@@ -61,7 +61,7 @@
 ### PF-001 라이선스와 저장소 메타데이터
 
 - 크기: S
-- 상태: 결정 필요
+- 상태: Done. Apache-2.0을 적용했다.
 - 문제: 현재 라이선스가 없다. 공개 저장소만으로는 재사용과 기여가 어렵고, Maven Central도 라이선스 메타데이터를 요구한다.
 - 범위: `LICENSE` 파일, README 라이선스 절, POM의 `licenses`, GitHub 저장소 설명과 토픽.
 - 완료 기준: `LICENSE`가 저장소 루트에 있고, README와 POM이 같은 라이선스를 가리킨다.
@@ -70,12 +70,12 @@
 ### PF-002 Maven 배포 설정
 
 - 크기: M
-- 상태: 대기
+- 상태: Done. `publishToMavenLocal`과 staging 저장소로 검증했다.
 - 문제: `maven-publish`가 없어서 소비자가 의존성으로 가져갈 수 없다.
 - 범위: core, spring, boot 4 starter에 `maven-publish`를 적용한다. demo는 배포하지 않는다. POM의 `name`, `description`, `url`, `scm`, `developers`, `licenses`를 채운다. sources jar와 javadoc jar를 만든다. Central Portal 배포와 GPG 서명을 설정한다.
 - 완료 기준: `./gradlew publishToMavenLocal`이 세 모듈의 POM과 jar를 만든다. 별도 샘플 프로젝트가 로컬 저장소에서 의존성을 받아 컴파일한다. Central staging 배포는 자격 증명이 있을 때 검증한다.
-- 의존: PF-001, GitHub 저장소 URL.
-- 메모: group은 `io.github.allbegray.pebbleforge`다. 처음에는 GitHub Packages가 아니라 Maven Central을 목표로 한다.
+- 의존: PF-001.
+- 메모: group은 `io.github.allbegray.pebbleforge`다. 저장소는 `https://github.com/allbegray/pebble-forge`로 잡았다. 처음에는 GitHub Packages가 아니라 Maven Central을 목표로 한다.
 
 ### PF-003 GitHub Actions CI
 
@@ -201,13 +201,11 @@
 
 ## 결정이 필요한 것
 
-1. 라이선스는 Apache-2.0으로 갈지 MIT로 갈지.
-2. GitHub 저장소 이름과 URL. `pebble-extension`인지 `pebble-forge`인지.
-3. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
-4. PF-101의 스키마 형식. JSON, YAML, Java DSL 중 무엇을 먼저 지원할지.
-5. PF-103의 핫 리로드 범위. 파일 로더만인지, classpath 개발 디렉터리까지인지.
-6. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
-7. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지.
+1. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
+2. PF-101의 스키마 형식. JSON, YAML, Java DSL 중 무엇을 먼저 지원할지.
+3. PF-103의 핫 리로드 범위. 파일 로더만인지, classpath 개발 디렉터리까지인지.
+4. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
+5. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지.
 
 ## 릴리스 기준
 
