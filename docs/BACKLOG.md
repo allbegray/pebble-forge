@@ -36,7 +36,7 @@
 | --- | --- | --- | --- | --- | --- |
 | PF-001 | P0 | 라이선스와 저장소 메타데이터 | S | Done | 없음 |
 | PF-002 | P0 | Maven 배포 설정 | M | Done | PF-001 |
-| PF-003 | P0 | GitHub Actions CI | S | 대기 | 없음 |
+| PF-003 | P0 | GitHub Actions CI | S | 작성 완료 | 없음 |
 | PF-004 | P0 | `for` 호환성 매트릭스 | M | 대기 | 없음 |
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | 대기 | PF-001, PF-002 |
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | 대기 | 없음 |
@@ -80,7 +80,7 @@
 ### PF-003 GitHub Actions CI
 
 - 크기: S
-- 상태: 대기
+- 상태: 작성 완료. 첫 push에서 초록색을 확인해야 한다.
 - 문제: 로컬 Gradle 실행에만 의존한다.
 - 범위: JDK 21에서 `./gradlew build`를 실행하는 workflow, Gradle 캐시, 테스트 리포트 업로드, `main`과 PR 트리거, Dependabot 또는 Renovate 설정.
 - 완료 기준: push와 PR에서 workflow가 초록색이다. 실패한 테스트가 리포트에 남는다. 의존성 업데이트 PR이 자동으로 열린다.
