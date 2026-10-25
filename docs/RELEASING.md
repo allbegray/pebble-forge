@@ -109,10 +109,10 @@ https://plugins.gradle.org/plugin/io.github.allbegray.pebbleforge.diagnostics
 
 ## 8. Start the next development version
 
-Set the root version to the next snapshot, for example `0.4.0-SNAPSHOT`, and commit it.
+Set the root version to the next development version, for example `0.4.0`, and commit it.
 
 ```kotlin
-version = "0.4.0-SNAPSHOT"
+version = "0.4.0"
 ```
 
 Add a new `Unreleased` section to `CHANGELOG.md`.

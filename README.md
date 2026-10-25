@@ -14,7 +14,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- Version 0.3.0, GitHub release. Main is 0.4.0-SNAPSHOT. Maven Central and Gradle Plugin Portal publication are pending.
+- Version 0.3.0, GitHub release. Main is 0.4.0. Maven Central and Gradle Plugin Portal publication are pending.
 
 The source release is at <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>. The snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal` until Maven Central is available.
 

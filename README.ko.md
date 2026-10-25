@@ -14,7 +14,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- 버전 0.3.0, GitHub release. main은 0.4.0-SNAPSHOT입니다. Maven Central과 Gradle Plugin Portal 배포는 보류 중입니다.
+- 버전 0.3.0, GitHub release. main은 0.4.0입니다. Maven Central과 Gradle Plugin Portal 배포는 보류 중입니다.
 
 소스 릴리스는 <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>에 있습니다. Maven Central이 준비되기 전까지는 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
