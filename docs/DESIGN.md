@@ -384,7 +384,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | --- | --- | --- |
 | Core | 215 | Components, roots, language extensions, sandbox, escaping, include/extends traces, dev mode |
 | Contracts | 113 | Model variables, source-order flow, lexical include and extends scopes, block ownership, component props |
-| Diagnostics | 16 | Source frames, include and extends stacks, parse errors, cycle and stale-frame handling |
+| Diagnostics | 22 | Source frames, structured INCLUDE/EXTENDS/ERROR frames, include and extends stacks, parse errors, cycle and stale-frame handling |
 | Natural HTML | 129 | Rewrite, rejection matrix, source map, XSS fixtures, jsoup preview, sandbox |
 | Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
 | CLI | 14 | Render output, JSON/YAML models, source frames, path and usage errors, exit codes |
@@ -393,7 +393,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **616** | |
+| **Total** | **622** | |
 
 ## Non-goals
 
@@ -426,7 +426,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
 | Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
 | Quality | Spotless misc checks plus Checkstyle and Javadoc `-Werror` | Catches hygiene and API documentation regressions without a mass reformat |
-| Diagnostics | Unified include/extends trace plus a source-frame formatter | Captures the runtime chain without replacing the renderer |
+| Diagnostics | Unified include/extends trace plus a source-frame formatter with typed frame kinds | Captures the runtime chain without replacing the renderer and gives consumers structured targets |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
 | Gradle diagnostics | Separate `renderPebbleTemplate` task | Renders a model without a JSON dependency and prints source frames on failure |
 | CLI | Standalone render command with Jackson 3 models | Gives terminal users the same source-frame diagnostics without Gradle or a JSON-to-DSL bridge |

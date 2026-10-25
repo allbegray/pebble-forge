@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 616개다. core 215, contracts 113, diagnostics 16, natural-html 129, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
+- 테스트는 622개다. core 215, contracts 113, diagnostics 22, natural-html 129, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - 컴포넌트, 네임스페이스 루트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 컨텍스트 인식 이스케이프, Natural HTML 표현식, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수, JMH 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질 검사, Spring Boot 데모 앱, JSON/YAML 진단 CLI가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -155,8 +155,8 @@
 - 상태: 진행 중. 소스 프레임, include와 extends 체인, 중첩 체인, 파싱 오류, 소스 없음, Spring Boot 오류 디스패치를 구현했다.
 - 문제: Pebble 오류는 줄 번호와 파일 이름은 있지만 소스 일부와 include 경로를 보여주지 않는다.
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
-- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터, `renderPebbleTemplate` Gradle 태스크, JSON/YAML 모델을 받는 `pebble-forge-cli`. 진단 16개, Boot 진단 26개, Gradle 렌더 태스크 6개, CLI 14개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`, `2a4f860`.
-- 남은 것: 구조화된 프레임 종류, 소스 맵.
+- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터, `renderPebbleTemplate` Gradle 태스크, JSON/YAML 모델을 받는 `pebble-forge-cli`, `DiagnosticFrame`의 `INCLUDE`·`EXTENDS`·`ERROR` 종류와 target. 진단 22개, Boot 진단 26개, Gradle 렌더 태스크 6개, CLI 14개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`, `2a4f860`, `66abfd4`, `b96409b`.
+- 남은 것: 소스 맵.
 - 1차 구현 커밋: `d61932d` diagnostics 모듈, include 추적, 데모.
 - 완료 기준: 중첩 include와 extends 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
 - 메모: 렌더 시점 예외를 감싸는 방식과 파싱 시점 예외를 그대로 두는 방식을 비교한다.

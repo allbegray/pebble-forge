@@ -14,7 +14,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
 - Build-time contract checks for model variables and component props, with source-order flow, static include and extends scope propagation, block ownership, `checkAll`, root/partial overrides, JSON/YAML schema files, and a `checkPebbleTemplates` Gradle task.
-- Source-frame diagnostics with include and extends traces for template errors.
+- Source-frame diagnostics with include and extends traces and structured `INCLUDE`, `EXTENDS`, and `ERROR` frame kinds for template errors.
 - Spring Boot render-error diagnostics through a view decorator, optional error attributes, and a real 500 error dispatch.
 - A `renderPebbleTemplate` Gradle task for rendering one template with a model and printing source-frame diagnostics.
 - A standalone `pebble-forge-cli` for rendering one template with inline JSON or JSON/YAML model files and the same source-frame diagnostics.
