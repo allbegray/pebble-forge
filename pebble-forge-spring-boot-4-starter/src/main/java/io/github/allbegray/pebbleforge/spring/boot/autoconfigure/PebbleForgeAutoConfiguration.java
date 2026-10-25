@@ -110,6 +110,7 @@ public class PebbleForgeAutoConfiguration {
         SandboxPolicy.Builder builder = SandboxPolicy.builder()
                 .maxRenderedChars(sandbox.getMaxRenderedChars())
                 .maxLoopIterations(sandbox.getMaxLoopIterations())
+                .maxTotalIterations(sandbox.getMaxTotalIterations())
                 .maxIncludeDepth(sandbox.getMaxIncludeDepth())
                 .maxSlotChars(sandbox.getMaxSlotChars())
                 .forceAutoEscaping(sandbox.isForceAutoEscaping())

@@ -29,10 +29,11 @@ public final class ForNode extends AbstractRenderableNode {
     private final BodyNode body;
     private final BodyNode elseBody;
     private final int maxLoopIterations;
+    private final int maxTotalIterations;
 
     ForNode(int lineNumber, String keyVariableName, String valueVariableName,
             Expression<?> iterableExpression, BodyNode body, BodyNode elseBody,
-            int maxLoopIterations) {
+            int maxLoopIterations, int maxTotalIterations) {
         super(lineNumber);
         this.keyVariableName = keyVariableName;
         this.valueVariableName = valueVariableName;
@@ -40,6 +41,7 @@ public final class ForNode extends AbstractRenderableNode {
         this.body = body;
         this.elseBody = elseBody;
         this.maxLoopIterations = maxLoopIterations;
+        this.maxTotalIterations = maxTotalIterations;
     }
 
     @Override
@@ -75,6 +77,9 @@ public final class ForNode extends AbstractRenderableNode {
             LoopVariables loop = null;
             int index = 0;
             int iterations = 0;
+            IterationBudget.Counter budget = maxTotalIterations >= 0
+                    ? IterationBudget.forScope(context.getScopeChain(), maxTotalIterations)
+                    : null;
 
             while (iterator.hasNext()) {
                 if (maxLoopIterations >= 0 && iterations >= maxLoopIterations) {
@@ -83,6 +88,9 @@ public final class ForNode extends AbstractRenderableNode {
                             "Loop iteration limit of " + maxLoopIterations + " reached",
                             getLineNumber(),
                             self.getName());
+                }
+                if (budget != null) {
+                    budget.consume(self, getLineNumber());
                 }
                 iterations++;
 

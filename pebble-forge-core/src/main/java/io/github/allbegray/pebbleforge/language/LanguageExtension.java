@@ -12,22 +12,31 @@ import java.util.List;
 public final class LanguageExtension extends AbstractExtension {
 
     private final int maxLoopIterations;
+    private final int maxTotalIterations;
 
     public LanguageExtension() {
-        this(-1);
+        this(-1, -1);
     }
 
     public LanguageExtension(int maxLoopIterations) {
+        this(maxLoopIterations, -1);
+    }
+
+    public LanguageExtension(int maxLoopIterations, int maxTotalIterations) {
         if (maxLoopIterations < -1) {
             throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
         }
+        if (maxTotalIterations < -1) {
+            throw new IllegalArgumentException("maxTotalIterations must be -1 or greater");
+        }
         this.maxLoopIterations = maxLoopIterations;
+        this.maxTotalIterations = maxTotalIterations;
     }
 
     @Override
     public List<TokenParser> getTokenParsers() {
         return List.of(
-                new ForTokenParser(maxLoopIterations),
+                new ForTokenParser(maxLoopIterations, maxTotalIterations),
                 new SwitchTokenParser(),
                 new BreakTokenParser(),
                 new ContinueTokenParser(),

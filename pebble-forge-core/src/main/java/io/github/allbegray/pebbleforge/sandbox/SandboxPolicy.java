@@ -48,6 +48,7 @@ public final class SandboxPolicy {
 
     private final int maxRenderedChars;
     private final int maxLoopIterations;
+    private final int maxTotalIterations;
     private final int maxIncludeDepth;
     private final int maxSlotChars;
     private final MethodAccessValidator methodAccessValidator;
@@ -72,6 +73,7 @@ public final class SandboxPolicy {
         this.allGlobalVariables = builder.allGlobalVariables;
         this.maxRenderedChars = builder.maxRenderedChars;
         this.maxLoopIterations = builder.maxLoopIterations;
+        this.maxTotalIterations = builder.maxTotalIterations;
         this.maxIncludeDepth = builder.maxIncludeDepth;
         this.maxSlotChars = builder.maxSlotChars;
         this.methodAccessValidator = builder.methodAccessValidator;
@@ -115,6 +117,10 @@ public final class SandboxPolicy {
 
     public int maxLoopIterations() {
         return maxLoopIterations;
+    }
+
+    public int maxTotalIterations() {
+        return maxTotalIterations;
     }
 
     public int maxIncludeDepth() {
@@ -164,6 +170,7 @@ public final class SandboxPolicy {
 
         private int maxRenderedChars = 1_000_000;
         private int maxLoopIterations = 100_000;
+        private int maxTotalIterations = 1_000_000;
         private int maxIncludeDepth = 16;
         private int maxSlotChars = 1_000_000;
         private MethodAccessValidator methodAccessValidator = new SandboxMethodAccessValidator();
@@ -316,6 +323,14 @@ public final class SandboxPolicy {
                 throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
             }
             this.maxLoopIterations = maxLoopIterations;
+            return this;
+        }
+
+        public Builder maxTotalIterations(int maxTotalIterations) {
+            if (maxTotalIterations < -1) {
+                throw new IllegalArgumentException("maxTotalIterations must be -1 or greater");
+            }
+            this.maxTotalIterations = maxTotalIterations;
             return this;
         }
 

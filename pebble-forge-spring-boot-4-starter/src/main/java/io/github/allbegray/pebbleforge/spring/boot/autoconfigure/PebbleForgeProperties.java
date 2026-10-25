@@ -83,6 +83,7 @@ public class PebbleForgeProperties {
         private boolean enabled = false;
         private int maxRenderedChars = 1_000_000;
         private int maxLoopIterations = 100_000;
+        private int maxTotalIterations = 1_000_000;
         private int maxIncludeDepth = 16;
         private int maxSlotChars = 1_000_000;
         private boolean allowRawOutput = false;
@@ -110,6 +111,14 @@ public class PebbleForgeProperties {
 
         public void setMaxLoopIterations(int maxLoopIterations) {
             this.maxLoopIterations = maxLoopIterations;
+        }
+
+        public int getMaxTotalIterations() {
+            return maxTotalIterations;
+        }
+
+        public void setMaxTotalIterations(int maxTotalIterations) {
+            this.maxTotalIterations = maxTotalIterations;
         }
 
         public int getMaxIncludeDepth() {

@@ -194,7 +194,8 @@ public final class PebbleForge {
 
             if (language) {
                 Extension languageExtension = new LanguageExtension(
-                        sandbox == null ? -1 : sandbox.maxLoopIterations());
+                        sandbox == null ? -1 : sandbox.maxLoopIterations(),
+                        sandbox == null ? -1 : sandbox.maxTotalIterations());
                 delegate.extension(sandbox == null
                         ? languageExtension
                         : new SandboxedExtension(languageExtension, sandbox));
