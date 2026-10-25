@@ -9,6 +9,9 @@ import java.util.List;
  */
 public final class SpringSecurityFunctions {
 
+    /**
+     * The Spring Security function names.
+     */
     public static final List<String> NAMES = List.of(
             SpringSecurityExtension.IS_AUTHENTICATED,
             SpringSecurityExtension.IS_ANONYMOUS,
@@ -27,6 +30,12 @@ public final class SpringSecurityFunctions {
     private SpringSecurityFunctions() {
     }
 
+    /**
+     * Allows every Spring Security function in a sandbox policy.
+     *
+     * @param builder the policy builder
+     * @return the same builder
+     */
     public static SandboxPolicy.Builder allow(SandboxPolicy.Builder builder) {
         return builder.allowFunctions(NAMES.toArray(String[]::new));
     }

@@ -13,6 +13,12 @@ import io.pebbletemplates.pebble.tokenParser.TokenParser;
  */
 public final class SlotTokenParser implements TokenParser {
 
+    /**
+     * Creates a slot token parser.
+     */
+    public SlotTokenParser() {
+    }
+
     @Override
     public RenderableNode parse(Token token, Parser parser) {
         TokenStream stream = parser.getStream();

@@ -17,36 +17,83 @@ public final class ModelSchema {
         this.allowAny = allowAny;
     }
 
+    /**
+     * Creates a model schema builder.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns a schema that allows every variable.
+     *
+     * @return the permissive schema
+     */
     public static ModelSchema any() {
         return builder().allowAnyVariable().build();
     }
 
+    /**
+     * Returns whether the schema allows a variable.
+     *
+     * @param name the variable name
+     * @return true when the variable may be read
+     */
     public boolean allows(String name) {
         return allowAny || variables.contains(name);
     }
 
+    /**
+     * Returns the allowed variable names.
+     *
+     * @return the variable names
+     */
     public Set<String> variables() {
         return variables;
     }
 
+    /**
+     * Returns whether the schema allows every variable.
+     *
+     * @return true when any variable is allowed
+     */
     public boolean allowsAny() {
         return allowAny;
     }
 
+    /**
+     * Builds a {@link ModelSchema}.
+     */
     public static final class Builder {
+
+        /**
+         * Creates an empty builder. Prefer {@link ModelSchema#builder()}.
+         */
+        public Builder() {
+        }
 
         private final Set<String> variables = new LinkedHashSet<>();
         private boolean allowAny;
 
+        /**
+         * Allows one variable.
+         *
+         * @param name the variable name
+         * @return this builder
+         */
         public Builder variable(String name) {
             variables.add(requireName(name));
             return this;
         }
 
+        /**
+         * Allows several variables.
+         *
+         * @param names the variable names
+         * @return this builder
+         */
         public Builder variables(String... names) {
             for (String name : names) {
                 variable(name);
@@ -54,11 +101,21 @@ public final class ModelSchema {
             return this;
         }
 
+        /**
+         * Allows every variable.
+         *
+         * @return this builder
+         */
         public Builder allowAnyVariable() {
             this.allowAny = true;
             return this;
         }
 
+        /**
+         * Builds the schema.
+         *
+         * @return the schema
+         */
         public ModelSchema build() {
             return new ModelSchema(variables, allowAny);
         }

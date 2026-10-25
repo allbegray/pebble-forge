@@ -24,18 +24,75 @@ import java.util.Map;
  */
 public final class SpringSecurityExtension extends AbstractExtension {
 
+    /**
+     * Creates the extension.
+     */
+    public SpringSecurityExtension() {
+    }
+
+    /**
+     * Function name that reports whether the user is logged in.
+     */
     public static final String IS_AUTHENTICATED = "isAuthenticated";
+
+    /**
+     * Function name that reports whether the request is anonymous.
+     */
     public static final String IS_ANONYMOUS = "isAnonymous";
+
+    /**
+     * Function name that reports whether the user authenticated in this session.
+     */
     public static final String IS_FULLY_AUTHENTICATED = "isFullyAuthenticated";
+
+    /**
+     * Function name that reports whether the user authenticated with remember-me.
+     */
     public static final String IS_REMEMBER_ME = "isRememberMe";
+
+    /**
+     * Function name that checks one role.
+     */
     public static final String HAS_ROLE = "hasRole";
+
+    /**
+     * Function name that checks any of several roles.
+     */
     public static final String HAS_ANY_ROLE = "hasAnyRole";
+
+    /**
+     * Function name that checks one authority.
+     */
     public static final String HAS_AUTHORITY = "hasAuthority";
+
+    /**
+     * Function name that checks any of several authorities.
+     */
     public static final String HAS_ANY_AUTHORITY = "hasAnyAuthority";
+
+    /**
+     * Function name that returns the user's authorities.
+     */
     public static final String AUTHORITIES = "authorities";
+
+    /**
+     * Function name that returns the user's name, or an empty string.
+     */
     public static final String USERNAME = "username";
+
+    /**
+     * Function name that returns the CSRF token.
+     */
     public static final String CSRF_TOKEN = "csrfToken";
+
+    /**
+     * Function name that returns the CSRF parameter name.
+     */
     public static final String CSRF_PARAMETER_NAME = "csrfParameterName";
+
+    /**
+     * Function name that returns the CSRF header name.
+     */
     public static final String CSRF_HEADER_NAME = "csrfHeaderName";
 
     private static final AuthenticationTrustResolver TRUST_RESOLVER =

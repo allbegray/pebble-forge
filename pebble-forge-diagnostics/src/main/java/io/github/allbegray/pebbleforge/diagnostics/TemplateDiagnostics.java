@@ -24,10 +24,22 @@ public final class TemplateDiagnostics {
         this.contextLines = builder.contextLines;
     }
 
+    /**
+     * Creates a diagnostics builder.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Builds a report for a render failure. The report includes the include and extends frames
+     * attached to the error plus the failing source line.
+     *
+     * @param error the render failure
+     * @return the report
+     */
     public DiagnosticReport render(Throwable error) {
         PebbleException pebble = findPebble(error);
         if (pebble == null) {
@@ -118,16 +130,37 @@ public final class TemplateDiagnostics {
         return null;
     }
 
+    /**
+     * Builds a {@link TemplateDiagnostics}.
+     */
     public static final class Builder {
+
+        /**
+         * Creates an empty builder. Prefer {@link TemplateDiagnostics#builder()}.
+         */
+        public Builder() {
+        }
 
         private Loader<?> loader;
         private int contextLines = 2;
 
+        /**
+         * Sets the loader used to read source lines. Required.
+         *
+         * @param loader the loader
+         * @return this builder
+         */
         public Builder loader(Loader<?> loader) {
             this.loader = Objects.requireNonNull(loader, "loader");
             return this;
         }
 
+        /**
+         * Sets the number of source lines shown around an error.
+         *
+         * @param contextLines the context line count
+         * @return this builder
+         */
         public Builder contextLines(int contextLines) {
             if (contextLines < 0) {
                 throw new IllegalArgumentException("contextLines must not be negative");
@@ -136,6 +169,12 @@ public final class TemplateDiagnostics {
             return this;
         }
 
+        /**
+         * Builds the diagnostics service.
+         *
+         * @return the diagnostics service
+         * @throws IllegalStateException if no loader is set
+         */
         public TemplateDiagnostics build() {
             if (loader == null) {
                 throw new IllegalStateException("A loader is required");

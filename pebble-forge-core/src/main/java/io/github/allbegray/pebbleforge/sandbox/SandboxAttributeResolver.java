@@ -15,10 +15,20 @@ public final class SandboxAttributeResolver implements AttributeResolver {
 
     private final SandboxPolicyResolver policies;
 
+    /**
+     * Applies one policy.
+     *
+     * @param policy the policy to apply
+     */
     public SandboxAttributeResolver(SandboxPolicy policy) {
         this(SandboxPolicyResolver.fixed(policy));
     }
 
+    /**
+     * Applies a policy resolver.
+     *
+     * @param policies the policy resolver
+     */
     public SandboxAttributeResolver(SandboxPolicyResolver policies) {
         this.policies = policies;
     }

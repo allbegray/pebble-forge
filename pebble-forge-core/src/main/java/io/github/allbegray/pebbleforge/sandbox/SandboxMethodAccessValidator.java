@@ -10,6 +10,12 @@ import java.util.Set;
  */
 public final class SandboxMethodAccessValidator implements MethodAccessValidator {
 
+    /**
+     * Creates a validator with the built-in deny lists.
+     */
+    public SandboxMethodAccessValidator() {
+    }
+
     private static final Set<String> DENIED_PACKAGES = Set.of(
             "java.io.",
             "java.nio.file.",

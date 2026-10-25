@@ -15,10 +15,19 @@ public final class LanguageExtension extends AbstractExtension {
 
     private final SandboxLimitsResolver limitsResolver;
 
+    /**
+     * Creates an extension without resource limits.
+     */
     public LanguageExtension() {
         this(SandboxLimitsResolver.fixed(SandboxLimits.unlimited()));
     }
 
+    /**
+     * Creates an extension with loop limits.
+     *
+     * @param maxLoopIterations the maximum iterations of one loop
+     * @param maxTotalIterations the maximum iterations across all nested loops
+     */
     public LanguageExtension(int maxLoopIterations, int maxTotalIterations) {
         this(SandboxLimitsResolver.fixed(SandboxLimits.builder()
                 .maxLoopIterations(maxLoopIterations)
@@ -26,6 +35,11 @@ public final class LanguageExtension extends AbstractExtension {
                 .build()));
     }
 
+    /**
+     * Creates an extension that resolves limits per template.
+     *
+     * @param limitsResolver the limits resolver
+     */
     public LanguageExtension(SandboxLimitsResolver limitsResolver) {
         this.limitsResolver = limitsResolver;
     }

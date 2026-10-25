@@ -38,6 +38,18 @@ import java.util.Map;
 @EnableConfigurationProperties({PebbleProperties.class, PebbleForgeProperties.class})
 public class PebbleForgeAutoConfiguration {
 
+    /**
+     * Creates the auto-configuration.
+     */
+    public PebbleForgeAutoConfiguration() {
+    }
+
+    /**
+     * Creates the Pebble loader from Pebble's standard properties.
+     *
+     * @param properties the Pebble properties
+     * @return the loader
+     */
     @Bean
     @ConditionalOnMissingBean(name = "pebbleLoader")
     public Loader<?> pebbleLoader(PebbleProperties properties) {
@@ -48,6 +60,12 @@ public class PebbleForgeAutoConfiguration {
         return loader;
     }
 
+    /**
+     * Creates the Pebble Spring extension.
+     *
+     * @param messageSource the message source, or an empty provider
+     * @return the Spring extension
+     */
     @Bean
     @ConditionalOnMissingBean
     public SpringExtension springExtension(ObjectProvider<MessageSource> messageSource) {
@@ -55,6 +73,19 @@ public class PebbleForgeAutoConfiguration {
         return new SpringExtension(source);
     }
 
+    /**
+     * Creates the Pebble engine with Pebble Forge extensions.
+     *
+     * @param properties the Pebble properties
+     * @param pebbleLoader the template loader
+     * @param extensions the user extensions
+     * @param methodAccessValidator an optional method access validator
+     * @param sandboxPolicy an optional sandbox policy
+     * @param policyResolver an optional per-template policy resolver
+     * @param limitsResolver an optional per-template limits resolver
+     * @param forgeProperties the Pebble Forge properties
+     * @return the engine
+     */
     @Bean
     @ConditionalOnMissingBean(name = "pebbleEngine")
     public PebbleEngine pebbleEngine(

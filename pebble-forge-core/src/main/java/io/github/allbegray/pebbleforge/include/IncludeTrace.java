@@ -14,6 +14,9 @@ public final class IncludeTrace {
 
     /**
      * Returns only include frames, in chronological order.
+     *
+     * @param error the error to inspect
+     * @return the include frames
      */
     public static List<IncludeFrame> frames(Throwable error) {
         return TemplateTrace.frames(error).stream()
@@ -29,6 +32,13 @@ public final class IncludeTrace {
         return TemplateTrace.includeDepth();
     }
 
+    /**
+     * One include call in a template trace.
+     *
+     * @param caller the template that declared the include
+     * @param line the line of the include tag
+     * @param target the included template
+     */
     public record IncludeFrame(String caller, int line, String target) {
     }
 }

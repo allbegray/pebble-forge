@@ -82,72 +82,167 @@ public final class SandboxPolicy {
         this.forceAutoEscaping = builder.forceAutoEscaping;
     }
 
+    /**
+     * Creates a builder with the strict default policy.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns the strict default policy.
+     *
+     * @return the default policy
+     */
     public static SandboxPolicy strict() {
         return builder().build();
     }
 
+    /**
+     * Returns whether a tag is allowed.
+     *
+     * @param tag the tag name
+     * @return true when the tag may run
+     */
     public boolean isTagAllowed(String tag) {
         return !deniedTags.contains(tag) && (allTags || allowedTags.contains(tag));
     }
 
+    /**
+     * Returns whether a filter is allowed.
+     *
+     * @param filter the filter name
+     * @return true when the filter may run
+     */
     public boolean isFilterAllowed(String filter) {
         return !deniedFilters.contains(filter) && (allFilters || allowedFilters.contains(filter));
     }
 
+    /**
+     * Returns whether a function is allowed.
+     *
+     * @param function the function name
+     * @return true when the function may run
+     */
     public boolean isFunctionAllowed(String function) {
         return !deniedFunctions.contains(function)
                 && (allFunctions || allowedFunctions.contains(function));
     }
 
+    /**
+     * Returns whether a test is allowed.
+     *
+     * @param test the test name
+     * @return true when the test may run
+     */
     public boolean isTestAllowed(String test) {
         return !deniedTests.contains(test) && (allTests || allowedTests.contains(test));
     }
 
+    /**
+     * Returns whether a global variable is exposed to templates.
+     *
+     * @param name the variable name
+     * @return true when the variable is visible
+     */
     public boolean isGlobalVariableAllowed(String name) {
         return allGlobalVariables || allowedGlobalVariables.contains(name);
     }
 
+    /**
+     * Returns the maximum rendered output size.
+     *
+     * @return the limit in characters, or -1 for no limit
+     */
     public int maxRenderedChars() {
         return maxRenderedChars;
     }
 
+    /**
+     * Returns the maximum iterations of one loop.
+     *
+     * @return the limit, or -1 for no limit
+     */
     public int maxLoopIterations() {
         return maxLoopIterations;
     }
 
+    /**
+     * Returns the maximum iterations across all nested loops.
+     *
+     * @return the limit, or -1 for no limit
+     */
     public int maxTotalIterations() {
         return maxTotalIterations;
     }
 
+    /**
+     * Returns the maximum nested include depth.
+     *
+     * @return the limit, or -1 for no limit
+     */
     public int maxIncludeDepth() {
         return maxIncludeDepth;
     }
 
+    /**
+     * Returns the maximum slot content length.
+     *
+     * @return the limit in characters, or -1 for no limit
+     */
     public int maxSlotChars() {
         return maxSlotChars;
     }
 
+    /**
+     * Returns the validator for method access.
+     *
+     * @return the method access validator
+     */
     public MethodAccessValidator methodAccessValidator() {
         return methodAccessValidator;
     }
 
+    /**
+     * Returns the validator for template names.
+     *
+     * @return the template name validator
+     */
     public Predicate<String> templateNameValidator() {
         return templateNameValidator;
     }
 
+    /**
+     * Returns whether public field access is denied.
+     *
+     * @return true when public fields are denied
+     */
     public boolean denyPublicFields() {
         return denyPublicFields;
     }
 
+    /**
+     * Returns whether the policy forces auto-escaping.
+     *
+     * @return true when auto-escaping is forced
+     */
     public boolean forceAutoEscaping() {
         return forceAutoEscaping;
     }
 
+    /**
+     * Builds a {@link SandboxPolicy}. The defaults allow the safe tag, filter, function, and test
+     * sets and deny dangerous method access.
+     */
     public static final class Builder {
+
+        /**
+         * Creates a builder with the strict default policy. Prefer {@link SandboxPolicy#builder()}.
+         */
+        public Builder() {
+        }
 
         private final Set<String> allowedTags = new LinkedHashSet<>(SAFE_TAGS);
         private final Set<String> deniedTags = new LinkedHashSet<>();
@@ -178,6 +273,12 @@ public final class SandboxPolicy {
         private boolean denyPublicFields = true;
         private boolean forceAutoEscaping = true;
 
+        /**
+         * Allows tags in addition to the current set.
+         *
+         * @param tags the tag names
+         * @return this builder
+         */
         public Builder allowTags(String... tags) {
             for (String tag : tags) {
                 allowedTags.add(requireName(tag, "tag"));
@@ -186,6 +287,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Replaces the allowed tag set.
+         *
+         * @param tags the only tag names that may run
+         * @return this builder
+         */
         public Builder allowOnlyTags(String... tags) {
             allowedTags.clear();
             deniedTags.clear();
@@ -193,6 +300,12 @@ public final class SandboxPolicy {
             return allowTags(tags);
         }
 
+        /**
+         * Denies tags, including tags in the safe default set.
+         *
+         * @param tags the tag names to deny
+         * @return this builder
+         */
         public Builder denyTags(String... tags) {
             for (String tag : tags) {
                 deniedTags.add(requireName(tag, "tag"));
@@ -200,11 +313,22 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Allows every tag except explicitly denied tags.
+         *
+         * @return this builder
+         */
         public Builder allowAllTags() {
             allTags = true;
             return this;
         }
 
+        /**
+         * Allows filters in addition to the current set.
+         *
+         * @param filters the filter names
+         * @return this builder
+         */
         public Builder allowFilters(String... filters) {
             for (String filter : filters) {
                 allowedFilters.add(requireName(filter, "filter"));
@@ -213,6 +337,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Replaces the allowed filter set. The {@code escape} filter always stays allowed.
+         *
+         * @param filters the only filter names that may run
+         * @return this builder
+         */
         public Builder allowOnlyFilters(String... filters) {
             allowedFilters.clear();
             deniedFilters.clear();
@@ -221,6 +351,12 @@ public final class SandboxPolicy {
             return allowFilters(filters);
         }
 
+        /**
+         * Denies filters. The {@code escape} filter cannot be denied.
+         *
+         * @param filters the filter names to deny
+         * @return this builder
+         */
         public Builder denyFilters(String... filters) {
             for (String filter : filters) {
                 if ("escape".equals(filter)) {
@@ -232,15 +368,31 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Allows every filter except explicitly denied filters.
+         *
+         * @return this builder
+         */
         public Builder allowAllFilters() {
             allFilters = true;
             return this;
         }
 
+        /**
+         * Allows the {@code raw} filter, which skips escaping.
+         *
+         * @return this builder
+         */
         public Builder allowRawOutput() {
             return allowFilters("raw");
         }
 
+        /**
+         * Allows functions in addition to the current set.
+         *
+         * @param functions the function names
+         * @return this builder
+         */
         public Builder allowFunctions(String... functions) {
             for (String function : functions) {
                 allowedFunctions.add(requireName(function, "function"));
@@ -249,6 +401,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Replaces the allowed function set.
+         *
+         * @param functions the only function names that may run
+         * @return this builder
+         */
         public Builder allowOnlyFunctions(String... functions) {
             allowedFunctions.clear();
             deniedFunctions.clear();
@@ -256,6 +414,12 @@ public final class SandboxPolicy {
             return allowFunctions(functions);
         }
 
+        /**
+         * Denies functions, including functions in the safe default set.
+         *
+         * @param functions the function names to deny
+         * @return this builder
+         */
         public Builder denyFunctions(String... functions) {
             for (String function : functions) {
                 deniedFunctions.add(requireName(function, "function"));
@@ -263,11 +427,22 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Allows every function except explicitly denied functions.
+         *
+         * @return this builder
+         */
         public Builder allowAllFunctions() {
             allFunctions = true;
             return this;
         }
 
+        /**
+         * Allows tests in addition to the current set.
+         *
+         * @param tests the test names
+         * @return this builder
+         */
         public Builder allowTests(String... tests) {
             for (String test : tests) {
                 allowedTests.add(requireName(test, "test"));
@@ -276,6 +451,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Replaces the allowed test set.
+         *
+         * @param tests the only test names that may run
+         * @return this builder
+         */
         public Builder allowOnlyTests(String... tests) {
             allowedTests.clear();
             deniedTests.clear();
@@ -283,6 +464,12 @@ public final class SandboxPolicy {
             return allowTests(tests);
         }
 
+        /**
+         * Denies tests, including tests in the safe default set.
+         *
+         * @param tests the test names to deny
+         * @return this builder
+         */
         public Builder denyTests(String... tests) {
             for (String test : tests) {
                 deniedTests.add(requireName(test, "test"));
@@ -290,11 +477,22 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Allows every test except explicitly denied tests.
+         *
+         * @return this builder
+         */
         public Builder allowAllTests() {
             allTests = true;
             return this;
         }
 
+        /**
+         * Exposes global variables to templates.
+         *
+         * @param variables the global variable names
+         * @return this builder
+         */
         public Builder allowGlobalVariables(String... variables) {
             for (String variable : variables) {
                 allowedGlobalVariables.add(requireName(variable, "global variable"));
@@ -302,15 +500,31 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Exposes every global variable.
+         *
+         * @return this builder
+         */
         public Builder allowAllGlobalVariables() {
             allGlobalVariables = true;
             return this;
         }
 
+        /**
+         * Allows the component, slot, and props tags and the slot function.
+         *
+         * @return this builder
+         */
         public Builder allowComponents() {
             return allowTags("component", "slot", "props").allowFunctions("slot");
         }
 
+        /**
+         * Sets the maximum rendered output size.
+         *
+         * @param maxRenderedChars the limit in characters
+         * @return this builder
+         */
         public Builder maxRenderedChars(int maxRenderedChars) {
             if (maxRenderedChars < 0) {
                 throw new IllegalArgumentException("maxRenderedChars must not be negative");
@@ -319,6 +533,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Sets the maximum iterations of one loop.
+         *
+         * @param maxLoopIterations the limit, or -1 for no limit
+         * @return this builder
+         */
         public Builder maxLoopIterations(int maxLoopIterations) {
             if (maxLoopIterations < -1) {
                 throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
@@ -327,6 +547,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Sets the maximum iterations across all nested loops.
+         *
+         * @param maxTotalIterations the limit, or -1 for no limit
+         * @return this builder
+         */
         public Builder maxTotalIterations(int maxTotalIterations) {
             if (maxTotalIterations < -1) {
                 throw new IllegalArgumentException("maxTotalIterations must be -1 or greater");
@@ -335,6 +561,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Sets the maximum nested include depth.
+         *
+         * @param maxIncludeDepth the limit, or -1 for no limit
+         * @return this builder
+         */
         public Builder maxIncludeDepth(int maxIncludeDepth) {
             if (maxIncludeDepth < -1) {
                 throw new IllegalArgumentException("maxIncludeDepth must be -1 or greater");
@@ -343,6 +575,12 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Sets the maximum slot content length.
+         *
+         * @param maxSlotChars the limit in characters, or -1 for no limit
+         * @return this builder
+         */
         public Builder maxSlotChars(int maxSlotChars) {
             if (maxSlotChars < -1) {
                 throw new IllegalArgumentException("maxSlotChars must be -1 or greater");
@@ -351,26 +589,55 @@ public final class SandboxPolicy {
             return this;
         }
 
+        /**
+         * Sets the validator for method access.
+         *
+         * @param validator the validator
+         * @return this builder
+         */
         public Builder methodAccessValidator(MethodAccessValidator validator) {
             this.methodAccessValidator = Objects.requireNonNull(validator, "validator");
             return this;
         }
 
+        /**
+         * Sets the validator for template names.
+         *
+         * @param validator the validator
+         * @return this builder
+         */
         public Builder templateNameValidator(Predicate<String> validator) {
             this.templateNameValidator = Objects.requireNonNull(validator, "validator");
             return this;
         }
 
+        /**
+         * Sets whether public field access is denied.
+         *
+         * @param denyPublicFields true to deny public fields
+         * @return this builder
+         */
         public Builder denyPublicFields(boolean denyPublicFields) {
             this.denyPublicFields = denyPublicFields;
             return this;
         }
 
+        /**
+         * Sets whether the policy forces auto-escaping.
+         *
+         * @param forceAutoEscaping true to force auto-escaping
+         * @return this builder
+         */
         public Builder forceAutoEscaping(boolean forceAutoEscaping) {
             this.forceAutoEscaping = forceAutoEscaping;
             return this;
         }
 
+        /**
+         * Builds the policy.
+         *
+         * @return the policy
+         */
         public SandboxPolicy build() {
             return new SandboxPolicy(this);
         }

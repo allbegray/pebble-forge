@@ -11,6 +11,11 @@ public final class PolicyAwareMethodAccessValidator implements MethodAccessValid
 
     private final SandboxPolicyResolver policies;
 
+    /**
+     * Creates a validator that selects a delegate per sandbox policy.
+     *
+     * @param policies the policy resolver
+     */
     public PolicyAwareMethodAccessValidator(SandboxPolicyResolver policies) {
         this.policies = policies;
     }

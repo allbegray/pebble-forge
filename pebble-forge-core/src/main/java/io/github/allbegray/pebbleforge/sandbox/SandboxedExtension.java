@@ -22,10 +22,22 @@ public final class SandboxedExtension extends AbstractExtension {
     private final Extension delegate;
     private final SandboxPolicyResolver policies;
 
+    /**
+     * Applies one policy to the extension.
+     *
+     * @param delegate the extension to wrap
+     * @param policy the policy to apply
+     */
     public SandboxedExtension(Extension delegate, SandboxPolicy policy) {
         this(delegate, SandboxPolicyResolver.fixed(policy));
     }
 
+    /**
+     * Applies a policy resolver to the extension.
+     *
+     * @param delegate the extension to wrap
+     * @param policies the policy resolver
+     */
     public SandboxedExtension(Extension delegate, SandboxPolicyResolver policies) {
         this.delegate = delegate;
         this.policies = policies;

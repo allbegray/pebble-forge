@@ -26,12 +26,19 @@ public final class TemplateTrace {
     private TemplateTrace() {
     }
 
+    /**
+     * Pushes a frame onto the current render trace.
+     *
+     * @param frame the frame to push
+     */
     public static void push(Frame frame) {
         STACK.get().addLast(Objects.requireNonNull(frame, "frame"));
     }
 
     /**
      * Returns the current stack size, to be used with {@link #popTo(int)}.
+     *
+     * @return the current stack size
      */
     public static int mark() {
         return STACK.get().size();
@@ -40,6 +47,8 @@ public final class TemplateTrace {
     /**
      * Removes every frame above {@code mark}. Values below zero are treated as
      * zero, and values above the current size are ignored.
+     *
+     * @param mark the stack size to keep
      */
     public static void popTo(int mark) {
         int target = Math.max(0, mark);
@@ -55,6 +64,8 @@ public final class TemplateTrace {
     /**
      * Counts only include frames; inheritance frames do not consume include
      * depth.
+     *
+     * @return the include depth
      */
     public static int includeDepth() {
         int depth = 0;
@@ -68,6 +79,8 @@ public final class TemplateTrace {
 
     /**
      * Returns a snapshot of the current frames, in chronological order.
+     *
+     * @return the current frames
      */
     public static List<Frame> currentFrames() {
         return List.copyOf(STACK.get());
@@ -85,6 +98,8 @@ public final class TemplateTrace {
      * Clears frames from an earlier top-level render when a new template root
      * is entered. Parent evaluation and templates entered through
      * {@code include} keep the existing chain.
+     *
+     * @param context the evaluation context of the template that is starting
      */
     public static void resetIfNewRender(EvaluationContextImpl context) {
         if (context.getHierarchy().getChild() != null || INCLUDE_NESTING.get() > 0) {
@@ -93,10 +108,16 @@ public final class TemplateTrace {
         reset();
     }
 
+    /**
+     * Marks the start of an include.
+     */
     public static void enterInclude() {
         INCLUDE_NESTING.set(INCLUDE_NESTING.get() + 1);
     }
 
+    /**
+     * Marks the end of an include.
+     */
     public static void exitInclude() {
         int nesting = INCLUDE_NESTING.get() - 1;
         if (nesting <= 0) {
@@ -109,6 +130,8 @@ public final class TemplateTrace {
     /**
      * Attaches the current frames to the error once. Repeated calls, or calls
      * after an inner node has attached a trace, are no-ops.
+     *
+     * @param error the render failure
      */
     public static void attach(RuntimeException error) {
         if (error == null || findTrace(error, new HashSet<>()) != null) {
@@ -124,6 +147,9 @@ public final class TemplateTrace {
     /**
      * Returns the frames attached to the error, walking suppressed exceptions
      * and causes, in chronological order.
+     *
+     * @param error the error to inspect
+     * @return the attached frames, or an empty list
      */
     public static List<Frame> frames(Throwable error) {
         Trace trace = findTrace(error, new HashSet<>());
@@ -137,6 +163,9 @@ public final class TemplateTrace {
      * <p>Pebble evaluates an extended parent only after the child root node
      * returns, so callers must wrap the whole evaluate call to capture
      * parent-body failures.
+     *
+     * @param action the render action to run
+     * @throws IOException if the action fails
      */
     public static void run(IOAction action) throws IOException {
         Objects.requireNonNull(action, "action");
@@ -183,17 +212,44 @@ public final class TemplateTrace {
         return null;
     }
 
+    /**
+     * The kind of template frame.
+     */
     public enum Kind {
+
+        /**
+         * An include frame.
+         */
         INCLUDE,
+
+        /**
+         * An inheritance frame.
+         */
         EXTENDS
     }
 
+    /**
+     * One template call in a render trace.
+     *
+     * @param kind the frame kind
+     * @param template the calling template
+     * @param line the line of the call
+     * @param target the included or extended template
+     */
     public record Frame(Kind kind, String template, int line, String target) {
     }
 
+    /**
+     * A render action that can fail with an I/O error.
+     */
     @FunctionalInterface
     public interface IOAction {
 
+        /**
+         * Runs the action.
+         *
+         * @throws IOException if the action fails
+         */
         void run() throws IOException;
     }
 

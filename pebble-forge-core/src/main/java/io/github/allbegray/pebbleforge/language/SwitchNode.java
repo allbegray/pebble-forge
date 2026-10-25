@@ -69,20 +69,46 @@ public final class SwitchNode extends AbstractRenderableNode {
         }
     }
 
+    /**
+     * Returns the expression whose value selects a case.
+     *
+     * @return the subject expression
+     */
     public Expression<?> getSubject() {
         return subject;
     }
 
+    /**
+     * Returns the cases in declaration order.
+     *
+     * @return the cases
+     */
     public List<Case> getCases() {
         return cases;
     }
 
+    /**
+     * Returns the default body.
+     *
+     * @return the default body, or {@code null}
+     */
     public BodyNode getDefaultBody() {
         return defaultBody;
     }
 
+    /**
+     * One case in a switch.
+     *
+     * @param values the values that select this case
+     * @param body the case body
+     */
     public record Case(List<Expression<?>> values, BodyNode body) {
 
+        /**
+         * Creates an immutable case.
+         *
+         * @throws NullPointerException if a value is null
+         */
         public Case {
             values = List.copyOf(values);
         }

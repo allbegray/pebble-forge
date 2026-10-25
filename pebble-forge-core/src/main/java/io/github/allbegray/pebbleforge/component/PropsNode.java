@@ -13,11 +13,23 @@ import java.util.List;
  */
 public final class PropsNode extends AbstractRenderableNode {
 
+    /**
+     * A declared prop.
+     *
+     * @param name the prop name
+     * @param defaultValue the default value expression, or {@code null} when required
+     */
     public record Prop(String name, Expression<?> defaultValue) {
     }
 
     private final List<Prop> props;
 
+    /**
+     * Creates a props node.
+     *
+     * @param lineNumber the line of the props tag
+     * @param props the declared props
+     */
     public PropsNode(int lineNumber, List<Prop> props) {
         super(lineNumber);
         this.props = List.copyOf(props);
@@ -33,6 +45,11 @@ public final class PropsNode extends AbstractRenderableNode {
         }
     }
 
+    /**
+     * Returns the declared props.
+     *
+     * @return the props
+     */
     public List<Prop> getProps() {
         return props;
     }

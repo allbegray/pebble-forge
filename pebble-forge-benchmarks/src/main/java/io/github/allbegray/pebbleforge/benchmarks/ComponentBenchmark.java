@@ -30,8 +30,19 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class ComponentBenchmark {
 
+    /**
+     * Creates the benchmark state. JMH instantiates it.
+     */
+    public ComponentBenchmark() {
+    }
+
     private PebbleTemplate template;
 
+    /**
+     * Builds the engine and loads the benchmark template.
+     *
+     * @throws IOException if the template cannot be read
+     */
     @Setup(Level.Trial)
     public void setUp() throws IOException {
         PebbleEngine engine = PebbleForge.engine()
@@ -41,6 +52,12 @@ public class ComponentBenchmark {
         template = engine.getTemplate("component-page");
     }
 
+    /**
+     * Renders the benchmark template once.
+     *
+     * @return the rendered output
+     * @throws IOException if rendering fails
+     */
     @Benchmark
     public String render() throws IOException {
         return BenchTemplates.render(template);

@@ -21,6 +21,11 @@ public final class SandboxedFileLoader implements Loader<String> {
     private String suffix;
     private String charset = "UTF-8";
 
+    /**
+     * Creates a loader rooted at an absolute directory.
+     *
+     * @param root the existing directory that contains templates
+     */
     public SandboxedFileLoader(Path root) {
         setPrefix(root.toAbsolutePath().normalize().toString());
     }
@@ -86,6 +91,11 @@ public final class SandboxedFileLoader implements Loader<String> {
         }
     }
 
+    /**
+     * Returns the loader root.
+     *
+     * @return the absolute root directory
+     */
     public String getPrefix() {
         return root.toString();
     }

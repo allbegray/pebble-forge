@@ -18,6 +18,9 @@ public final class NaturalHtml {
 
     /**
      * Wraps a delegate loader with Natural HTML analysis and rewriting.
+     *
+     * @param delegate the loader that reads the original templates
+     * @return the Natural HTML loader
      */
     public static NaturalHtmlLoader loader(Loader<String> delegate) {
         return new NaturalHtmlLoader(Objects.requireNonNull(delegate, "delegate"));
@@ -26,6 +29,9 @@ public final class NaturalHtml {
     /**
      * Analyzes and rewrites a template without building an engine.
      *
+     * @param templateName the template name used in errors
+     * @param source the original template source
+     * @return the analysis
      * @throws NaturalHtmlException when the source is not a safe Natural HTML template
      */
     public static NaturalHtmlAnalysis analyze(String templateName, String source) {

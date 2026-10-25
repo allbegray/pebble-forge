@@ -29,8 +29,19 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class LanguageBenchmark {
 
+    /**
+     * Creates the benchmark state. JMH instantiates it.
+     */
+    public LanguageBenchmark() {
+    }
+
     private PebbleTemplate template;
 
+    /**
+     * Builds the engine and loads the benchmark template.
+     *
+     * @throws IOException if the template cannot be read
+     */
     @Setup(Level.Trial)
     public void setUp() throws IOException {
         PebbleEngine engine = PebbleForge.engine()
@@ -39,6 +50,12 @@ public class LanguageBenchmark {
         template = engine.getTemplate("language");
     }
 
+    /**
+     * Renders the benchmark template once.
+     *
+     * @return the rendered output
+     * @throws IOException if rendering fails
+     */
     @Benchmark
     public String render() throws IOException {
         return BenchTemplates.render(template);

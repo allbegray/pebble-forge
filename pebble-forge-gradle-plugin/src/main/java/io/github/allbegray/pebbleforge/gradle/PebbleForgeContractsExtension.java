@@ -9,17 +9,58 @@ import org.gradle.api.provider.SetProperty;
  */
 public abstract class PebbleForgeContractsExtension {
 
+    /**
+     * Creates the extension. Gradle instantiates it.
+     */
+    public PebbleForgeContractsExtension() {
+    }
+
+    /**
+     * Returns the directory that contains the templates.
+     *
+     * @return the template directory
+     */
     public abstract DirectoryProperty getTemplatesDirectory();
 
+    /**
+     * Returns the template file suffix.
+     *
+     * @return the suffix, such as {@code .peb}
+     */
     public abstract Property<String> getTemplateSuffix();
 
+    /**
+     * Returns the component root directory.
+     *
+     * @return the component root
+     */
     public abstract Property<String> getComponentRoot();
 
+    /**
+     * Returns the model variables that templates may read.
+     *
+     * @return the variable names
+     */
     public abstract SetProperty<String> getVariables();
 
+    /**
+     * Returns whether every model variable is allowed.
+     *
+     * @return true when the model schema allows any variable
+     */
     public abstract Property<Boolean> getAllowAnyVariable();
 
+    /**
+     * Returns the templates to check as roots.
+     *
+     * @return the root template names
+     */
     public abstract SetProperty<String> getRootTemplates();
 
+    /**
+     * Returns the templates to keep out of root inference.
+     *
+     * @return the partial template names
+     */
     public abstract SetProperty<String> getPartialTemplates();
 }

@@ -1,6 +1,4 @@
 import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.api.tasks.javadoc.Javadoc
-import org.gradle.external.javadoc.StandardJavadocDocletOptions
 
 plugins {
     `java-library`
@@ -13,10 +11,6 @@ val repositoryUrl = "https://github.com/allbegray/pebble-forge"
 java {
     withSourcesJar()
     withJavadocJar()
-}
-
-tasks.withType<Javadoc>().configureEach {
-    (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
 }
 
 publishing {

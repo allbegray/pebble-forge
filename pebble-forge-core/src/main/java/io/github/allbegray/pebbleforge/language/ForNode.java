@@ -151,22 +151,47 @@ public final class ForNode extends AbstractRenderableNode {
         }
     }
 
+    /**
+     * Returns the name of the loop value variable.
+     *
+     * @return the value variable name
+     */
     public String getIterationVariable() {
         return valueVariableName;
     }
 
+    /**
+     * Returns the name of the loop key variable, or {@code null} when the loop has no key.
+     *
+     * @return the key variable name
+     */
     public String getKeyVariableName() {
         return keyVariableName;
     }
 
+    /**
+     * Returns the expression that produces the iterable.
+     *
+     * @return the iterable expression
+     */
     public Expression<?> getIterable() {
         return iterableExpression;
     }
 
+    /**
+     * Returns the loop body.
+     *
+     * @return the body
+     */
     public BodyNode getBody() {
         return body;
     }
 
+    /**
+     * Returns the body rendered when the iterable is empty.
+     *
+     * @return the else body, or {@code null}
+     */
     public BodyNode getElseBody() {
         return elseBody;
     }
@@ -187,7 +212,16 @@ public final class ForNode extends AbstractRenderableNode {
         return null;
     }
 
+    /**
+     * The values exposed as {@code loop} inside a for body.
+     */
     public static final class LoopVariables {
+
+        /**
+         * Creates empty loop variables. A for node fills them during rendering.
+         */
+        public LoopVariables() {
+        }
 
         private boolean first;
         private boolean last;
@@ -195,22 +229,47 @@ public final class ForNode extends AbstractRenderableNode {
         private int index;
         private LazyRevIndex revindex;
 
+        /**
+         * Returns whether this is the first iteration.
+         *
+         * @return true on the first iteration
+         */
         public boolean isFirst() {
             return first;
         }
 
+        /**
+         * Returns whether this is the last iteration.
+         *
+         * @return true on the last iteration
+         */
         public boolean isLast() {
             return last;
         }
 
+        /**
+         * Returns the number of items in the iterable.
+         *
+         * @return the length
+         */
         public LazyLength getLength() {
             return length;
         }
 
+        /**
+         * Returns the zero-based iteration index.
+         *
+         * @return the index
+         */
         public int getIndex() {
             return index;
         }
 
+        /**
+         * Returns the index counted from the end of the iterable.
+         *
+         * @return the reverse index
+         */
         public LazyRevIndex getRevindex() {
             return revindex;
         }

@@ -30,6 +30,19 @@ import org.springframework.web.servlet.ViewResolver;
 @EnableConfigurationProperties(PebbleForgeProperties.class)
 public class PebbleForgeDiagnosticsAutoConfiguration {
 
+    /**
+     * Creates the auto-configuration.
+     */
+    public PebbleForgeDiagnosticsAutoConfiguration() {
+    }
+
+    /**
+     * Creates the template diagnostics service.
+     *
+     * @param pebbleLoader the Pebble loader
+     * @param properties the Pebble Forge properties
+     * @return the diagnostics service
+     */
     @Bean
     @ConditionalOnBean(name = "pebbleLoader")
     @ConditionalOnMissingBean
@@ -44,10 +57,20 @@ public class PebbleForgeDiagnosticsAutoConfiguration {
                 .build();
     }
 
+    /**
+     * Wraps the Pebble view resolver with the diagnostics view resolver.
+     */
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnBean(name = "pebbleViewResolver")
     static class ViewResolverConfiguration {
 
+        /**
+         * Creates the diagnostics view resolver.
+         *
+         * @param pebbleViewResolver the Pebble view resolver
+         * @param pebbleDiagnostics the diagnostics service, or an empty provider
+         * @return the diagnostics view resolver
+         */
         @Bean
         @ConditionalOnMissingBean(name = "pebbleDiagnosticsViewResolver")
         public ViewResolver pebbleDiagnosticsViewResolver(
@@ -58,12 +81,20 @@ public class PebbleForgeDiagnosticsAutoConfiguration {
         }
     }
 
+    /**
+     * Adds diagnostics to Spring Boot error attributes.
+     */
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass({ErrorAttributes.class, DefaultErrorAttributes.class})
     @ConditionalOnProperty(prefix = "pebble.forge.diagnostics", name = "enabled",
             havingValue = "true", matchIfMissing = true)
     static class ErrorAttributesConfiguration {
 
+        /**
+         * Creates the error attributes that include render diagnostics.
+         *
+         * @return the error attributes
+         */
         @Bean
         @ConditionalOnProperty(prefix = "pebble.forge.diagnostics",
                 name = "expose-in-error-attributes", havingValue = "true")

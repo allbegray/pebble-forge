@@ -7,7 +7,6 @@ import io.pebbletemplates.pebble.node.expression.Expression;
 import io.pebbletemplates.pebble.template.EvaluationContextImpl;
 import io.pebbletemplates.pebble.template.PebbleTemplateImpl;
 
-import java.io.IOException;
 import java.io.Writer;
 
 /**
@@ -18,6 +17,13 @@ public final class SlotNode extends AbstractRenderableNode {
     private final Expression<?> nameExpression;
     private final BodyNode body;
 
+    /**
+     * Creates a slot node.
+     *
+     * @param lineNumber the line of the slot tag
+     * @param nameExpression the slot name expression, or {@code null} for the body slot
+     * @param body the slot body
+     */
     public SlotNode(int lineNumber, Expression<?> nameExpression, BodyNode body) {
         super(lineNumber);
         this.nameExpression = nameExpression;
@@ -52,6 +58,11 @@ public final class SlotNode extends AbstractRenderableNode {
         return String.valueOf(value);
     }
 
+    /**
+     * Returns the slot body.
+     *
+     * @return the body
+     */
     public BodyNode getBody() {
         return body;
     }

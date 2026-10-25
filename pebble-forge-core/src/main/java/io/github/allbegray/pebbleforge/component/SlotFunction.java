@@ -13,6 +13,12 @@ import java.util.Map;
  */
 public final class SlotFunction implements Function {
 
+    /**
+     * Creates the slot function.
+     */
+    public SlotFunction() {
+    }
+
     @Override
     public List<String> getArgumentNames() {
         return List.of("name");

@@ -18,11 +18,22 @@ public final class ComponentTokenParser implements TokenParser {
     private final Components components;
     private final SandboxLimitsResolver limitsResolver;
 
+    /**
+     * Creates a parser without resource limits.
+     *
+     * @param components the component configuration
+     */
     public ComponentTokenParser(Components components) {
         this(components, io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver.fixed(
                 io.github.allbegray.pebbleforge.sandbox.SandboxLimits.unlimited()));
     }
 
+    /**
+     * Creates a parser.
+     *
+     * @param components the component configuration
+     * @param limitsResolver the resolver for per-template resource limits
+     */
     public ComponentTokenParser(Components components, SandboxLimitsResolver limitsResolver) {
         this.components = components;
         this.limitsResolver = limitsResolver;

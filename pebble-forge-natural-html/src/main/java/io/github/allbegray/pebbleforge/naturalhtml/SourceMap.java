@@ -25,6 +25,9 @@ public final class SourceMap {
 
     /**
      * Returns the original offset for a generated offset.
+     *
+     * @param generatedOffset the offset in the generated source
+     * @return the matching offset in the original source
      */
     public int originalOffset(int generatedOffset) {
         if (generatedOffset < 0 || generatedOffset > generatedLength) {
@@ -46,6 +49,9 @@ public final class SourceMap {
 
     /**
      * Returns the one-based line and column in the original source for a generated offset.
+     *
+     * @param generatedOffset the offset in the generated source
+     * @return the matching position in the original source
      */
     public SourcePosition originalPosition(int generatedOffset) {
         return SourceCoordinates.position(lineStarts, originalOffset(generatedOffset));

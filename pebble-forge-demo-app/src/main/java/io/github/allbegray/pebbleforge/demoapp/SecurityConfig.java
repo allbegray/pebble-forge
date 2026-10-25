@@ -12,9 +12,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Configures demo users, form login, and access rules.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    /**
+     * Creates the security configuration.
+     */
+    public SecurityConfig() {
+    }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

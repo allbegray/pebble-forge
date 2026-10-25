@@ -21,10 +21,22 @@ public final class SandboxExtensionCustomizer extends ExtensionCustomizer {
 
     private final SandboxPolicyResolver policies;
 
+    /**
+     * Applies one policy to a built-in extension.
+     *
+     * @param delegate the extension to customize
+     * @param policy the policy to apply
+     */
     public SandboxExtensionCustomizer(Extension delegate, SandboxPolicy policy) {
         this(delegate, SandboxPolicyResolver.fixed(policy));
     }
 
+    /**
+     * Applies a policy resolver to a built-in extension.
+     *
+     * @param delegate the extension to customize
+     * @param policies the policy resolver
+     */
     public SandboxExtensionCustomizer(Extension delegate, SandboxPolicyResolver policies) {
         super(delegate);
         this.policies = policies;

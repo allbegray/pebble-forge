@@ -7,16 +7,30 @@ import java.io.Reader;
 
 /**
  * Rejects template names that escape the loader root.
+ *
+ * @param <T> the cache key type of the wrapped loader
  */
 public final class SandboxedLoader<T> implements Loader<T> {
 
     private final Loader<T> delegate;
     private final SandboxPolicyResolver policies;
 
+    /**
+     * Applies one policy to every template.
+     *
+     * @param delegate the loader to wrap
+     * @param policy the policy to apply
+     */
     public SandboxedLoader(Loader<T> delegate, SandboxPolicy policy) {
         this(delegate, SandboxPolicyResolver.fixed(policy));
     }
 
+    /**
+     * Applies a policy resolver to the loader.
+     *
+     * @param delegate the loader to wrap
+     * @param policies the policy resolver
+     */
     public SandboxedLoader(Loader<T> delegate, SandboxPolicyResolver policies) {
         this.delegate = delegate;
         this.policies = policies;

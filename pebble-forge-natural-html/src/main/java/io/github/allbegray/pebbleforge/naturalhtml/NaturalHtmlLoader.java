@@ -20,12 +20,20 @@ public final class NaturalHtmlLoader implements Loader<String> {
         this.delegate = delegate;
     }
 
+    /**
+     * Returns the wrapped loader.
+     *
+     * @return the delegate loader
+     */
     public Loader<String> delegate() {
         return delegate;
     }
 
     /**
      * Reads a template from the delegate without rewriting it.
+     *
+     * @param templateName the template name
+     * @return the original source
      */
     public String readOriginal(String templateName) {
         Objects.requireNonNull(templateName, "templateName");

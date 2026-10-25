@@ -10,8 +10,21 @@ import java.util.Map;
  */
 public final class PebbleForgeDiagnosticsPlugin implements Plugin<Project> {
 
+    /**
+     * The extension name.
+     */
     public static final String EXTENSION_NAME = "pebbleForgeDiagnostics";
+
+    /**
+     * The render task name.
+     */
     public static final String TASK_NAME = "renderPebbleTemplate";
+
+    /**
+     * Creates the plugin. Gradle instantiates it.
+     */
+    public PebbleForgeDiagnosticsPlugin() {
+    }
 
     @Override
     public void apply(Project project) {

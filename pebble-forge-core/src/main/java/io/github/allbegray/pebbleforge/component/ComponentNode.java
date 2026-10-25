@@ -35,6 +35,15 @@ public final class ComponentNode extends AbstractRenderableNode {
     private final Components components;
     private final SandboxLimitsResolver limitsResolver;
 
+    /**
+     * Creates a component node without resource limits.
+     *
+     * @param lineNumber the line of the component tag
+     * @param nameExpression the expression that produces the component name
+     * @param propsExpression the props map, or {@code null}
+     * @param body the component body
+     * @param components the component configuration
+     */
     public ComponentNode(
             int lineNumber,
             Expression<?> nameExpression,
@@ -45,6 +54,16 @@ public final class ComponentNode extends AbstractRenderableNode {
                 SandboxLimitsResolver.fixed(SandboxLimits.unlimited()));
     }
 
+    /**
+     * Creates a component node.
+     *
+     * @param lineNumber the line of the component tag
+     * @param nameExpression the expression that produces the component name
+     * @param propsExpression the props map, or {@code null}
+     * @param body the component body
+     * @param components the component configuration
+     * @param limitsResolver the resolver for per-template resource limits
+     */
     public ComponentNode(
             int lineNumber,
             Expression<?> nameExpression,
@@ -92,14 +111,29 @@ public final class ComponentNode extends AbstractRenderableNode {
         body.accept(visitor);
     }
 
+    /**
+     * Returns the expression that produces the component name.
+     *
+     * @return the name expression
+     */
     public Expression<?> getComponentNameExpression() {
         return nameExpression;
     }
 
+    /**
+     * Returns the props map expression.
+     *
+     * @return the props expression, or {@code null}
+     */
     public MapExpression getPropsExpression() {
         return propsExpression;
     }
 
+    /**
+     * Returns the component body.
+     *
+     * @return the body
+     */
     public BodyNode getBody() {
         return body;
     }

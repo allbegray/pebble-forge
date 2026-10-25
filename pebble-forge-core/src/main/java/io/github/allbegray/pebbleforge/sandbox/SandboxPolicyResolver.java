@@ -32,6 +32,13 @@ public final class SandboxPolicyResolver {
         this.policies = List.copyOf(distinct);
     }
 
+    /**
+     * Resolves the policy for a template name. The default policy applies when no rule matches
+     * and to literal template text.
+     *
+     * @param templateName the template name
+     * @return the policy
+     */
     public SandboxPolicy resolve(String templateName) {
         Objects.requireNonNull(templateName, "templateName");
         if (isLiteral(templateName)) {
@@ -46,19 +53,41 @@ public final class SandboxPolicyResolver {
         return defaultPolicy;
     }
 
+    /**
+     * Returns the policy used when no rule matches.
+     *
+     * @return the default policy
+     */
     public SandboxPolicy defaultPolicy() {
         return defaultPolicy;
     }
 
+    /**
+     * Returns every distinct policy in this resolver.
+     *
+     * @return the policies
+     */
     public Collection<SandboxPolicy> policies() {
         return policies;
     }
 
+    /**
+     * Returns a resolver that uses one policy for every template.
+     *
+     * @param policy the policy to use
+     * @return the resolver
+     */
     public static SandboxPolicyResolver fixed(SandboxPolicy policy) {
         Objects.requireNonNull(policy, "policy");
         return new SandboxPolicyResolver(policy, List.of());
     }
 
+    /**
+     * Creates a resolver builder.
+     *
+     * @param defaultPolicy the policy used when no rule matches
+     * @return a new builder
+     */
     public static Builder builder(SandboxPolicy defaultPolicy) {
         return new Builder(defaultPolicy);
     }
@@ -71,6 +100,10 @@ public final class SandboxPolicyResolver {
                 || templateName.indexOf('\r') >= 0;
     }
 
+    /**
+     * Builds a {@link SandboxPolicyResolver}. Exact rules win over prefix rules, and longer
+     * prefixes win over shorter prefixes.
+     */
     public static final class Builder {
 
         private final SandboxPolicy defaultPolicy;
@@ -80,18 +113,37 @@ public final class SandboxPolicyResolver {
             this.defaultPolicy = Objects.requireNonNull(defaultPolicy, "defaultPolicy");
         }
 
+        /**
+         * Adds a rule for one template name.
+         *
+         * @param templateName the exact template name
+         * @param policy the policy to use
+         * @return this builder
+         */
         public Builder exact(String templateName, SandboxPolicy policy) {
             rules.add(new Rule(validateRule(templateName, false),
                     Objects.requireNonNull(policy, "policy"), true));
             return this;
         }
 
+        /**
+         * Adds a rule for a template name prefix.
+         *
+         * @param prefix the directory or name prefix
+         * @param policy the policy to use
+         * @return this builder
+         */
         public Builder prefix(String prefix, SandboxPolicy policy) {
             rules.add(new Rule(validateRule(prefix, true) + "/",
                     Objects.requireNonNull(policy, "policy"), false));
             return this;
         }
 
+        /**
+         * Builds the resolver.
+         *
+         * @return the resolver
+         */
         public SandboxPolicyResolver build() {
             return new SandboxPolicyResolver(defaultPolicy, List.copyOf(rules));
         }

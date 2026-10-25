@@ -108,14 +108,29 @@ public final class WithNode extends AbstractRenderableNode {
         body.accept(visitor);
     }
 
+    /**
+     * Returns the expression that produces the scoped variables.
+     *
+     * @return the values expression, or {@code null}
+     */
     public Expression<?> getValuesExpression() {
         return valuesExpression;
     }
 
+    /**
+     * Returns the body rendered with the extra variables.
+     *
+     * @return the body
+     */
     public BodyNode getBody() {
         return body;
     }
 
+    /**
+     * Returns whether the body runs in an isolated scope.
+     *
+     * @return true when the body cannot see the caller's variables
+     */
     public boolean isIsolated() {
         return isolated;
     }

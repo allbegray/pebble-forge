@@ -10,6 +10,12 @@ import java.util.List;
  */
 public final class ExtendsExtension extends AbstractExtension {
 
+    /**
+     * Creates an extends extension.
+     */
+    public ExtendsExtension() {
+    }
+
     @Override
     public List<TokenParser> getTokenParsers() {
         return List.of(new ForgeExtendsTokenParser());

@@ -12,6 +12,8 @@ import java.util.HexFormat;
 /**
  * Adds a content hash to the loader cache key so template edits are picked up
  * without rebuilding the engine.
+ *
+ * @param <T> the cache key type of the wrapped loader
  */
 public final class ReloadingLoader<T> implements Loader<ReloadingLoader.CacheKey> {
 
@@ -21,10 +23,22 @@ public final class ReloadingLoader<T> implements Loader<ReloadingLoader.CacheKey
         this.delegate = delegate;
     }
 
+    /**
+     * Wraps a loader so its cache keys include a content hash.
+     *
+     * @param delegate the loader to wrap
+     * @param <T> the cache key type of the wrapped loader
+     * @return the wrapped loader
+     */
     public static <T> ReloadingLoader<T> wrap(Loader<T> delegate) {
         return new ReloadingLoader<>(delegate);
     }
 
+    /**
+     * Returns the wrapped loader.
+     *
+     * @return the wrapped loader
+     */
     public Loader<T> delegate() {
         return delegate;
     }
@@ -84,6 +98,12 @@ public final class ReloadingLoader<T> implements Loader<ReloadingLoader.CacheKey
         }
     }
 
+    /**
+     * A loader cache key that changes when the template content changes.
+     *
+     * @param templateName the template name
+     * @param version the content hash
+     */
     public record CacheKey(String templateName, String version) {
     }
 }

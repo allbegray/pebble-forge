@@ -15,6 +15,12 @@ import java.util.List;
  */
 public final class PropsTokenParser implements TokenParser {
 
+    /**
+     * Creates a props token parser.
+     */
+    public PropsTokenParser() {
+    }
+
     @Override
     public RenderableNode parse(Token token, Parser parser) {
         TokenStream stream = parser.getStream();

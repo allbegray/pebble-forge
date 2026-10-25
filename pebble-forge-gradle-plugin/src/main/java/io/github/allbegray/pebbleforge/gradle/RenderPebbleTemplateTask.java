@@ -33,6 +33,9 @@ import java.util.Map;
  */
 public abstract class RenderPebbleTemplateTask extends DefaultTask {
 
+    /**
+     * Creates the task and sets defaults for its options.
+     */
     public RenderPebbleTemplateTask() {
         getTemplateSuffix().convention(".peb");
         getComponentRoot().convention("components");
@@ -41,34 +44,77 @@ public abstract class RenderPebbleTemplateTask extends DefaultTask {
         getModel().convention(Map.of());
     }
 
+    /**
+     * Returns the directory that contains the templates.
+     *
+     * @return the template directory
+     */
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
     public abstract DirectoryProperty getTemplatesDirectory();
 
+    /**
+     * Returns the template file suffix.
+     *
+     * @return the suffix, such as {@code .peb}
+     */
     @Input
     public abstract Property<String> getTemplateSuffix();
 
+    /**
+     * Returns the template to render.
+     *
+     * @return the template name without the suffix
+     */
     @Input
     @Optional
     public abstract Property<String> getTemplateName();
 
+    /**
+     * Returns the model values passed to the template.
+     *
+     * @return the model
+     */
     @Input
     public abstract MapProperty<String, Object> getModel();
 
+    /**
+     * Returns the component root directory.
+     *
+     * @return the component root
+     */
     @Input
     public abstract Property<String> getComponentRoot();
 
+    /**
+     * Returns whether missing variables fail the render.
+     *
+     * @return true when strict variables are enabled
+     */
     @Input
     public abstract Property<Boolean> getStrictVariables();
 
+    /**
+     * Returns the number of source lines shown around an error.
+     *
+     * @return the context line count
+     */
     @Input
     public abstract Property<Integer> getContextLines();
 
+    /**
+     * Sets the template to render from the command line.
+     *
+     * @param templateName the template name without the suffix
+     */
     @Option(option = "template", description = "Template name to render, without the suffix.")
     public void setTemplateOption(String templateName) {
         getTemplateName().set(templateName);
     }
 
+    /**
+     * Renders the template and prints the output, or prints source frames on failure.
+     */
     @TaskAction
     public void renderTemplate() {
         File root = getTemplatesDirectory().get().getAsFile();

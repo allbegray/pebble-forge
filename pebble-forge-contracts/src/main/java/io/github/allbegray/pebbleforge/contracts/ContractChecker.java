@@ -34,12 +34,20 @@ public final class ContractChecker {
                 .build();
     }
 
+    /**
+     * Creates a contract checker builder.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
      * Checks one template as a root and follows its static includes.
+     *
+     * @param templateName the template to check
+     * @return the findings
      */
     public ContractResult check(String templateName) {
         Objects.requireNonNull(templateName, "templateName");
@@ -50,6 +58,9 @@ public final class ContractChecker {
      * Checks a complete template set, inferring which templates are roots.
      * Every supplied template is parsed and structurally analyzed. Roots are
      * evaluated with an empty scope and follow their static includes.
+     *
+     * @param templateNames the templates to check
+     * @return the findings
      */
     public ContractResult checkAll(Collection<String> templateNames) {
         Objects.requireNonNull(templateNames, "templateNames");
@@ -60,7 +71,16 @@ public final class ContractChecker {
         return new CheckSession(engine, components, model, rootTemplates, partialTemplates);
     }
 
+    /**
+     * Builds a {@link ContractChecker}.
+     */
     public static final class Builder {
+
+        /**
+         * Creates an empty builder. Prefer {@link ContractChecker#builder()}.
+         */
+        public Builder() {
+        }
 
         private Loader<?> loader;
         private Components components = Components.defaults();
@@ -68,16 +88,34 @@ public final class ContractChecker {
         private Set<String> rootTemplates = Set.of();
         private Set<String> partialTemplates = Set.of();
 
+        /**
+         * Sets the template loader. Required.
+         *
+         * @param loader the loader
+         * @return this builder
+         */
         public Builder loader(Loader<?> loader) {
             this.loader = Objects.requireNonNull(loader, "loader");
             return this;
         }
 
+        /**
+         * Sets the component configuration.
+         *
+         * @param components the component configuration
+         * @return this builder
+         */
         public Builder components(Components components) {
             this.components = Objects.requireNonNull(components, "components");
             return this;
         }
 
+        /**
+         * Sets the model schema used to validate variable reads.
+         *
+         * @param model the model schema
+         * @return this builder
+         */
         public Builder model(ModelSchema model) {
             this.model = Objects.requireNonNull(model, "model");
             return this;
@@ -86,6 +124,9 @@ public final class ContractChecker {
         /**
          * Forces the named templates to be checked as roots. Wins over
          * {@link #partialTemplates(Collection)}.
+         *
+         * @param names the root template names
+         * @return this builder
          */
         public Builder rootTemplates(Collection<String> names) {
             this.rootTemplates = copyNames(names, "rootTemplates");
@@ -95,12 +136,21 @@ public final class ContractChecker {
         /**
          * Keeps the named templates out of root inference. They are still
          * checked when a root or component reaches them statically.
+         *
+         * @param names the partial template names
+         * @return this builder
          */
         public Builder partialTemplates(Collection<String> names) {
             this.partialTemplates = copyNames(names, "partialTemplates");
             return this;
         }
 
+        /**
+         * Builds the checker.
+         *
+         * @return the checker
+         * @throws IllegalStateException if no loader is set
+         */
         public ContractChecker build() {
             if (loader == null) {
                 throw new IllegalStateException("A loader is required");

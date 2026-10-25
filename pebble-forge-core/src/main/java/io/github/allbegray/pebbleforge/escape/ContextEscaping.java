@@ -14,10 +14,29 @@ import java.util.Set;
  */
 public final class ContextEscaping {
 
+    /**
+     * Name of Pebble's HTML escaping strategy.
+     */
     public static final String HTML = "html";
+
+    /**
+     * Name of the HTML attribute escaping strategy registered by this class.
+     */
     public static final String HTML_ATTRIBUTE = "html_attr";
+
+    /**
+     * Name of the URL escaping strategy registered by this class.
+     */
     public static final String URL = "url";
+
+    /**
+     * Name of Pebble's JavaScript escaping strategy.
+     */
     public static final String JAVASCRIPT = "js";
+
+    /**
+     * Name of Pebble's CSS escaping strategy.
+     */
     public static final String CSS = "css";
 
     private static final Set<String> ALLOWED_SCHEMES = Set.of("http", "https", "mailto", "tel");
@@ -32,6 +51,8 @@ public final class ContextEscaping {
      * Adds the {@code html_attr} and {@code url} strategies to a Pebble engine builder.
      *
      * <p>Safe to call more than once.
+     *
+     * @param builder the builder to configure
      */
     public static void register(PebbleEngine.Builder builder) {
         Objects.requireNonNull(builder, "builder");
@@ -42,12 +63,23 @@ public final class ContextEscaping {
     /**
      * Escapes a value for an HTML attribute value, quoted or unquoted.
      */
+    /**
+     * Returns the strategy that escapes a value for an HTML attribute value.
+     *
+     * @return the HTML attribute strategy
+     */
     public static EscapingStrategy htmlAttribute() {
         return HTML_ATTRIBUTE_STRATEGY;
     }
 
     /**
      * Rejects unsafe URL schemes and escapes the result for an HTML attribute value.
+     */
+    /**
+     * Returns the strategy that rejects unsafe URL schemes and escapes the result for an HTML
+     * attribute value.
+     *
+     * @return the URL strategy
      */
     public static EscapingStrategy url() {
         return URL_STRATEGY;

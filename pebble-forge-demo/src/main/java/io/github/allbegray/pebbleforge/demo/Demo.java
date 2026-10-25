@@ -12,8 +12,23 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Runs a small tour of components, the sandbox, language tags, and diagnostics.
+ */
 public final class Demo {
 
+    /**
+     * Creates the demo. Prefer running {@link #main(String[])}.
+     */
+    public Demo() {
+    }
+
+    /**
+     * Prints the demo pages and a diagnostics report.
+     *
+     * @param args command-line arguments, which are not used
+     * @throws Exception if a demo template fails to load or render
+     */
     public static void main(String[] args) throws Exception {
         ClasspathLoader loader = new ClasspathLoader();
         loader.setPrefix("templates/");

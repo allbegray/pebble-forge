@@ -18,6 +18,11 @@ public final class PolicyAwareDefaultAttributeResolver implements AttributeResol
     private final ConcurrentHashMap<SandboxPolicy, DefaultAttributeResolver> delegates =
             new ConcurrentHashMap<>();
 
+    /**
+     * Creates a resolver that selects a delegate per sandbox policy.
+     *
+     * @param policies the policy resolver
+     */
     public PolicyAwareDefaultAttributeResolver(SandboxPolicyResolver policies) {
         this.policies = policies;
     }

@@ -26,16 +26,28 @@ public final class Components {
         this.maxSlotChars = maxSlotChars;
     }
 
+    /**
+     * Creates a builder with the default root, suffix, and depth.
+     *
+     * @return a new builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns the default component configuration.
+     *
+     * @return the default configuration
+     */
     public static Components defaults() {
         return builder().build();
     }
 
     /**
      * Returns the default root, or {@code null} when only namespaced roots are configured.
+     *
+     * @return the default root
      */
     public String root() {
         return roots.get("");
@@ -43,28 +55,62 @@ public final class Components {
 
     /**
      * Returns namespace to root. The default root uses the empty namespace.
+     *
+     * @return the configured roots
      */
     public Map<String, String> roots() {
         return roots;
     }
 
+    /**
+     * Returns the file suffix appended to component paths.
+     *
+     * @return the suffix, such as {@code .peb}
+     */
     public String suffix() {
         return suffix;
     }
 
+    /**
+     * Returns the maximum component nesting depth.
+     *
+     * @return the maximum depth
+     */
     public int maxDepth() {
         return maxDepth;
     }
 
+    /**
+     * Returns the maximum slot content length, or -1 when unlimited.
+     *
+     * @return the maximum slot length
+     */
     public int maxSlotChars() {
         return maxSlotChars;
     }
 
+    /**
+     * Returns a copy with a different slot content limit.
+     *
+     * @param maxSlotChars the maximum slot content length, or -1 for no limit
+     * @return the copy
+     */
     public Components withMaxSlotChars(int maxSlotChars) {
         requireValidMaxSlotChars(maxSlotChars);
         return new Components(roots, suffix, maxDepth, maxSlotChars);
     }
 
+    /**
+     * Resolves a component name to the template path for its configured root.
+     *
+     * <p>A name may start with a namespace, such as {@code ui:card}. Names without a namespace
+     * use the default root.
+     *
+     * @param componentName the component name
+     * @return the template path
+     * @throws IllegalArgumentException if the name is empty, contains an invalid segment, or uses
+     *         an unknown namespace
+     */
     public String resolvePath(String componentName) {
         Objects.requireNonNull(componentName, "componentName");
         String name = componentName.trim();
@@ -170,7 +216,16 @@ public final class Components {
         return namespace.isEmpty() ? "\"\" (default)" : namespace;
     }
 
+    /**
+     * Builds a {@link Components} configuration.
+     */
     public static final class Builder {
+
+        /**
+         * Creates an empty builder. Prefer {@link Components#builder()}.
+         */
+        public Builder() {
+        }
 
         private final Map<String, String> namedRoots = new LinkedHashMap<>();
         private String defaultRoot = "components";
@@ -181,6 +236,9 @@ public final class Components {
 
         /**
          * Sets the default root. May be called once.
+         *
+         * @param root the root directory
+         * @return this builder
          */
         public Builder root(String root) {
             if (defaultRootDeclared) {
@@ -194,6 +252,10 @@ public final class Components {
 
         /**
          * Declares a root for a namespace. A namespace may be declared once.
+         *
+         * @param namespace the namespace name
+         * @param root the root directory
+         * @return this builder
          */
         public Builder root(String namespace, String root) {
             Objects.requireNonNull(namespace, "namespace");
@@ -214,6 +276,12 @@ public final class Components {
             return this;
         }
 
+        /**
+         * Sets the file suffix. It must be empty or start with a dot.
+         *
+         * @param suffix the file suffix
+         * @return this builder
+         */
         public Builder suffix(String suffix) {
             Objects.requireNonNull(suffix, "suffix");
             if (!suffix.isEmpty() && !suffix.startsWith(".")) {
@@ -223,6 +291,12 @@ public final class Components {
             return this;
         }
 
+        /**
+         * Sets the maximum component nesting depth.
+         *
+         * @param maxDepth the maximum depth, at least 1
+         * @return this builder
+         */
         public Builder maxDepth(int maxDepth) {
             if (maxDepth < 1) {
                 throw new IllegalArgumentException("maxDepth must be at least 1");
@@ -231,6 +305,12 @@ public final class Components {
             return this;
         }
 
+        /**
+         * Sets the maximum slot content length.
+         *
+         * @param maxSlotChars the maximum length, or -1 for no limit
+         * @return this builder
+         */
         public Builder maxSlotChars(int maxSlotChars) {
             requireValidMaxSlotChars(maxSlotChars);
             this.maxSlotChars = maxSlotChars;
@@ -242,6 +322,8 @@ public final class Components {
          * {@link #root(String)} leaves the configuration without a default root, so
          * unqualified component names fail. Call {@link #root(String)} to keep the
          * conventional {@code components} root alongside namespaced roots.
+         *
+         * @return the configuration
          */
         public Components build() {
             Map<String, String> effectiveRoots = new LinkedHashMap<>();

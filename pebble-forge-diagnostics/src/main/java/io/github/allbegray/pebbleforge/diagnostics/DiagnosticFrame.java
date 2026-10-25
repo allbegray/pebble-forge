@@ -4,14 +4,31 @@ import java.util.List;
 
 /**
  * One template source frame in a diagnostic report.
+ *
+ * @param template the template name
+ * @param line the line of the call or error
+ * @param label a short description of the frame, or {@code null}
+ * @param sourceLines the source lines to show
+ * @param errorLineIndex the index of the error line in {@code sourceLines}, or -1
+ * @param caretColumn the 1-based column for the caret
  */
 public record DiagnosticFrame(String template, int line, String label, List<String> sourceLines,
                               int errorLineIndex, int caretColumn) {
 
+    /**
+     * Creates an immutable frame.
+     *
+     * @throws NullPointerException if {@code sourceLines} is null
+     */
     public DiagnosticFrame {
         sourceLines = List.copyOf(sourceLines);
     }
 
+    /**
+     * Formats the frame with line numbers and a caret under the error column.
+     *
+     * @return the formatted frame
+     */
     public String format() {
         StringBuilder output = new StringBuilder();
         output.append(template == null ? "?" : template);

@@ -11,8 +11,21 @@ import java.util.Set;
  */
 public final class PebbleForgeContractsPlugin implements Plugin<Project> {
 
+    /**
+     * The extension name.
+     */
     public static final String EXTENSION_NAME = "pebbleForgeContracts";
+
+    /**
+     * The check task name.
+     */
     public static final String TASK_NAME = "checkPebbleTemplates";
+
+    /**
+     * Creates the plugin. Gradle instantiates it.
+     */
+    public PebbleForgeContractsPlugin() {
+    }
 
     @Override
     public void apply(Project project) {
