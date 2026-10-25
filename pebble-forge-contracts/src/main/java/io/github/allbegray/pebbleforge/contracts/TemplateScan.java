@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.contracts;
 
+import io.pebbletemplates.pebble.error.LoaderException;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -16,6 +18,7 @@ final class TemplateScan {
     final Map<String, Boolean> props = new LinkedHashMap<>();
     boolean failed;
     boolean complete;
+    LoaderException loadError;
 
     TemplateScan(String templateName) {
         this.templateName = templateName;

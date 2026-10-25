@@ -172,6 +172,32 @@ class ContractCheckerTest {
     }
 
     @Test
+    void reportsMissingComponentAtTheCallLine() {
+        ContractResult result = check(
+                Map.of("page.peb",
+                        "first line\n{% component \"card\" %}{% endcomponent %}"),
+                ModelSchema.any());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.line()).isEqualTo(2);
+            assertThat(error.message())
+                    .contains("Component [card]")
+                    .contains("components/card.peb");
+        });
+    }
+
+    @Test
+    void reportsMissingRootTemplateAtLineZero() {
+        ContractResult result = check(Map.of(), ModelSchema.any());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isZero();
+            assertThat(error.message()).contains("Could not load template");
+        });
+    }
+
+    @Test
     void allowAnySchemaStillChecksComponentProps() {
         ContractResult result = check(
                 Map.of(

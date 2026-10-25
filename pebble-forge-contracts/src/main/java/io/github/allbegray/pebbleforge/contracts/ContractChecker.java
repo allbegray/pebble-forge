@@ -3,6 +3,7 @@ package io.github.allbegray.pebbleforge.contracts;
 import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
 import io.pebbletemplates.pebble.PebbleEngine;
+import io.pebbletemplates.pebble.error.LoaderException;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.loader.Loader;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
@@ -40,7 +41,11 @@ public final class ContractChecker {
 
     public ContractResult check(String templateName) {
         List<ContractDiagnostic> diagnostics = new ArrayList<>();
-        scan(templateName, new HashMap<>(), diagnostics);
+        TemplateScan scan = scan(templateName, new HashMap<>(), diagnostics);
+        if (scan.loadError != null) {
+            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
+                    templateName, 0, "Could not load template: " + scan.loadError.getMessage()));
+        }
         return new ContractResult(diagnostics);
     }
 
@@ -68,16 +73,24 @@ public final class ContractChecker {
             for (TemplateScan.ComponentCall call : scan.componentCalls) {
                 validateComponentCall(call, scan.templateName, scans, diagnostics);
             }
+        } catch (LoaderException e) {
+            scan.failed = true;
+            scan.loadError = e;
         } catch (PebbleException e) {
             scan.failed = true;
             diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    templateName, Math.max(e.getLineNumber(), 0),
+                    templateName, lineOf(e),
                     "Could not parse template: " + e.getMessage()));
         } finally {
             scan.complete = true;
         }
 
         return scan;
+    }
+
+    private static int lineOf(PebbleException error) {
+        Integer line = error.getLineNumber();
+        return line == null ? 0 : line;
     }
 
     private void reportMissingVariables(TemplateScan scan, List<ContractDiagnostic> diagnostics) {
@@ -113,6 +126,13 @@ public final class ContractChecker {
         }
 
         TemplateScan component = scan(componentPath, scans, diagnostics);
+        if (component.loadError != null) {
+            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
+                    templateName, call.line(),
+                    "Component [" + call.name() + "] template [" + componentPath
+                            + "] could not be loaded: " + component.loadError.getMessage()));
+            return;
+        }
         if (!component.complete || component.failed) {
             return;
         }
