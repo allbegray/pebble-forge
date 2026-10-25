@@ -3,6 +3,7 @@ package io.github.allbegray.pebbleforge;
 import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.component.ComponentsExtension;
 import io.github.allbegray.pebbleforge.include.IncludeExtension;
+import io.github.allbegray.pebbleforge.inheritance.ExtendsExtension;
 import io.github.allbegray.pebbleforge.language.LanguageExtension;
 import io.github.allbegray.pebbleforge.reload.ReloadingLoader;
 import io.github.allbegray.pebbleforge.sandbox.SandboxAttributeExtension;
@@ -222,6 +223,11 @@ public final class PebbleForge {
             delegate.extension(effectivePolicies == null
                     ? includeExtension
                     : new SandboxedExtension(includeExtension, effectivePolicies));
+
+            Extension extendsExtension = new ExtendsExtension();
+            delegate.extension(effectivePolicies == null
+                    ? extendsExtension
+                    : new SandboxedExtension(extendsExtension, effectivePolicies));
 
             if (language) {
                 Extension languageExtension = new LanguageExtension(effectiveLimits);

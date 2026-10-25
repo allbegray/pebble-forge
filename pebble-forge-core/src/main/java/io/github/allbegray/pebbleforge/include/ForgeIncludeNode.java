@@ -3,6 +3,7 @@ package io.github.allbegray.pebbleforge.include;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
 import io.github.allbegray.pebbleforge.sandbox.SandboxRuntime;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
+import io.github.allbegray.pebbleforge.trace.TemplateTrace;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
 import io.pebbletemplates.pebble.node.AbstractRenderableNode;
@@ -50,6 +51,7 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
     @Override
     public void render(PebbleTemplateImpl self, Writer writer, EvaluationContextImpl context)
             throws IOException {
+        TemplateTrace.resetIfNewRender(context);
         String templateName = (String) includeExpression.evaluate(self, context);
         if (templateName == null) {
             throw new PebbleException(
@@ -63,7 +65,7 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
         String callerName = SandboxRuntime.currentTemplateName(self);
         SandboxLimits limits = limitsResolver.resolve(callerName);
         int maxDepth = limits.maxIncludeDepth();
-        if (maxDepth >= 0 && IncludeTrace.depth() >= maxDepth) {
+        if (maxDepth >= 0 && TemplateTrace.includeDepth() >= maxDepth) {
             throw new PebbleException(
                     null,
                     "Include depth limit of " + maxDepth + " reached",
@@ -76,8 +78,9 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
             map = mapExpression.evaluate(self, context);
         }
 
-        IncludeTrace.push(new IncludeTrace.IncludeFrame(callerName, getLineNumber(),
-                templateName));
+        int mark = TemplateTrace.mark();
+        TemplateTrace.push(new TemplateTrace.Frame(TemplateTrace.Kind.INCLUDE, callerName,
+                getLineNumber(), templateName));
         try {
             String resolved = self.resolveRelativePath(templateName);
             if (resolved == null) {
@@ -85,13 +88,18 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
             }
             String includedName = resolved;
             Map<?, ?> includedMap = map;
-            SandboxRuntime.runWith(includedName,
-                    () -> self.includeTemplate(writer, context, templateName, includedMap));
+            TemplateTrace.enterInclude();
+            try {
+                SandboxRuntime.runWith(includedName,
+                        () -> self.includeTemplate(writer, context, templateName, includedMap));
+            } finally {
+                TemplateTrace.exitInclude();
+            }
         } catch (RuntimeException error) {
-            IncludeTrace.attach(error);
+            TemplateTrace.attach(error);
             throw error;
         } finally {
-            IncludeTrace.pop();
+            TemplateTrace.popTo(mark);
         }
     }
 

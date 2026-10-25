@@ -1,6 +1,6 @@
 package io.github.allbegray.pebbleforge.diagnostics;
 
-import io.github.allbegray.pebbleforge.include.IncludeTrace;
+import io.github.allbegray.pebbleforge.trace.TemplateTrace;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.loader.Loader;
 
@@ -36,12 +36,16 @@ public final class TemplateDiagnostics {
         }
 
         List<DiagnosticFrame> frames = new ArrayList<>();
-        for (IncludeTrace.IncludeFrame frame : IncludeTrace.frames(error)) {
-            frames.add(frameFor(frame.caller(), frame.line(),
-                    "includes " + frame.target()));
+        for (TemplateTrace.Frame frame : TemplateTrace.frames(error)) {
+            String label = frame.kind() == TemplateTrace.Kind.EXTENDS
+                    ? "extends " + frame.target()
+                    : "includes " + frame.target();
+            frames.add(frameFor(frame.template(), frame.line(), label));
         }
-        frames.add(frameFor(pebble.getFileName(),
-                pebble.getLineNumber() == null ? 0 : pebble.getLineNumber(), null));
+        int errorLine = pebble.getLineNumber() == null ? 0 : pebble.getLineNumber();
+        if (frames.isEmpty() || !sameLocation(frames.getLast(), pebble.getFileName(), errorLine)) {
+            frames.add(frameFor(pebble.getFileName(), errorLine, null));
+        }
 
         String message = pebble.getPebbleMessage() != null
                 ? pebble.getPebbleMessage()
@@ -65,6 +69,10 @@ public final class TemplateDiagnostics {
         int errorIndex = line - start;
         int caret = firstNonWhitespace(source.get(errorIndex)) + 1;
         return new DiagnosticFrame(template, line, label, source, errorIndex, caret);
+    }
+
+    private static boolean sameLocation(DiagnosticFrame frame, String template, int line) {
+        return Objects.equals(frame.template(), template) && frame.line() == line;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
