@@ -25,4 +25,13 @@ record Scope(Set<String> names, boolean complete) {
     Scope incomplete() {
         return complete ? new Scope(names, false) : this;
     }
+
+    Scope retain(Set<String> relevant) {
+        if (names.isEmpty() || relevant.containsAll(names)) {
+            return this;
+        }
+        Set<String> kept = new LinkedHashSet<>(names);
+        kept.retainAll(relevant);
+        return new Scope(kept, complete);
+    }
 }

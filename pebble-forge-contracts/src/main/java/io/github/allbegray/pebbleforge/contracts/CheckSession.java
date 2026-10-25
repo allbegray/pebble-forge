@@ -11,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,6 +34,9 @@ final class CheckSession {
 
     private final Map<String, TemplateScan> scans = new TreeMap<>();
     private final Set<String> componentTargets = new HashSet<>();
+    private final Map<String, Integer> contextCounts = new HashMap<>();
+    private Map<String, Set<String>> relevantNames = Map.of();
+    private static final int MAX_CONTEXTS_PER_TEMPLATE = 4096;
     private final Set<String> analyzed = new HashSet<>();
     private final Set<ContextKey> evaluated = new HashSet<>();
     private final Set<String> evaluatedTemplates = new HashSet<>();
@@ -51,6 +55,8 @@ final class CheckSession {
 
     ContractResult check(String templateName) {
         TemplateScan scan = scan(templateName);
+        discover(List.of(templateName));
+        computeRelevantNames();
         analyze(scan, null);
         evaluate(scan, Scope.EMPTY, null);
         return result();
@@ -65,6 +71,7 @@ final class CheckSession {
         SortedSet<String> seeds = new TreeSet<>(universe);
         seeds.addAll(rootTemplates);
         discover(seeds);
+        computeRelevantNames();
 
         SortedSet<String> roots = inferRoots(universe);
         Set<String> reachable = reachableFrom(roots);
@@ -102,6 +109,37 @@ final class CheckSession {
             }
             forEachStaticTarget(scan, pending::addLast);
         }
+    }
+
+    private void computeRelevantNames() {
+        Map<String, Set<String>> relevant = new HashMap<>();
+        for (TemplateScan scan : scans.values()) {
+            Set<String> names = new HashSet<>();
+            for (TemplateScan.VariableRead read : scan.reads) {
+                names.add(read.name());
+            }
+            relevant.put(scan.templateName, names);
+        }
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (TemplateScan scan : scans.values()) {
+                Set<String> names = relevant.get(scan.templateName);
+                if (names == null) {
+                    continue;
+                }
+                for (TemplateScan.IncludeEdge edge : scan.includes) {
+                    if (edge.resolutionError() == null
+                            && edge.target() instanceof TemplateScan.StaticTarget target) {
+                        Set<String> child = relevant.get(target.name());
+                        if (child != null && names.addAll(child)) {
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+        relevantNames = relevant;
     }
 
     private Set<String> reachableFrom(Collection<String> roots) {
@@ -355,9 +393,18 @@ final class CheckSession {
             return;
         }
 
-        checkReads(scan, scope, site);
-        if (!evaluated.add(new ContextKey(scan.templateName, scope.names(),
-                scope.complete()))) {
+        Scope effective = scope.retain(
+                relevantNames.getOrDefault(scan.templateName, scope.names()));
+        checkReads(scan, effective, site);
+        if (!evaluated.add(new ContextKey(scan.templateName, effective.names(),
+                effective.complete()))) {
+            return;
+        }
+        int contexts = contextCounts.merge(scan.templateName, 1, Integer::sum);
+        if (contexts > MAX_CONTEXTS_PER_TEMPLATE) {
+            warning(scan.templateName, 0,
+                    "Contract scope analysis truncated after "
+                            + MAX_CONTEXTS_PER_TEMPLATE + " contexts");
             return;
         }
         evaluatedTemplates.add(scan.templateName);
@@ -366,7 +413,7 @@ final class CheckSession {
         try {
             analyze(scan, site);
             for (TemplateScan.IncludeEdge edge : scan.includes) {
-                evaluateInclude(scan, edge, scope, site);
+                evaluateInclude(scan, edge, effective, site);
             }
             for (TemplateScan.ComponentCall call : scan.componentCalls) {
                 evaluateComponent(scan, call);

@@ -146,6 +146,7 @@ Components stay closed over props and the model. The renderer shares the caller 
 - Only the common Pebble node types are traversed. `embed` and `cache` bodies are not fully analyzed yet.
 - Type checking is out of scope for this slice.
 - Include chains are encoded in diagnostic messages. `ContractDiagnostic` has no path field.
+- Scope evaluation is capped at 4,096 distinct scopes per template. When the cap is reached, the checker emits a warning and skips the remaining call-site evaluations for that template.
 
 ## Next slices
 
