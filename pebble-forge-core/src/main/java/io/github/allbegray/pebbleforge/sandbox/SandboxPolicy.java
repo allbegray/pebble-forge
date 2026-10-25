@@ -49,6 +49,7 @@ public final class SandboxPolicy {
     private final int maxRenderedChars;
     private final int maxLoopIterations;
     private final int maxIncludeDepth;
+    private final int maxSlotChars;
     private final MethodAccessValidator methodAccessValidator;
     private final Predicate<String> templateNameValidator;
     private final boolean denyPublicFields;
@@ -72,6 +73,7 @@ public final class SandboxPolicy {
         this.maxRenderedChars = builder.maxRenderedChars;
         this.maxLoopIterations = builder.maxLoopIterations;
         this.maxIncludeDepth = builder.maxIncludeDepth;
+        this.maxSlotChars = builder.maxSlotChars;
         this.methodAccessValidator = builder.methodAccessValidator;
         this.templateNameValidator = builder.templateNameValidator;
         this.denyPublicFields = builder.denyPublicFields;
@@ -119,6 +121,10 @@ public final class SandboxPolicy {
         return maxIncludeDepth;
     }
 
+    public int maxSlotChars() {
+        return maxSlotChars;
+    }
+
     public MethodAccessValidator methodAccessValidator() {
         return methodAccessValidator;
     }
@@ -159,6 +165,7 @@ public final class SandboxPolicy {
         private int maxRenderedChars = 1_000_000;
         private int maxLoopIterations = 100_000;
         private int maxIncludeDepth = 16;
+        private int maxSlotChars = 1_000_000;
         private MethodAccessValidator methodAccessValidator = new SandboxMethodAccessValidator();
         private Predicate<String> templateNameValidator = name -> true;
         private boolean denyPublicFields = true;
@@ -317,6 +324,14 @@ public final class SandboxPolicy {
                 throw new IllegalArgumentException("maxIncludeDepth must be -1 or greater");
             }
             this.maxIncludeDepth = maxIncludeDepth;
+            return this;
+        }
+
+        public Builder maxSlotChars(int maxSlotChars) {
+            if (maxSlotChars < -1) {
+                throw new IllegalArgumentException("maxSlotChars must be -1 or greater");
+            }
+            this.maxSlotChars = maxSlotChars;
             return this;
         }
 

@@ -165,6 +165,40 @@ class ComponentsTest {
     }
 
     @Test
+    void sharesTheSlotBudgetAcrossSlots() {
+        assertThatThrownBy(() -> render(
+                Map.of(
+                        "page.peb", """
+                                {% component "echo" %}{% slot "a" %}123456{% endslot %}{% slot "b" %}123456{% endslot %}{% endcomponent %}
+                                """,
+                        "components/echo.peb", """
+                                {{ slot("a") }}{{ slot("b") }}
+                                """),
+                "page.peb",
+                Map.of(),
+                Components.builder().maxSlotChars(10).build()))
+                .isInstanceOf(PebbleException.class)
+                .hasMessageContaining("more than 10 chars");
+    }
+
+    @Test
+    void allowsSlotContentWithinTheBudget() throws java.io.IOException {
+        String output = render(
+                Map.of(
+                        "page.peb", """
+                                {% component "echo" %}{% slot "a" %}12345{% endslot %}{% slot "b" %}67890{% endslot %}{% endcomponent %}
+                                """,
+                        "components/echo.peb", """
+                                {{ slot("a") }}{{ slot("b") }}
+                                """),
+                "page.peb",
+                Map.of(),
+                Components.builder().maxSlotChars(10).build());
+
+        assertThat(output.strip()).isEqualTo("1234567890");
+    }
+
+    @Test
     void withOnlyPreservesSlotContent() throws java.io.IOException {
         String output = render(
                 Map.of(

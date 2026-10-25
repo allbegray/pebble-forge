@@ -11,11 +11,13 @@ public final class Components {
     private final String root;
     private final String suffix;
     private final int maxDepth;
+    private final int maxSlotChars;
 
-    private Components(String root, String suffix, int maxDepth) {
+    private Components(String root, String suffix, int maxDepth, int maxSlotChars) {
         this.root = root;
         this.suffix = suffix;
         this.maxDepth = maxDepth;
+        this.maxSlotChars = maxSlotChars;
     }
 
     public static Builder builder() {
@@ -36,6 +38,19 @@ public final class Components {
 
     public int maxDepth() {
         return maxDepth;
+    }
+
+    public int maxSlotChars() {
+        return maxSlotChars;
+    }
+
+    public Components withMaxSlotChars(int maxSlotChars) {
+        return builder()
+                .root(root)
+                .suffix(suffix)
+                .maxDepth(maxDepth)
+                .maxSlotChars(maxSlotChars)
+                .build();
     }
 
     public String resolvePath(String componentName) {
@@ -72,6 +87,7 @@ public final class Components {
         private String root = "components";
         private String suffix = ".peb";
         private int maxDepth = 16;
+        private int maxSlotChars = -1;
 
         public Builder root(String root) {
             Objects.requireNonNull(root, "root");
@@ -106,8 +122,16 @@ public final class Components {
             return this;
         }
 
+        public Builder maxSlotChars(int maxSlotChars) {
+            if (maxSlotChars < -1) {
+                throw new IllegalArgumentException("maxSlotChars must be -1 or greater");
+            }
+            this.maxSlotChars = maxSlotChars;
+            return this;
+        }
+
         public Components build() {
-            return new Components(root, suffix, maxDepth);
+            return new Components(root, suffix, maxDepth, maxSlotChars);
         }
     }
 }

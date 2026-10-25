@@ -169,7 +169,18 @@ public final class PebbleForge {
             }
 
             if (components != null) {
-                Extension componentExtension = new ComponentsExtension(components);
+                Components effectiveComponents = components;
+                if (sandbox != null) {
+                    int slotLimit = components.maxSlotChars();
+                    int policyLimit = sandbox.maxSlotChars();
+                    int effectiveLimit = slotLimit < 0
+                            ? policyLimit
+                            : (policyLimit < 0 ? slotLimit : Math.min(slotLimit, policyLimit));
+                    if (effectiveLimit != slotLimit) {
+                        effectiveComponents = components.withMaxSlotChars(effectiveLimit);
+                    }
+                }
+                Extension componentExtension = new ComponentsExtension(effectiveComponents);
                 delegate.extension(sandbox == null
                         ? componentExtension
                         : new SandboxedExtension(componentExtension, sandbox));

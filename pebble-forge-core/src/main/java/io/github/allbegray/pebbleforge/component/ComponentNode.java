@@ -127,10 +127,11 @@ public final class ComponentNode extends AbstractRenderableNode {
 
     private Map<String, Object> captureSlots(
             PebbleTemplateImpl self, EvaluationContextImpl context) throws IOException {
+        SlotBudget budget = new SlotBudget(slotLimit(context));
         boolean hasExplicitSlots = body.getChildren().stream().anyMatch(SlotNode.class::isInstance);
         if (!hasExplicitSlots) {
             Map<String, Object> slots = new LinkedHashMap<>();
-            slots.put("body", new SafeString(renderBody(self, context, body)));
+            slots.put("body", new SafeString(renderBody(self, context, body, budget)));
             return slots;
         }
 
@@ -144,7 +145,8 @@ public final class ComponentNode extends AbstractRenderableNode {
                             self.getName(),
                             slotNode.getLineNumber());
                 }
-                slots.put(slotName, new SafeString(renderBody(self, context, slotNode.getBody())));
+                slots.put(slotName, new SafeString(renderBody(self, context, slotNode.getBody(),
+                        budget)));
             } else if (child instanceof TextNode textNode) {
                 String text = new String(textNode.getData());
                 if (!text.isBlank()) {
@@ -163,23 +165,34 @@ public final class ComponentNode extends AbstractRenderableNode {
         return slots;
     }
 
-    private String renderBody(
-            PebbleTemplateImpl self, EvaluationContextImpl context, BodyNode node)
-            throws IOException {
+    private int slotLimit(EvaluationContextImpl context) {
+        int outputLimit = context.getMaxRenderedSize();
+        int componentLimit = components.maxSlotChars();
+        if (componentLimit < 0) {
+            return outputLimit;
+        }
+        if (outputLimit < 0) {
+            return componentLimit;
+        }
+        return Math.min(outputLimit, componentLimit);
+    }
+
+    private String renderBody(PebbleTemplateImpl self, EvaluationContextImpl context, BodyNode node,
+            SlotBudget budget) throws IOException {
         StringWriter out = new StringWriter();
-        Writer writer = context.getMaxRenderedSize() < 0
+        Writer writer = budget.getMaxRenderedSize() < 0
                 ? out
-                : LimitedSizeWriter.from(out, new SizeCap(context.getMaxRenderedSize()));
+                : LimitedSizeWriter.from(out, budget);
         node.render(self, writer, context);
         return out.toString();
     }
 
-    private static final class SizeCap implements RenderedSizeContext {
+    private static final class SlotBudget implements RenderedSizeContext {
 
         private final int max;
         private final AtomicInteger written = new AtomicInteger();
 
-        private SizeCap(int max) {
+        private SlotBudget(int max) {
             this.max = max;
         }
 

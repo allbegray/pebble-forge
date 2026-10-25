@@ -111,6 +111,7 @@ public class PebbleForgeAutoConfiguration {
                 .maxRenderedChars(sandbox.getMaxRenderedChars())
                 .maxLoopIterations(sandbox.getMaxLoopIterations())
                 .maxIncludeDepth(sandbox.getMaxIncludeDepth())
+                .maxSlotChars(sandbox.getMaxSlotChars())
                 .forceAutoEscaping(sandbox.isForceAutoEscaping())
                 .allowComponents()
                 .allowTags("extends", "block");

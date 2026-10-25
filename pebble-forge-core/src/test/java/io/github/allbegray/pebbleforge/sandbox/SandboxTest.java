@@ -269,6 +269,26 @@ class SandboxTest {
     }
 
     @Test
+    void enforcesTheSlotCaptureBudget() {
+        SandboxPolicy policy = SandboxPolicy.builder().maxSlotChars(10).build();
+        PebbleEngine engine = PebbleForge.engine()
+                .loader(new MapLoader(Map.of(
+                        "page.peb", """
+                                {% component "echo" %}{% slot "a" %}123456{% endslot %}{% slot "b" %}123456{% endslot %}{% endcomponent %}
+                                """,
+                        "components/echo.peb", """
+                                {{ slot("a") }}{{ slot("b") }}
+                                """)))
+                .components(Components.defaults())
+                .sandbox(policy)
+                .build();
+
+        assertThatThrownBy(() -> engine.getTemplate("page.peb").evaluate(new StringWriter()))
+                .isInstanceOf(PebbleException.class)
+                .hasMessageContaining("more than 10 chars");
+    }
+
+    @Test
     void appliesTemplateNameRules() {
         SandboxPolicy policy = SandboxPolicy.builder()
                 .templateNameValidator(name -> name.startsWith("public/"))
