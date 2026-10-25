@@ -5,6 +5,7 @@ import io.github.allbegray.pebbleforge.contracts.ContractChecker;
 import io.github.allbegray.pebbleforge.contracts.ContractDiagnostic;
 import io.github.allbegray.pebbleforge.contracts.ContractResult;
 import io.github.allbegray.pebbleforge.contracts.ModelSchema;
+import io.github.allbegray.pebbleforge.contracts.ModelType;
 import io.pebbletemplates.pebble.loader.FileLoader;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -25,7 +26,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -132,15 +134,23 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
         SchemaFileLoader.Schema fileSchema = getSchemaFile().isPresent()
                 ? SchemaFileLoader.load(getSchemaFile().get().getAsFile())
                 : SchemaFileLoader.Schema.empty();
-        Set<String> variables = new LinkedHashSet<>(getVariables().get());
-        variables.addAll(fileSchema.variables());
+        Map<String, ModelType> variableTypes = new LinkedHashMap<>();
+        for (String name : getVariables().get()) {
+            variableTypes.put(name, ModelType.any());
+        }
+        variableTypes.putAll(fileSchema.variableTypes());
         boolean allowAnyVariable = getAllowAnyVariable().get() || fileSchema.allowAnyVariable();
 
-        ModelSchema schema = allowAnyVariable
-                ? ModelSchema.any()
-                : ModelSchema.builder()
-                        .variables(variables.toArray(String[]::new))
-                        .build();
+        ModelSchema schema;
+        if (allowAnyVariable) {
+            schema = ModelSchema.any();
+        } else {
+            ModelSchema.Builder builder = ModelSchema.builder();
+            for (Map.Entry<String, ModelType> variable : variableTypes.entrySet()) {
+                builder.variable(variable.getKey(), variable.getValue());
+            }
+            schema = builder.build();
+        }
 
         Set<String> templateNames = templateNames(root.toPath(), suffix);
         Set<String> rootTemplates = configuredTemplates(

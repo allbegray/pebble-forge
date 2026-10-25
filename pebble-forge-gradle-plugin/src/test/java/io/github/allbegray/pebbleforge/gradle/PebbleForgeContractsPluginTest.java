@@ -332,6 +332,151 @@ class PebbleForgeContractsPluginTest {
     }
 
     @Test
+    void typedYamlSchemaLoadsDeclaredProperties() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  page:
+                    type: object
+                    properties:
+                      title: string
+                      count: number
+                      tags:
+                        type: array
+                        items: string
+                  items:
+                    type: array
+                    items: object
+                  enabled: boolean
+                """, "{{ page.title }}{{ page.count }}{{ page.tags }}{{ items }}{{ enabled }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void typedYamlSchemaReportsAMissingProperty() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  page:
+                    type: object
+                    properties:
+                      title: string
+                """, "{{ page.missing }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Variable [page] has no property [missing]")
+                .contains("Pebble template contract check failed");
+    }
+
+    @Test
+    void typedJsonSchemaLoads() throws IOException {
+        writeSchemaProject("schema.json", """
+                {
+                  "variables": {
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "title": "string",
+                        "address": {
+                          "type": "object",
+                          "properties": {
+                            "city": "string"
+                          }
+                        }
+                      }
+                    },
+                    "items": {"type": "array", "items": "string"}
+                  }
+                }
+                """, "{{ page.title }}{{ page.address.city }}{{ items }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void invalidSchemaTypeNameNamesThePath() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  page:
+                    type: mystery
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Unknown schema type [mystery]")
+                .contains("variables.page")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void unknownSchemaTypeFieldNamesTheField() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  page:
+                    type: object
+                    unexpected: true
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Unknown schema type field [unexpected]")
+                .contains("variables.page")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void arrayItemsWithTheWrongShapeNamesTheField() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  items:
+                    type: array
+                    items: 7
+                """, "{{ items }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Schema type at variables.items.items")
+                .contains("must be a string or an object")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void legacyArraySchemaKeepsAttributesPermissive() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  - page
+                """, "{{ page.anything.goes }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void typedFileTypeWinsOverAnUntypedDslVariable() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  page:
+                    type: object
+                    properties:
+                      title: string
+                """, "{{ page.missing }}", "variables.add(\"page\")");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Variable [page] has no property [missing]");
+    }
+
+    @Test
     void missingSchemaFileFailsClearly() throws IOException {
         writeProject("{{ page.title }}", null);
         configureProject(false, "schemaFile.set(file(\"missing.yaml\"))");
