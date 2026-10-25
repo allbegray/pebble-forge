@@ -21,6 +21,163 @@ class ContractCheckerTest {
     }
 
     @Test
+    void acceptsTypedObjectProperties() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.title }}{{ page.count }}{{ page.address.city }}"),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "title", ModelType.string(),
+                                "count", ModelType.number(),
+                                "address", ModelType.object(Map.of(
+                                        "city", ModelType.string())))))
+                        .build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void reportsMissingTypedObjectProperty() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.missing }}"),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "title", ModelType.string())))
+                        .build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).isEqualTo("Variable [page] has no property [missing]");
+        });
+    }
+
+    @Test
+    void reportsMissingNestedTypedObjectProperty() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.address.zip }}"),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "address", ModelType.object(Map.of(
+                                        "city", ModelType.string())))))
+                        .build());
+
+        assertThat(result.errors()).singleElement().satisfies(error ->
+                assertThat(error.message())
+                        .isEqualTo("Variable [page] has no property [address.zip]"));
+    }
+
+    @Test
+    void reportsAttributeReadOnScalarVariable() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.title }}"),
+                ModelSchema.builder().variable("page", ModelType.string()).build());
+
+        assertThat(result.errors()).singleElement().satisfies(error ->
+                assertThat(error.message()).isEqualTo(
+                        "Variable [page] of type [string] has no property [title]"));
+    }
+
+    @Test
+    void typedAnyVariableAcceptsAttributes() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.anything.goes }}"),
+                ModelSchema.builder().variable("page", ModelType.any()).build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void untypedDeclaredVariableAcceptsAttributes() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.anything.goes }}"),
+                ModelSchema.builder().variable("page").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void dynamicAttributeNameIsSkipped() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page[key] }}"),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "title", ModelType.string())))
+                        .variable("key", ModelType.string())
+                        .build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void arrayAttributeReadSkipsDeeperChecks() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ items.name }}"),
+                ModelSchema.builder()
+                        .variable("items", ModelType.array(ModelType.string()))
+                        .build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void typedAttributeErrorInIncludeUsesTheCallSite() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ page.missing }}"),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "title", ModelType.string())))
+                        .build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Included template [partial.peb:1]")
+                    .contains("reads [page.missing]")
+                    .contains("which has no property [missing]");
+        });
+    }
+
+    @Test
+    void localVariableShadowsTheModelType() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% set page = "local" %}{{ page.title }}
+                        """),
+                ModelSchema.builder()
+                        .variable("page", ModelType.object(Map.of(
+                                "title", ModelType.string())))
+                        .build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void permissiveModelSkipsAttributeTypeChecks() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.missing }}"),
+                ModelSchema.any());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void undeclaredVariableReportsOnlyTheReadDiagnostic() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ page.title }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error ->
+                assertThat(error.message())
+                        .contains("Variable [page] is not declared")
+                        .doesNotContain("no property"));
+    }
+
+    @Test
     void reportsMissingModelVariable() {
         ContractResult result = check(
                 Map.of("page.peb", "{{ missing }}"),

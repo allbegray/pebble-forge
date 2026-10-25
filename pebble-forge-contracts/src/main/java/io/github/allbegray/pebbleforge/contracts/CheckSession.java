@@ -457,6 +457,7 @@ final class CheckSession {
                 relevantNames.getOrDefault(scan.templateName, scope.names()));
         Set<String> ancestorNames = ancestorVisibleDeclarations(scan, overriddenBlocks);
         checkReads(scan, effective, site, overriddenBlocks, ancestorNames);
+        checkAttributeReads(scan, effective, site, overriddenBlocks, ancestorNames);
         Set<String> overrides = Set.copyOf(overriddenBlocks);
         if (!evaluated.add(new ContextKey(scan.templateName, effective.names(),
                 effective.complete(), overrides))) {
@@ -538,27 +539,119 @@ final class CheckSession {
 
     private boolean isLocallyDeclared(TemplateScan scan, TemplateScan.VariableRead read,
             Set<String> ancestorNames, Set<String> overriddenBlocks) {
-        if (read.visible().contains(read.name())) {
+        return isLocallyDeclared(scan, read.name(), read.line(), read.block(),
+                read.visible(), read.closed(), ancestorNames, overriddenBlocks);
+    }
+
+    private boolean isLocallyDeclared(TemplateScan scan, String name, int line, String block,
+            Set<String> visible, boolean closed, Set<String> ancestorNames,
+            Set<String> overriddenBlocks) {
+        if (visible.contains(name)) {
             return true;
         }
-        if (read.closed()) {
+        if (closed) {
             return false;
         }
-        if (ancestorNames.contains(read.name())) {
+        if (ancestorNames.contains(name)) {
             return true;
         }
-        if (read.block() == null) {
-            for (Map.Entry<String, Set<String>> block : scan.blockDeclarations.entrySet()) {
-                if (overriddenBlocks.contains(block.getKey())
-                        || !block.getValue().contains(read.name())) {
+        if (block == null) {
+            for (Map.Entry<String, Set<String>> candidate : scan.blockDeclarations.entrySet()) {
+                if (overriddenBlocks.contains(candidate.getKey())
+                        || !candidate.getValue().contains(name)) {
                     continue;
                 }
-                if (scan.blockLines.get(block.getKey()) <= read.line()) {
+                if (scan.blockLines.get(candidate.getKey()) <= line) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    private void checkAttributeReads(TemplateScan scan, Scope scope, Site site,
+            Set<String> overriddenBlocks, Set<String> ancestorNames) {
+        if (model.allowsAny() || !scope.complete()) {
+            return;
+        }
+        boolean unknownParent = hasUnknownParentScope(scan);
+        for (TemplateScan.AttributeRead read : scan.attributeReads) {
+            if (!read.complete()) {
+                continue;
+            }
+            if (read.block() != null && overriddenBlocks.contains(read.block())) {
+                continue;
+            }
+            if (read.block() != null && unknownParent) {
+                continue;
+            }
+            if (read.visible().contains(read.variable())) {
+                continue;
+            }
+            if (!read.closed() && (scope.names().contains(read.variable())
+                    || isLocallyDeclared(scan, read.variable(), read.line(), read.block(),
+                            read.visible(), read.closed(), ancestorNames, overriddenBlocks))) {
+                continue;
+            }
+            ModelType type = model.typeOf(read.variable());
+            if (type == null) {
+                continue;
+            }
+            checkAttributePath(scan, read, type, site);
+        }
+    }
+
+    private void checkAttributePath(TemplateScan scan, TemplateScan.AttributeRead read,
+            ModelType type, Site site) {
+        ModelType current = type;
+        for (int index = 0; index < read.path().size(); index++) {
+            String property = read.path().get(index);
+            switch (current) {
+                case ModelType.Any ignored -> {
+                    return;
+                }
+                case ModelType.ArrayType ignored -> {
+                    return;
+                }
+                case ModelType.ObjectType object -> {
+                    ModelType next = object.properties().get(property);
+                    if (next == null) {
+                        reportAttributeError(scan, read, index, site, null);
+                        return;
+                    }
+                    current = next;
+                }
+                case ModelType.Scalar scalar -> {
+                    reportAttributeError(scan, read, index, site, scalar);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void reportAttributeError(TemplateScan scan, TemplateScan.AttributeRead read,
+            int index, Site site, ModelType.Scalar scalar) {
+        String property = String.join(".", read.path().subList(0, index + 1));
+        if (site == null) {
+            if (scalar == null) {
+                error(scan.templateName, read.line(),
+                        "Variable [" + read.variable() + "] has no property ["
+                                + property + "]");
+            } else {
+                error(scan.templateName, read.line(), "Variable [" + read.variable()
+                        + "] of type [" + scalar.describe() + "] has no property ["
+                        + property + "]");
+            }
+            return;
+        }
+        String detail = scalar == null
+                ? "which has no property [" + property + "]"
+                : "which has no property [" + property + "] on type ["
+                        + scalar.describe() + "]";
+        error(site.callerTemplate(), site.line(), site.relation() + " template ["
+                + scan.templateName + ":" + read.line() + "] reads ["
+                + read.variable() + "." + property + "], " + detail
+                + nestedChainSuffix(site.chain(), site.chainLabel()));
     }
 
     private boolean hasUnknownParentScope(TemplateScan scan) {

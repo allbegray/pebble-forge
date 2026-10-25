@@ -177,9 +177,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
             return;
         }
         if (node instanceof GetAttributeExpression attribute) {
-            scan(attribute.getNode());
-            scan(attribute.getAttributeNameExpression());
-            scanArguments(attribute.getArgumentsNode());
+            recordAttributeRead(attribute);
             return;
         }
         if (node instanceof FilterExpression filter) {
@@ -368,6 +366,38 @@ final class ContractVisitor extends AbstractNodeVisitor {
         flows.getLast().names.clear();
         flows.getLast().names.addAll(joined);
         scopes.getLast().names.addAll(joined);
+    }
+
+    private void recordAttributeRead(GetAttributeExpression outermost) {
+        List<GetAttributeExpression> chain = new ArrayList<>();
+        Expression<?> current = outermost;
+        while (current instanceof GetAttributeExpression attribute) {
+            chain.add(attribute);
+            current = attribute.getNode();
+        }
+
+        boolean complete = true;
+        List<String> path = new ArrayList<>();
+        for (int index = chain.size() - 1; index >= 0; index--) {
+            Expression<?> name = chain.get(index).getAttributeNameExpression();
+            if (name instanceof LiteralStringExpression literal) {
+                path.add(literal.getValue());
+            } else {
+                complete = false;
+            }
+        }
+
+        if (current instanceof ContextVariableExpression root) {
+            FlowFrame flow = flows.getLast();
+            scan.attributeReads.add(new TemplateScan.AttributeRead(root.getName(), path,
+                    outermost.getLineNumber(), currentBlock(), complete,
+                    Set.copyOf(flow.names), flow.closed));
+        }
+        for (GetAttributeExpression attribute : chain) {
+            scan(attribute.getAttributeNameExpression());
+            scanArguments(attribute.getArgumentsNode());
+        }
+        scan(current);
     }
 
     private void recordInclude(IncludeNodeView include) {

@@ -31,6 +31,7 @@ final class TemplateScan {
      */
     final Map<String, Integer> blockLines = new LinkedHashMap<>();
     final List<VariableRead> reads = new ArrayList<>();
+    final List<AttributeRead> attributeReads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();
     final List<IncludeEdge> includes = new ArrayList<>();
     final Map<String, Boolean> props = new LinkedHashMap<>();
@@ -44,6 +45,23 @@ final class TemplateScan {
     record VariableRead(String name, int line, String block, Set<String> visible,
                         boolean closed, boolean complete) {
         VariableRead {
+            visible = Set.copyOf(visible);
+            if (line < 0) {
+                throw new IllegalArgumentException("line must not be negative");
+            }
+        }
+    }
+
+    /**
+     * One attribute chain rooted at a context variable. The path holds only
+     * literal string segments; {@code complete} is false when any segment has
+     * a dynamic name.
+     */
+    record AttributeRead(String variable, List<String> path, int line, String block,
+                         boolean complete, Set<String> visible, boolean closed) {
+        AttributeRead {
+            Objects.requireNonNull(variable, "variable");
+            path = List.copyOf(path);
             visible = Set.copyOf(visible);
             if (line < 0) {
                 throw new IllegalArgumentException("line must not be negative");
