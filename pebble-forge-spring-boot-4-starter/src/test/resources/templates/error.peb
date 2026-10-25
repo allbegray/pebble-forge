@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en">
+<body>
+<h1>Something went wrong</h1>
+<pre>{{ pebbleDiagnosticsText | default("No template diagnostics available") | escape }}</pre>
+</body>
+</html>

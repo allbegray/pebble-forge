@@ -12,6 +12,7 @@ public class PebbleForgeProperties {
     private final Sandbox sandbox = new Sandbox();
     private final Security security = new Security();
     private final Language language = new Language();
+    private final Diagnostics diagnostics = new Diagnostics();
     private boolean devMode;
 
     public boolean isDevMode() {
@@ -36,6 +37,10 @@ public class PebbleForgeProperties {
 
     public Language getLanguage() {
         return language;
+    }
+
+    public Diagnostics getDiagnostics() {
+        return diagnostics;
     }
 
     public static class Components {
@@ -177,6 +182,37 @@ public class PebbleForgeProperties {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    public static class Diagnostics {
+
+        private boolean enabled = true;
+        private int contextLines = 2;
+        private boolean exposeInErrorAttributes = false;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public int getContextLines() {
+            return contextLines;
+        }
+
+        public void setContextLines(int contextLines) {
+            this.contextLines = contextLines;
+        }
+
+        public boolean isExposeInErrorAttributes() {
+            return exposeInErrorAttributes;
+        }
+
+        public void setExposeInErrorAttributes(boolean exposeInErrorAttributes) {
+            this.exposeInErrorAttributes = exposeInErrorAttributes;
         }
     }
 }

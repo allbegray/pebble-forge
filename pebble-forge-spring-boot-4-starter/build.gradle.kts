@@ -11,9 +11,11 @@ java {
 
 dependencies {
     api(project(":pebble-forge-spring"))
+    api(project(":pebble-forge-diagnostics"))
     api("io.pebbletemplates:pebble-spring-boot-starter:4.1.2")
     api("org.springframework.boot:spring-boot-autoconfigure:4.0.6")
 
+    compileOnly("org.springframework.boot:spring-boot-webmvc:4.0.6")
     compileOnly("org.springframework:spring-context:7.0.7")
     compileOnly("org.springframework:spring-web:7.0.7")
     compileOnly("org.springframework:spring-webmvc:7.0.7")
