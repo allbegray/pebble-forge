@@ -561,7 +561,8 @@ final class CheckSession {
                         || !candidate.getValue().contains(name)) {
                     continue;
                 }
-                if (scan.blockLines.get(candidate.getKey()) <= line) {
+                Integer blockLine = scan.blockLines.get(candidate.getKey());
+                if (blockLine != null && blockLine <= line) {
                     return true;
                 }
             }
@@ -614,6 +615,9 @@ final class CheckSession {
                     return;
                 }
                 case ModelType.ObjectType object -> {
+                    if (object.properties().isEmpty()) {
+                        return;
+                    }
                     ModelType next = object.properties().get(property);
                     if (next == null) {
                         reportAttributeError(scan, read, index, site, null);
