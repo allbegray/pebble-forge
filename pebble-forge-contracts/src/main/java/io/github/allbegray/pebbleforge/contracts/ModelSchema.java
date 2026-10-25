@@ -1,6 +1,8 @@
 package io.github.allbegray.pebbleforge.contracts;
 
-import java.util.LinkedHashSet;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -9,11 +11,11 @@ import java.util.Set;
  */
 public final class ModelSchema {
 
-    private final Set<String> variables;
+    private final Map<String, ModelType> variableTypes;
     private final boolean allowAny;
 
-    private ModelSchema(Set<String> variables, boolean allowAny) {
-        this.variables = Set.copyOf(variables);
+    private ModelSchema(Map<String, ModelType> variableTypes, boolean allowAny) {
+        this.variableTypes = Collections.unmodifiableMap(new LinkedHashMap<>(variableTypes));
         this.allowAny = allowAny;
     }
 
@@ -42,7 +44,7 @@ public final class ModelSchema {
      * @return true when the variable may be read
      */
     public boolean allows(String name) {
-        return allowAny || variables.contains(name);
+        return allowAny || variableTypes.containsKey(name);
     }
 
     /**
@@ -51,7 +53,23 @@ public final class ModelSchema {
      * @return the variable names
      */
     public Set<String> variables() {
-        return variables;
+        return variableTypes.keySet();
+    }
+
+    /**
+     * Returns the declared type of a variable.
+     *
+     * @param name the variable name
+     * @return the variable type, {@link ModelType#any()} for a permissive
+     *         schema, or null when the variable is not declared
+     */
+    public ModelType typeOf(String name) {
+        Objects.requireNonNull(name, "name");
+        ModelType type = variableTypes.get(name);
+        if (type != null) {
+            return type;
+        }
+        return allowAny ? ModelType.any() : null;
     }
 
     /**
@@ -74,22 +92,33 @@ public final class ModelSchema {
         public Builder() {
         }
 
-        private final Set<String> variables = new LinkedHashSet<>();
+        private final Map<String, ModelType> variableTypes = new LinkedHashMap<>();
         private boolean allowAny;
 
         /**
-         * Allows one variable.
+         * Allows one variable with the any type.
          *
          * @param name the variable name
          * @return this builder
          */
         public Builder variable(String name) {
-            variables.add(requireName(name));
+            return variable(name, ModelType.any());
+        }
+
+        /**
+         * Allows one variable with a declared type.
+         *
+         * @param name the variable name
+         * @param type the variable type
+         * @return this builder
+         */
+        public Builder variable(String name, ModelType type) {
+            variableTypes.put(requireName(name), Objects.requireNonNull(type, "type"));
             return this;
         }
 
         /**
-         * Allows several variables.
+         * Allows several variables with the any type.
          *
          * @param names the variable names
          * @return this builder
@@ -117,7 +146,7 @@ public final class ModelSchema {
          * @return the schema
          */
         public ModelSchema build() {
-            return new ModelSchema(variables, allowAny);
+            return new ModelSchema(variableTypes, allowAny);
         }
 
         private static String requireName(String name) {
