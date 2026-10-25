@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 590개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
+테스트는 602개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
@@ -181,7 +181,8 @@ plugins {
 }
 
 pebbleForgeContracts {
-    variables.add("page")
+    schemaFile.set(layout.projectDirectory.file("contracts.yaml"))
+    variables.add("page")              // 파일과 병합
     variables.add("items")
     componentRoot.set("components")
 
@@ -204,7 +205,7 @@ page:8: ERROR: Component [card] requires prop [title]
 page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
-기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
+기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `schemaFile`은 JSON이나 YAML에서 `variables`와 `allowAnyVariable`을 읽습니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
 
 Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 

@@ -368,7 +368,7 @@ Version 0.1 contains these features and the tests that prove them.
 5. Safe Spring Security functions and sandbox allowlist helpers.
 6. A runnable demo that renders a component, a sandbox rejection, and the language tags.
 
-The next releases add JSON or YAML schemas, a diagnostics CLI, Natural HTML control flow and composition, and JavaScript/CSS contexts. Natural HTML is a separate dialect loader because it needs a real HTML parser and a source map back to the original template.
+The next releases add a diagnostics CLI, Natural HTML control flow and composition, and JavaScript/CSS contexts. Natural HTML is a separate dialect loader because it needs a real HTML parser and a source map back to the original template.
 
 The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKLOG.md).
 
@@ -380,13 +380,13 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Contracts | 113 | Model variables, source-order flow, lexical include and extends scopes, block ownership, component props |
 | Diagnostics | 16 | Source frames, include and extends stacks, parse errors, cycle and stale-frame handling |
 | Natural HTML | 129 | Rewrite, rejection matrix, source map, XSS fixtures, jsoup preview, sandbox |
-| Gradle plugin | 20 | Contracts policy, render diagnostics, model values, frames, direct task registration |
+| Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot starter | 39 | Auto-configuration, web resolution, diagnostics, component roots |
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **590** | |
+| **Total** | **602** | |
 
 ## Non-goals
 
@@ -414,7 +414,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
-| Contracts | Build-time checks with source-order flow and include/extends scope propagation | Catches common errors without a full Java type checker. Direct reads are flow-sensitive inside a template; cross-template propagation is presence-based; components stay closed. |
+| Contracts | Build-time checks with source-order flow, include/extends scope propagation, and JSON/YAML variable schemas | Catches common errors without a full Java type checker. Direct reads are flow-sensitive inside a template; cross-template propagation is presence-based; components stay closed. The schema file is a flat name list. |
 | Escaping | Explicit context strategies plus pinned Pebble built-ins | Keeps the template author in control and lets Natural HTML choose the sink without replacing Pebble's parser |
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
 | Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
@@ -444,6 +444,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
 - Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template include/extends propagation remains presence-based, and a root read can see a non-overridden block declaration regardless of position.
+- The JSON/YAML contract schema is a flat variable list with one `allowAnyVariable` flag. It has no types, required fields, nullability, or nested model shapes. `$schema` is accepted and ignored.
 - A non-component, non-partial template that is not reachable from a root is checked as a fallback root. A nested template under the component root that is only included is treated as a partial.
 - Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.
 - A partial reached only through a dynamic include has no static incoming edge and is inferred as a root unless it is listed in `partialTemplates`.
@@ -469,7 +470,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 ## Open questions
 
 - Should a component allow unknown props? Current answer is yes. A warning mode is a later addition.
-- Should the contract schema move from the Gradle DSL to JSON or YAML?
+- Should the contract schema add types, required fields, and nested model shapes, or stay a flat variable list?
+- Should the stock Gradle task expose named component roots?
 - Should Natural HTML grow control flow and cross-template composition, and how should it declare a partial's sink context?
 - Should `url` percent-encode and reject protocol-relative URLs, or leave open-redirect policy to the application?
 - Should the two Gradle plugin IDs be published to the Plugin Portal together?

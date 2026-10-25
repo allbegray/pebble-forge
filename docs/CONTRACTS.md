@@ -22,6 +22,7 @@ plugins {
 }
 
 pebbleForgeContracts {
+    schemaFile.set(layout.projectDirectory.file("contracts.yaml"))
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
@@ -42,12 +43,35 @@ The default template directory is `src/main/resources/templates`. The default su
 | `templatesDirectory` | `src/main/resources/templates` | Root of the template tree |
 | `templateSuffix` | `.peb` | File suffix appended by the loader |
 | `componentRoot` | `components` | Default component directory under the template root |
+| `schemaFile` | none | Optional JSON or YAML file with model variables |
 | `variables` | empty | Model variables the template may read |
 | `allowAnyVariable` | `false` | Disable missing-variable errors |
 | `rootTemplates` | empty | Force root status for dual-role templates |
 | `partialTemplates` | empty | Exclude a template from root inference |
 
 Names are relative to the template root with the template suffix removed. `pages/account`, not `pages/account.peb`.
+
+### Schema file
+
+`schemaFile` loads model variables from JSON or YAML. `variables` and the file are merged. `allowAnyVariable` is true when either the DSL or the file enables it.
+
+```yaml
+variables:
+  - page
+  - items
+allowAnyVariable: false
+```
+
+```json
+{
+  "variables": ["page", "items"],
+  "allowAnyVariable": false
+}
+```
+
+The root must be an object. The only fields are `variables`, `allowAnyVariable`, and optional `$schema`. Unknown fields, wrong types, blank names, malformed files, and extensions other than `.json`, `.yaml`, or `.yml` fail the build. `$schema` is ignored; it is an editor hint.
+
+The schema is flat. It declares names and one permissive flag. It does not define types, required fields, nullability, or nested shapes.
 
 The core `Components` API supports a default root plus named roots such as `ui:card`, and the Boot starter binds `pebble.forge.components.roots.*`. The stock Gradle task still exposes one `componentRoot`; a custom task can pass a fully configured `Components` when a project checks namespaced components.
 
@@ -154,15 +178,14 @@ Components stay closed over props and the model. The renderer shares the caller 
 - A macro body is a closed scope with its arguments. It does not see outer template locals. A macro body reading component props can false-positive.
 - Macros imported from another template are not expanded.
 - Only the common Pebble node types are traversed. `embed` and `cache` bodies are not fully analyzed yet.
-- Type checking is out of scope for this slice.
+- Type checking is out of scope for this slice. The JSON/YAML schema is a flat variable-name list, not a type system.
 - Include chains are encoded in diagnostic messages. `ContractDiagnostic` has no path field.
 - Scope evaluation is capped at 4,096 distinct scopes per template. When the cap is reached, the checker emits a warning and skips the remaining call-site evaluations for that template.
 
 ## Next slices
 
 - Flow-sensitive cross-template include and extends summaries.
-- JSON or YAML schema loaded by the Gradle plugin.
-- Flow-sensitive local variable analysis.
-- Type checks for component props and model variables.
+- Typed JSON or YAML schema for component props and model variables.
+- Exact block ordering and switch exhaustiveness.
 - Publish the Gradle plugin to the Plugin Portal.
 - Inline suppression comments for intentional dynamic templates.

@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-590 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+602 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
@@ -183,7 +183,8 @@ plugins {
 }
 
 pebbleForgeContracts {
-    variables.add("page")
+    schemaFile.set(layout.projectDirectory.file("contracts.yaml"))
+    variables.add("page")              // merged with the file
     variables.add("items")
     componentRoot.set("components")
 
@@ -206,7 +207,7 @@ page:8: ERROR: Component [card] requires prop [title]
 page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
-The default template root is `src/main/resources/templates`. The default suffix is `.peb`. Set `allowAnyVariable` to `true` to check only components.
+The default template root is `src/main/resources/templates`. The default suffix is `.peb`. `schemaFile` loads `variables` and `allowAnyVariable` from JSON or YAML. Set `allowAnyVariable` to `true` to check only components.
 
 The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
