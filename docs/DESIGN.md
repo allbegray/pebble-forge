@@ -86,12 +86,13 @@ pebble-forge-core
     └── SandboxMethodAccessValidator  blocks dangerous classes, methods, and return types
 
 pebble-forge-contracts
-├── ModelSchema              allowed model variables
+├── ModelSchema              allowed model variables and their types
+├── ModelType                object properties, arrays, scalars, and any
 ├── ContractChecker          single-root and whole-set contract entry points
-├── CheckSession             parse, analyze, root inference, and scoped evaluation
+├── CheckSession             parse, analyze, root inference, scoped evaluation, attribute shapes
 ├── Scope                    visible names plus a completeness flag
-├── ContractVisitor          reads, locals, blocks, component calls, include and extends edges
-├── TemplateScan             context-free facts, block ownership, and typed failures
+├── ContractVisitor          reads, attribute paths, locals, blocks, component calls, include/extends edges
+├── TemplateScan             context-free facts, block lines, attribute reads, typed failures
 └── ContractDiagnostic       errors and warnings with template and line
 
 pebble-forge-diagnostics
@@ -383,17 +384,17 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Module | Tests | What it proves |
 | --- | --- | --- |
 | Core | 215 | Components, roots, language extensions, sandbox, escaping, include/extends traces, dev mode |
-| Contracts | 126 | Model variables, source-order flow, definite cross-template summaries, lexical include and extends scopes, block ownership, component props |
+| Contracts | 151 | Model variables, typed shapes, source-order flow, definite cross-template summaries, lexical include and extends scopes, block ownership, component props |
 | Diagnostics | 23 | Source frames, structured INCLUDE/EXTENDS/ERROR frames, source-mapped errors, include and extends stacks, parse errors, cycle and stale-frame handling |
 | Natural HTML | 130 | Rewrite, rejection matrix, source map, diagnostics integration, XSS fixtures, jsoup preview, sandbox |
-| Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
+| Gradle plugin | 45 | Contracts policy, typed JSON/YAML schemas, named roots, Plugin Portal metadata, render diagnostics, direct task registration |
 | CLI | 14 | Render output, JSON/YAML models, source frames, path and usage errors, exit codes |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot starter | 39 | Auto-configuration, web resolution, diagnostics, component roots |
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **637** | |
+| **Total** | **675** | |
 
 ## Non-goals
 
@@ -421,10 +422,12 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
-| Contracts | Build-time checks with source-order flow, definite cross-template summaries, and JSON/YAML variable schemas | Catches common errors without a full Java type checker. Direct reads and extends summaries are flow-sensitive; include propagation is a call-site snapshot; components stay closed. The schema file is a flat name list. |
+| Contracts | Build-time checks with source-order flow, definite cross-template summaries, and typed JSON/YAML shapes | Catches common errors without a full Java type checker. Direct reads and extends summaries are flow-sensitive; include propagation is a call-site snapshot; components stay closed. Types are attribute shapes, not expression types. |
 | Escaping | Explicit context strategies plus pinned Pebble built-ins | Keeps the template author in control and lets Natural HTML choose the sink without replacing Pebble's parser |
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
 | Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
+| Contract types | Typed JSON/YAML shapes plus static literal attribute paths | Checks model shape without claiming expression-level type inference |
+| Plugin publishing | Gradle Plugin Portal metadata for both IDs, excluded from Maven Central aggregation | Keeps plugin distribution separate from library artifacts |
 | Quality | Spotless misc checks plus Checkstyle and Javadoc `-Werror` | Catches hygiene and API documentation regressions without a mass reformat |
 | Diagnostics | Unified include/extends trace plus a source-frame formatter with typed frame kinds and source-mapped errors | Captures the runtime chain without replacing the renderer and gives consumers structured targets |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
@@ -452,7 +455,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
 - Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. Include propagation is a call-site snapshot. A root read can still see a non-overridden block declaration regardless of position.
-- The JSON/YAML contract schema is a flat variable list with one `allowAnyVariable` flag. It has no types, required fields, nullability, or nested model shapes. `$schema` is accepted and ignored.
+- The typed JSON/YAML contract schema describes object properties and array item shapes. It has no union, optional, or nullability types. `required` is parsed but not enforced. Attribute checks stop at arrays and skip dynamic or numeric index segments. `$schema` is accepted and ignored.
+- Root reads see a block declaration only when the block starts at or before the read line. Cross-template block execution order is not modeled. A switch without a default keeps the no-match path even when every declared case sets a name.
 - A non-component, non-partial template that is not reachable from a root is checked as a fallback root. A nested template under the component root that is only included is treated as a partial.
 - Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.
 - A partial reached only through a dynamic include has no static incoming edge and is inferred as a root unless it is listed in `partialTemplates`.
@@ -479,8 +483,9 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 ## Open questions
 
 - Should a component allow unknown props? Current answer is yes. A warning mode is a later addition.
-- Should the contract schema add types, required fields, and nested model shapes, or stay a flat variable list?
-- Should the stock Gradle task expose named component roots?
+- Should contract types grow expression-level checks, unions, optional values, and required-property enforcement?
+- How should cross-template block execution order be modeled?
+- The stock Gradle task now exposes named component roots.
 - Should Natural HTML grow control flow and cross-template composition, and how should it declare a partial's sink context?
 - Should `url` percent-encode and reject protocol-relative URLs, or leave open-redirect policy to the application?
 - Should the two Gradle plugin IDs be published to the Plugin Portal together?

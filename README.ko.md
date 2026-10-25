@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 637개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
+테스트는 675개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
@@ -174,7 +174,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### 계약 검사
 
-`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 템플릿 내부 직접 읽기는 소스 순서에 따라 검사합니다. 정적 include와 extends 부모는 호출자 또는 자식 스코프, 리터럴 `with` 키, 블록 소유권, 템플릿 사이의 확정된 흐름 종료 선언으로 따라갑니다.
+`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 템플릿 내부 직접 읽기는 소스 순서에 따라 검사합니다. 정적 include와 extends 부모는 호출자 또는 자식 스코프, 리터럴 `with` 키, 블록 소유권, 템플릿 사이의 확정된 흐름 종료 선언으로 따라갑니다. 타입이 있는 JSON/YAML 스키마는 객체 프로퍼티와 배열 아이템 모양을 선언합니다.
 
 ```kotlin
 plugins {
@@ -186,6 +186,7 @@ pebbleForgeContracts {
     variables.add("page")              // 파일과 병합
     variables.add("items")
     componentRoot.set("components")
+    componentRoots.put("ui", "ui-components")
 
     rootTemplates.add("pages/account")     // 루트로 강제
     partialTemplates.add("fragments/row")  // 루트 추론에서 제외
@@ -206,9 +207,22 @@ page:8: ERROR: Component [card] requires prop [title]
 page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
-기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `schemaFile`은 JSON이나 YAML에서 `variables`와 `allowAnyVariable`을 읽습니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
+기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `schemaFile`은 JSON이나 YAML에서 `variables`, 선택적 타입, `allowAnyVariable`을 읽습니다.
 
-Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
+```yaml
+variables:
+  page:
+    type: object
+    properties:
+      title: string
+  items:
+    type: array
+    items: string
+```
+
+`allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
+
+Gradle 플러그인은 Plugin Portal 배포 설정을 마쳤지만 아직 업로드하지 않았습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 
 ### Natural HTML
 

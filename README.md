@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-637 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+675 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
@@ -176,7 +176,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### Contract checks
 
-The contracts module parses templates at build time and checks model variable reads and component props. Direct reads are flow-sensitive inside a template. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, block ownership, and definite end-of-flow declarations across templates.
+The contracts module parses templates at build time and checks model variable reads and component props. Direct reads are flow-sensitive inside a template. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, block ownership, and definite end-of-flow declarations across templates. A typed JSON or YAML schema can declare object properties and array item shapes.
 
 ```kotlin
 plugins {
@@ -188,6 +188,7 @@ pebbleForgeContracts {
     variables.add("page")              // merged with the file
     variables.add("items")
     componentRoot.set("components")
+    componentRoots.put("ui", "ui-components")
 
     rootTemplates.add("pages/account")     // force root status
     partialTemplates.add("fragments/row")  // exclude from root inference
@@ -208,9 +209,22 @@ page:8: ERROR: Component [card] requires prop [title]
 page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
-The default template root is `src/main/resources/templates`. The default suffix is `.peb`. `schemaFile` loads `variables` and `allowAnyVariable` from JSON or YAML. Set `allowAnyVariable` to `true` to check only components.
+The default template root is `src/main/resources/templates`. The default suffix is `.peb`. `schemaFile` loads `variables`, optional types, and `allowAnyVariable` from JSON or YAML.
 
-The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
+```yaml
+variables:
+  page:
+    type: object
+    properties:
+      title: string
+  items:
+    type: array
+    items: string
+```
+
+Set `allowAnyVariable` to `true` to check only components.
+
+The Gradle plugin is configured for the Plugin Portal but has not been uploaded yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
 ### Natural HTML
 

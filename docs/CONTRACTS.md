@@ -26,6 +26,7 @@ pebbleForgeContracts {
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
+    componentRoots.put("ui", "ui-components")
 
     rootTemplates.add("pages/account")
     partialTemplates.add("fragments/row")
@@ -43,6 +44,7 @@ The default template directory is `src/main/resources/templates`. The default su
 | `templatesDirectory` | `src/main/resources/templates` | Root of the template tree |
 | `templateSuffix` | `.peb` | File suffix appended by the loader |
 | `componentRoot` | `components` | Default component directory under the template root |
+| `componentRoots` | empty | Namespace-to-root mappings such as `ui` to `ui-components` |
 | `schemaFile` | none | Optional JSON or YAML file with model variables |
 | `variables` | empty | Model variables the template may read |
 | `allowAnyVariable` | `false` | Disable missing-variable errors |
@@ -55,6 +57,8 @@ Names are relative to the template root with the template suffix removed. `pages
 
 `schemaFile` loads model variables from JSON or YAML. `variables` and the file are merged. `allowAnyVariable` is true when either the DSL or the file enables it.
 
+Legacy form:
+
 ```yaml
 variables:
   - page
@@ -62,22 +66,62 @@ variables:
 allowAnyVariable: false
 ```
 
+Typed form:
+
+```yaml
+variables:
+  page:
+    type: object
+    properties:
+      title: string
+      count: number
+      tags:
+        type: array
+        items: string
+  items:
+    type: array
+    items: object
+  enabled: boolean
+```
+
 ```json
 {
-  "variables": ["page", "items"],
-  "allowAnyVariable": false
+  "variables": {
+    "page": {
+      "type": "object",
+      "properties": {
+        "title": "string",
+        "address": {
+          "type": "object",
+          "properties": { "city": "string" }
+        }
+      }
+    },
+    "items": { "type": "array", "items": "string" }
+  }
 }
 ```
 
 The root must be an object. The only fields are `variables`, `allowAnyVariable`, and optional `$schema`. Unknown fields, wrong types, blank names, malformed files, and extensions other than `.json`, `.yaml`, or `.yml` fail the build. `$schema` is ignored; it is an editor hint.
 
-The schema is flat. It declares names and one permissive flag. It does not define types, required fields, nullability, or nested shapes.
+A typed variable may use `type`, `properties`, `required`, and `items`. Types are `any`, `string`, `number`, `boolean`, `object`, and `array`. Attribute reads with literal string names are checked against object properties. Missing properties and attributes on scalars fail. Arrays stop detailed checks, dynamic and numeric index segments are skipped, and `required` is parsed but not enforced. The schema is an attribute-shape layer, not an expression type system.
+
+`ModelType` exposes the same shapes to the Java API:
+
+```java
+ModelSchema schema = ModelSchema.builder()
+        .variable("page", ModelType.object(Map.of(
+                "title", ModelType.string(),
+                "items", ModelType.array(ModelType.object(Map.of())))))
+        .variable("enabled", ModelType.booleanType())
+        .build();
+```
 
 The core `Components` API supports a default root plus named roots such as `ui:card`, and the Boot starter binds `pebble.forge.components.roots.*`. The stock Gradle task still exposes one `componentRoot`; a custom task can pass a fully configured `Components` when a project checks namespaced components.
 
 `checkPebbleTemplates` runs as part of `check`.
 
-The plugin is not on the Gradle Plugin Portal yet. Use the included build or publish it locally until that changes.
+The plugin is configured for the Gradle Plugin Portal. The first upload needs a release version and Portal credentials; use the included build or publish locally until then.
 
 ## Root and partial policy
 
@@ -166,7 +210,7 @@ Components stay closed over props and the model. The renderer shares the caller 
 - Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. A child conditional set does not satisfy a parent read unless every branch leaves it visible.
 - Extends parent reads are reported at the parent template and line. Load and parse failures at the extends edge include an extends path. Parent-body read errors do not repeat the whole chain.
 - A dynamic or missing parent suppresses scope-dependent missing reads owned by blocks because the parent declarations are unknown. Model reads inside the child block are still checked.
-- Cross-template block ownership is presence-based, but block summaries are definite end-of-flow names. An unconditional block declaration can satisfy a later parent content read. A conditional or loop-only block declaration cannot. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
+- Cross-template block ownership is presence-based, but block summaries are definite end-of-flow names. An unconditional block declaration can satisfy a later parent content read. A conditional or loop-only block declaration cannot. A root read in the same template sees a block only when the block starts at or before the read line. Cross-template block execution order is not modeled. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
 - Dynamic include targets and dynamic `with` keys are warnings. A dynamic target whose base expression is a model read still checks that base.
 - A partial reached only through a dynamic include is inferred as a root unless it is listed in `partialTemplates`.
 - Components do not see caller locals at check time, even though runtime `includeTemplate` shares the scope chain.
@@ -178,13 +222,12 @@ Components stay closed over props and the model. The renderer shares the caller 
 - A macro body is a closed scope with its arguments. It does not see outer template locals. A macro body reading component props can false-positive.
 - Macros imported from another template are not expanded.
 - Only the common Pebble node types are traversed. `embed` and `cache` bodies are not fully analyzed yet.
-- Type checking is out of scope for this slice. The JSON/YAML schema is a flat variable-name list, not a type system.
+- Type checking is limited to model variable attribute shapes. Expressions, operators, filters, component prop types, arrays, dynamic indexes, unions, and nullability are out of scope. `required` is parsed but not enforced.
 - Include chains are encoded in diagnostic messages. `ContractDiagnostic` has no path field.
 - Scope evaluation is capped at 4,096 distinct scopes per template. When the cap is reached, the checker emits a warning and skips the remaining call-site evaluations for that template.
 
 ## Next slices
 
-- Typed JSON or YAML schema for component props and model variables.
-- Exact block ordering and switch exhaustiveness across extends.
-- Publish the Gradle plugin to the Plugin Portal.
+- Cross-template block execution order.
+- Publish the Gradle plugin to the Plugin Portal with release credentials.
 - Inline suppression comments for intentional dynamic templates.
