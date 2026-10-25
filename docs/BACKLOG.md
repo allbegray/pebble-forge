@@ -14,9 +14,9 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 337개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 112, 진단 16, 개발 모드 4, Gradle 플러그인 20, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 25, include 노드 뷰 1, 템플릿 추적 18, Boot 진단 26.
-- 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
-- 컴포넌트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
+- 테스트는 590개다. core 215, contracts 113, diagnostics 16, natural-html 129, Gradle 플러그인 20, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
+- 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
+- 컴포넌트, 네임스페이스 루트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 컨텍스트 인식 이스케이프, Natural HTML 표현식, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수, JMH 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질 검사, Spring Boot 데모 앱이 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
 - 라이선스, CI, Maven Central 배포 설정은 들어가 있다. 원격 push 뒤 CI 초록색과 Central 배포를 확인해야 한다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
@@ -27,7 +27,7 @@
 | --- | --- |
 | P0 | 공개 0.1 릴리스 전에 반드시 끝낸다. |
 | P1 | 0.2와 0.3 초반에 다룰 개발 경험과 안전성 작업이다. |
-| P2 | 0.3 이후 출력 형식과 통합 작업이다. |
+| P2 | 0.3 출력 형식과 통합 작업이다. PF-201부터 PF-208까지 완료했다. PF-202는 표현식 전용 PF-202.1 범위다. |
 | P3 | 지금은 하지 않는다. 필요해지면 다시 판단한다. |
 
 ## 요약
@@ -48,14 +48,14 @@
 | PF-108 | P1 | 템플릿별 전체 allowlist 정책 | XL | Done | PF-105 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
 | PF-107 | P1 | Spring Security 함수 확장 | S | Done | 없음 |
-| PF-201 | P2 | 컨텍스트 인식 이스케이프 | XL | 보류 | 없음 |
-| PF-202 | P2 | Natural HTML | XL | 보류 | PF-201 |
-| PF-203 | P2 | 컴포넌트 라이브러리 | M | 보류 | 없음 |
-| PF-204 | P2 | 성능 벤치마크 | M | 보류 | PF-004 |
-| PF-205 | P2 | 퍼징과 속성 기반 테스트 | M | 보류 | PF-004 |
-| PF-206 | P2 | Javadoc과 API 문서 | S | 보류 | PF-002 |
-| PF-207 | P2 | 코드 품질 도구 | S | 보류 | PF-003 |
-| PF-208 | P2 | Spring Boot 데모 앱 | M | 보류 | 없음 |
+| PF-201 | P2 | 컨텍스트 인식 이스케이프 | XL | Done | 없음 |
+| PF-202 | P2 | Natural HTML | XL | Done (PF-202.1) | PF-201 |
+| PF-203 | P2 | 컴포넌트 라이브러리 | M | Done | 없음 |
+| PF-204 | P2 | 성능 벤치마크 | M | Done | PF-004 |
+| PF-205 | P2 | 퍼징과 속성 기반 테스트 | M | Done | PF-004 |
+| PF-206 | P2 | Javadoc과 API 문서 | S | Done | PF-002 |
+| PF-207 | P2 | 코드 품질 도구 | S | Done | PF-003 |
+| PF-208 | P2 | Spring Boot 데모 앱 | M | Done | 없음 |
 
 ## 완료
 
@@ -69,6 +69,14 @@
 | PF-006 | `79f8123` SECURITY.md |
 | PF-105 | `4038221`, `ee9c89e`, `705dace`, `f71e5de`, `bbcfda6`, `934694d` 샌드박스 강화 |
 | PF-108 | `c91c3e1` 템플릿별 전체 allowlist |
+| PF-201 | `759ddb0` `html_attr`과 `url` 이스케이프 전략 |
+| PF-202 | `3460bbc` Natural HTML 표현식 로더 (PF-202.1) |
+| PF-203 | `3c62eb5`, `2d290f5`, `c4c858b` 네임스페이스 컴포넌트 루트 |
+| PF-204 | `44c7832` JMH 벤치마크와 로컬 기준선 |
+| PF-205 | `63fa223` jqwik 퍼징, 경로 jail, 허용 목록, 최소화 |
+| PF-206 | `7c02dfa` Javadoc `-Werror`, 통합 API 사이트, Pages 워크플로 |
+| PF-207 | `7c02dfa` Spotless와 Checkstyle |
+| PF-208 | `7a7b750` Spring Boot 4 데모 앱 |
 
 ## P0. 공개 0.1 릴리스
 
@@ -225,6 +233,17 @@
 | PF-207 | 코드 품질 도구 | S | Spotless, Checkstyle 또는 ErrorProne, 의존성 업데이트를 붙인다. | CI에서 포맷과 정적 검사가 실행된다. |
 | PF-208 | Spring Boot 데모 앱 | M | MVC, Security, 컴포넌트, 언어 확장을 한 앱에서 보여준다. | 앱을 실행하고 브라우저에서 페이지를 확인할 수 있다. |
 
+### P2 완료 내용
+
+- PF-201: `ContextEscaping`이 `html_attr`과 `url`을 등록한다. HTML 본문, 속성, URL은 새 전략과 기존 `html`로, JavaScript 문자열과 CSS는 Pebble 내장 `js`/`css`로 처리한다. 18개 XSS fixture와 62개 escaping 테스트가 있다.
+- PF-202.1: `pebble-forge-natural-html`이 브라우저에서 열리는 `.html` 템플릿의 `{{ }}` 표현식을 HTML 문맥에 맞춰 재작성한다. jsoup 1.20.1이 HTML을 검증하고, 삽입 전용 소스 맵이 줄 번호를 보존한다. 129개 테스트가 로더, 거부 문맥, 소스 맵, XSS, 브라우저 미리보기, 샌드박스를 검증한다. `{% %}` 태그, include, extends, 컴포넌트, 매크로, JavaScript/CSS 보간은 아직 지원하지 않는다.
+- PF-203: `Components`가 네임스페이스 루트 맵을 가진다. `ui:card` 같은 이름, jar classpath 컴포넌트, 중복 네임스페이스와 중복 루트 경로 검출을 지원한다. Spring Boot의 `pebble.forge.components.roots.*`도 연결했다.
+- PF-204: `pebble-forge-benchmarks`가 raw Pebble, Forge plain, 컴포넌트, 샌드박스, 언어 확장을 측정한다. `RESULTS.md`에 실제 M1 Max 측정값과 25% 로컬 회귀 규칙을 저장했다.
+- PF-205: `pebble-forge-fuzz`가 jqwik으로 파서, 경로 jail, 샌드박스 허용 목록을 검증한다. 실패 최소화기와 18개 checked-in corpus가 있다. 현재 제품 실패는 발견되지 않았다.
+- PF-206: Javadoc 경고 0개, `-Werror`, `javadocAll` 통합 사이트, GitHub Pages 워크플로를 추가했다. Pages 배포는 저장소에서 Pages를 켠 뒤 확인해야 한다.
+- PF-207: Spotless 7.0.4와 Checkstyle 10.26.1을 `build`/CI에 연결했다. 전체 Java 재포맷은 하지 않았다. Dependabot은 기존 설정을 유지한다.
+- PF-208: `pebble-forge-demo-app`이 MVC, Spring Security 폼 로그인과 CSRF, 컴포넌트, extends/block, 언어 확장을 한 앱에서 보여준다. 8개 MockMvc 테스트와 실제 브라우저 확인을 마쳤다.
+
 ## P3. 지금 하지 않는 것
 
 - 클라이언트 런타임과 islands.
@@ -233,14 +252,18 @@
 - 프로세스 내부 CPU 격리 보장.
 - Spring Boot 3 전용 모듈. 필요해지면 별도 모듈로 만든다.
 - 모든 표현식을 검사하는 완전한 정적 타입 시스템. PF-101은 변수와 props 범위에서 시작한다.
+- Natural HTML의 제어 흐름, include/extends/컴포넌트/매크로, JavaScript/CSS 보간. PF-202.1 이후 별도 설계가 필요하다.
+- 전체 Java 포맷터 도입. 현재 Spotless는 공백과 파일 끝 개행만 검사한다.
 
 ## 결정이 필요한 것
 
 1. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
 2. PF-101의 다음 스키마. 지금은 Gradle DSL을 쓴다. JSON과 YAML을 언제 추가할지 정한다.
-3. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
-4. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지. 현재 보류.
-5. PF-108의 메서드 컨텍스트를 스레드 로컬 대신 명시적 렌더 컨텍스트로 바꿀지.
+3. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지. 현재 보류.
+4. PF-108의 메서드 컨텍스트를 스레드 로컬 대신 명시적 렌더 컨텍스트로 바꿀지.
+5. Natural HTML에 제어 흐름과 include/extends/컴포넌트를 넣을지, 넣는다면 partial의 문맥을 어떻게 선언할지.
+6. URL 전략이 percent-encoding과 protocol-relative URL 거부까지 맡을지, open redirect 정책은 애플리케이션에 둘지.
+7. Gradle 플러그인 두 개를 Plugin Portal에 함께 배포할지.
 
 ## 릴리스 기준
 
@@ -248,5 +271,5 @@
 | --- | --- | --- |
 | 0.1.0 | 현재 기능 | P0 완료, Maven Central 배포, CI 초록색, 라이선스와 릴리스 노트 |
 | 0.2.0 | PF-101, PF-102, PF-103, PF-104, PF-105, PF-107, PF-108 | 계약 검사, 진단, 핫 리로드, 언어 후속, 샌드박스 강화, 보안 함수 확장, 템플릿별 전체 allowlist |
-| 0.3.0 | PF-106, PF-201, PF-202, PF-203 | WebFlux, 컨텍스트 이스케이프, Natural HTML, 컴포넌트 라이브러리 |
+| 0.3.0 | PF-201부터 PF-208까지 | 컨텍스트 이스케이프, Natural HTML PF-202.1, 컴포넌트 루트, 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질, Spring Boot 데모 앱 |
 | 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |

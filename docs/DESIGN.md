@@ -49,7 +49,7 @@ The mode is a policy object. It does not change the expression language. A templ
 pebble-forge-core
 ├── PebbleForge              builder that returns a normal PebbleEngine
 ├── component
-│   ├── Components           configuration: root, suffix, depth
+│   ├── Components           configuration: roots, namespaces, suffix, depth
 │   ├── ComponentNode        renders a component template with props and slots
 │   ├── SlotNode             captures a named block
 │   ├── PropsNode            validates required props and applies defaults
@@ -63,6 +63,8 @@ pebble-forge-core
 │   ├── ExtendsExtension     replaces extends with a trace-aware node
 │   ├── ForgeExtendsNode     extends tracing, cycle detection, and parent loading
 │   └── ForgeExtendsTokenParser  delegates to Pebble's extends parser
+├── escape
+│   └── ContextEscaping      html_attr and url strategies on Pebble's escaper
 ├── language
 │   ├── LanguageExtension    switch, break, continue, with, and a break-aware for
 │   ├── ForNode              for loop that catches break and continue signals
@@ -96,6 +98,14 @@ pebble-forge-diagnostics
 ├── TemplateDiagnostics        builds source frames from a PebbleException and TemplateTrace
 └── DiagnosticReport           structured frames and terminal formatting
 
+pebble-forge-natural-html
+├── NaturalHtml                loader entry point and analyze()
+├── NaturalHtmlLoader          reads, rewrites, and delegates to Pebble
+├── NaturalHtmlAnalyzer        expression classification, jsoup validation, rewrite
+├── HtmlRegions                allowed and forbidden HTML regions
+├── ExpressionScanner          string- and brace-aware {{ }} boundaries
+└── SourceMap                  insert-only generated-to-original offset map
+
 pebble-forge-gradle-plugin
 ├── CheckPebbleTemplatesTask  walks once, applies root/partial policy, and calls checkAll
 └── RenderPebbleTemplateTask  renders one template with a model and prints diagnostics
@@ -115,6 +125,17 @@ pebble-forge-spring-boot-4-starter
 
 pebble-forge-demo
 └── Demo                     renders a component under a sandbox policy
+
+pebble-forge-demo-app
+├── DemoApplication          Spring Boot 4 MVC application
+├── DemoController           home, components, language, admin, and login pages
+└── SecurityConfig           in-memory users and form login
+
+pebble-forge-benchmarks
+└── five JMH states          raw, forge plain, component, sandbox, language
+
+pebble-forge-fuzz
+└── property tests           parser, path jail, allowlists, minimizer, corpus
 ```
 
 The public builder is the only entry point:
@@ -137,6 +158,8 @@ PebbleEngine engine = PebbleForge.engine()
 ```
 
 `Components.suffix` is appended by Forge. If the loader already appends a suffix, set the component suffix to `""`. The Spring Boot starter does this. A double suffix is the most common setup mistake.
+
+`Components` stores a namespace-keyed root map. The empty namespace is the default root and is used by an unqualified component name. A named root uses `namespace:name`. Duplicate namespaces and duplicate normalized root paths fail at build time. Jar components are ordinary classpath resources, so the loader resolves them without a separate component classloader.
 
 ## Components
 
@@ -211,6 +234,22 @@ The contracts module parses each template once into context-free facts. A node v
 A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads with a source-order flow snapshot, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and follows static extends parents with the child's visible declarations. `if` and `switch` branches join by intersection. A component is evaluated closed over props and the model. Block ownership excludes declarations from a parent block that a child overrides, while root declarations flow both ways. Evaluation is memoized by template, scope, and overridden block set. Cross-template propagation remains presence-based.
 
 A template with no incoming static include or extends edge is a root. Direct component entry points and static component call targets are roots. A nested template under the component root that is only included is a partial. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. A non-component, non-partial template that no root reaches is checked as a fallback root. Include, extends, and component cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete.
+
+## Context-aware escaping
+
+Pebble Forge registers two strategies on Pebble's `EscapeFilter`: `html_attr` for attribute values and `url` for whole URLs in an HTML attribute. `html`, `js`, and `css` stay Pebble's built-ins. `PebbleForge.engine()` registers the two new strategies before `build()`; plain Pebble builders call `ContextEscaping.register`.
+
+The strategies are explicit. The template author chooses the sink. `html_attr` escapes markup characters, whitespace, `=`, backtick, NUL, and C0 controls. `url` validates the scheme against `http`, `https`, `mailto`, and `tel`, rejects others with `#`, and then applies `html_attr`. It does not percent-encode or validate hosts.
+
+`SafeString` bypasses every strategy. Slots and `raw` output are trusted HTML, not values that can be reused in URL, JavaScript, or CSS sinks.
+
+## Natural HTML
+
+`pebble-forge-natural-html` is an opt-in loader. It reads a browser-openable `.html` file, uses jsoup 1.20.1 with position tracking to validate the document and find HTML regions, scans Pebble print expressions, and inserts a context escape around each expression. Pebble still parses and renders the rewritten source.
+
+The first slice is expressions only. Text and RCDATA get `html`, quoted attributes get `html_attr`, and quoted URL attributes get `url`. All `{% ... %}` tags, Pebble comments, script/style interpolation, comments, tag and attribute names, unquoted values, event handlers, `srcdoc`, `srcset`, `ping`, and foreign-content subtrees are rejected. The insertion is newline-free, so Pebble errors retain original line numbers. `SourceMap` maps generated offsets back to original offsets and columns.
+
+This is PF-202.1. Cross-template composition and JavaScript/CSS contexts remain open.
 
 ## Sandbox
 
@@ -329,33 +368,25 @@ Version 0.1 contains these features and the tests that prove them.
 5. Safe Spring Security functions and sandbox allowlist helpers.
 6. A runnable demo that renders a component, a sandbox rejection, and the language tags.
 
-The next releases add JSON or YAML schemas, a diagnostics CLI, and context-aware escaping. Natural HTML authoring is a separate dialect loader. It does not belong in the first release because it needs a real HTML parser and a source map back to the original template.
+The next releases add JSON or YAML schemas, a diagnostics CLI, Natural HTML control flow and composition, and JavaScript/CSS contexts. Natural HTML is a separate dialect loader because it needs a real HTML parser and a source map back to the original template.
 
 The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKLOG.md).
 
 ## Verification
 
-| Area | Tests | What it proves |
+| Module | Tests | What it proves |
 | --- | --- | --- |
-| Components | 15 | Real templates, real engine, exact output, slot isolation |
-| Language | 28 | Switch, break, continue, with, destructuring, multi-value cases, sandbox on and off |
-| Iteration budget | 3 | Sequential loops, nested loops, per-render reset |
-| For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
-| Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
-| Contracts | 112 | Model variables, source-order flow, lexical include and extends scopes, block ownership, root policy, fallback roots, component props, dynamic names, cycles, missing targets |
-| Diagnostics | 16 | Source frames, include and extends stacks, nested chains, parse errors, missing source, cycle and stale-frame handling |
-| Gradle plugin | 20 | TestKit projects cover contracts policy, render diagnostics, model values, frames, and direct task registration |
-| Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
-| Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
-| File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
-| Template limits | 6 | Resolver matching, loop/include/slot limits by prefix |
-| Include node view | 1 | Read-only target, with arguments, and line for static analysis |
-| Template trace | 18 | Include/extends frame order, cycle safety, include depth, marker attachment, wrapper cleanup |
-| Per-template policies | 25 | Resolver matching, filter/tag/function/method enforcement, literal templates, name validation, include, extends, macro, embed, and component ownership |
+| Core | 215 | Components, roots, language extensions, sandbox, escaping, include/extends traces, dev mode |
+| Contracts | 113 | Model variables, source-order flow, lexical include and extends scopes, block ownership, component props |
+| Diagnostics | 16 | Source frames, include and extends stacks, parse errors, cycle and stale-frame handling |
+| Natural HTML | 129 | Rewrite, rejection matrix, source map, XSS fixtures, jsoup preview, sandbox |
+| Gradle plugin | 20 | Contracts policy, render diagnostics, model values, frames, direct task registration |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
-| Boot auto-config | 11 | Application context, official auto-config ordering, policy override, policy resolver, language switch, dev mode, limits resolver |
-| Boot web | 1 | MockMvc request through the official Pebble view resolver |
-| Boot diagnostics | 26 | Render-error 500 dispatch, diagnostics attributes, error pages, full container, disabled mode, extends frames |
+| Boot starter | 39 | Auto-configuration, web resolution, diagnostics, component roots |
+| Benchmarks | 5 | Smoke renders for every measured template |
+| Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
+| Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
+| **Total** | **590** | |
 
 ## Non-goals
 
@@ -384,6 +415,10 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
 | Contracts | Build-time checks with source-order flow and include/extends scope propagation | Catches common errors without a full Java type checker. Direct reads are flow-sensitive inside a template; cross-template propagation is presence-based; components stay closed. |
+| Escaping | Explicit context strategies plus pinned Pebble built-ins | Keeps the template author in control and lets Natural HTML choose the sink without replacing Pebble's parser |
+| Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
+| Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
+| Quality | Spotless misc checks plus Checkstyle and Javadoc `-Werror` | Catches hygiene and API documentation regressions without a mass reformat |
 | Diagnostics | Unified include/extends trace plus a source-frame formatter | Captures the runtime chain without replacing the renderer |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
 | Gradle diagnostics | Separate `renderPebbleTemplate` task | Renders a model without a JSON dependency and prints source frames on failure |
@@ -421,11 +456,23 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The total loop budget is keyed by the render scope chain. Parallel branches deep-copy that scope chain and get a separate budget.
 - `with only` hides model and extension globals. Internal slot state, locale, and template are preserved. `_context` becomes empty in the isolated scope.
 - `for key, value` uses the map key for entries and a zero-based index for other iterables.
+- Context escaping is explicit. It does not infer a sink; Natural HTML does that for print expressions. `SafeString` bypasses every strategy. `url` validates schemes, not hosts, paths, or open redirects.
+- Natural HTML supports expressions only. It rejects all `{% ... %}` tags, Pebble comments, includes, extends, components, macros, script/style interpolation, and foreign-content subtrees. It is per-file and has no cross-template context propagation.
+- Natural HTML analysis-time errors are `NaturalHtmlException`, not `PebbleException`. The message carries line and column; `TemplateDiagnostics` source frames are for render errors. Columns count UTF-16 code units.
+- The browser preview test parses the source and rendered output with jsoup. It is not real-browser automation.
+- Component roots use a namespace map. A named-only configuration has no default root; unqualified names fail. Duplicate normalized root paths fail at build time. The stock Gradle check task exposes one `componentRoot`; the core API and Boot starter support named roots.
+- Benchmark numbers are local to one machine and JDK. They are a local review gate, not a CI timing gate.
+- The fuzz suite found no product failure in the committed trials. Its corpus is a minimized regression set, not a set of reproduced product bugs.
+- Javadoc deployment needs GitHub Pages enabled. The workflow has not run from the local checkout.
+- Spotless checks whitespace and final newlines only. A full Java reformat was deliberately not applied.
 
 ## Open questions
 
 - Should a component allow unknown props? Current answer is yes. A warning mode is a later addition.
 - Should the contract schema move from the Gradle DSL to JSON or YAML?
+- Should Natural HTML grow control flow and cross-template composition, and how should it declare a partial's sink context?
+- Should `url` percent-encode and reject protocol-relative URLs, or leave open-redirect policy to the application?
+- Should the two Gradle plugin IDs be published to the Plugin Portal together?
 - Should contract components see caller locals, matching runtime `includeTemplate`, or stay closed over props?
 - Should the Gradle plugin be published to the Plugin Portal?
 - Should the output limit and global variables become per-template? Current answer is no. The engine-wide values are conservative.

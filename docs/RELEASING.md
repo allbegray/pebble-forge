@@ -1,6 +1,6 @@
 # Releasing Pebble Forge
 
-This document is the release checklist. It covers the five published modules: core, contracts, diagnostics, spring, and the Boot 4 starter. `pebble-forge-demo` and `pebble-forge-gradle-plugin` are not published yet.
+This document is the release checklist. It covers the six published modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-gradle-plugin`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ The build signs only when both properties exist. Maven Central rejects unsigned 
 ./gradlew nmcpCheckAggregationFiles
 ```
 
-`publishToMavenLocal` must produce all five POMs, jars, sources jars, and javadoc jars.
+`publishToMavenLocal` must produce all six POMs, jars, sources jars, and javadoc jars.
 
 Resolve the core artifact from a separate sample project against `mavenLocal()` and run it. This catches broken POM metadata before the upload.
 
@@ -76,6 +76,7 @@ Wait for Maven Central to index the release, then check the coordinates.
 
 ```text
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-core/0.1.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-natural-html/0.1.0/
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-contracts/0.1.0/
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-diagnostics/0.1.0/
 https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring/0.1.0/
@@ -98,7 +99,9 @@ Add a new `Unreleased` section to `CHANGELOG.md`.
 
 - [ ] Version set in the root build file.
 - [ ] `CHANGELOG.md` updated.
-- [ ] `./gradlew clean build` passes.
+- [ ] `./gradlew clean build javadoc javadocAll` passes.
+- [ ] `./gradlew spotlessCheck checkstyleMain checkstyleTest` passes.
+- [ ] Aggregate Javadoc site is deployed or the Pages workflow is ready.
 - [ ] `./gradlew publishToMavenLocal` passes.
 - [ ] Separate local consumer resolves the artifacts.
 - [ ] `./gradlew nmcpCheckAggregationFiles` passes.

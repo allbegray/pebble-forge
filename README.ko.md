@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Pebble Forge는 Pebble 4 확장팩입니다. Pebble 템플릿을 그대로 유효하게 두고, 다른 템플릿 엔진이 더 잘하는 기능을 더합니다. 0.1 버전은 템플릿으로 정의하는 컴포넌트, 권한 기반 샌드박스, Spring Boot와 Spring Security 연동을 제공합니다.
+Pebble Forge는 Pebble 4 확장팩입니다. Pebble 템플릿을 그대로 유효하게 두고, 다른 템플릿 엔진이 더 잘하는 기능을 더합니다. 템플릿으로 정의하는 컴포넌트, 권한 기반 샌드박스, 컨텍스트 인식 이스케이프, Natural HTML, 빌드 시 계약 검사, Spring Boot와 Spring Security 연동을 제공합니다.
 
 이름은 임시 이름입니다. Pebble 포크가 아니라 확장 라이브러리입니다.
 
@@ -18,19 +18,23 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 337개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 590개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
 | 모듈 | 역할 |
 | --- | --- |
-| `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, `PebbleForge.engine()` 빌더 |
+| `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, 컨텍스트 인식 이스케이프, `PebbleForge.engine()` 빌더 |
+| `pebble-forge-natural-html` | 브라우저에서 바로 열리는 `.html` 템플릿과 컨텍스트별 표현식 재작성 |
+| `pebble-forge-benchmarks` | 일반 Pebble, 컴포넌트, 샌드박스, 언어 확장의 수동 JMH 벤치마크 |
 | `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
 | `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include/extends 추적 |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates`와 `renderPebbleTemplate` Gradle 태스크 |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
 | `pebble-forge-demo` | 컴포넌트와 샌드박스를 실행하는 데모 |
+| `pebble-forge-demo-app` | 컴포넌트, 언어 확장, Spring Security를 보여주는 Spring Boot 4 MVC 데모 |
+| `pebble-forge-fuzz` | 파서, 경로 jail, 허용 목록을 검증하는 jqwik 속성 테스트 |
 
 ## 코어
 
@@ -87,6 +91,43 @@ PebbleEngine engine = PebbleForge.engine()
 `Components.suffix`는 Forge가 붙입니다. 로더가 이미 `.peb`를 붙인다면 `Components.suffix("")`로 두세요. Spring Boot 스타터는 이렇게 설정합니다. 접미사가 두 번 붙는 문제가 가장 흔한 설정 실수입니다.
 
 슬롯은 미리 렌더링하고 안전한 문자열로 표시합니다. `{{ slot("body") }}`처럼 직접 출력하세요. 슬롯을 문자열과 이어 붙이거나 필터에 넘기면 일반 문자열로 바뀌어 다시 이스케이프됩니다. 슬롯 함수는 실제로 캡처한 슬롯 값만 출력하므로, `with` 블록으로 슬롯 내용을 위조해서 이스케이프를 우회할 수 없습니다.
+
+컴포넌트 루트를 여러 개 둘 수 있습니다.
+
+```java
+Components components = Components.builder()
+        .root("components")
+        .root("ui", "lib/components")
+        .root("admin", "admin/components")
+        .suffix("")
+        .build();
+```
+
+```twig
+{% component "card" %}{% endcomponent %}
+{% component "ui:card" %}{% endcomponent %}
+```
+
+네임스페이스 없는 이름은 기본 루트를 씁니다. 네임스페이스가 있는 루트는 `namespace:name`으로 찾습니다. 중복 네임스페이스와 정규화된 루트 경로 중복은 빌드 시 실패합니다. jar 안의 classpath 리소스로 포장한 컴포넌트도 같은 로더로 동작합니다.
+
+### 컨텍스트 인식 이스케이프
+
+`PebbleForge.engine()`은 Pebble 기본 전략 위에 두 가지 전략을 더 등록합니다.
+
+| 문맥 | 전략 |
+| --- | --- |
+| HTML 본문 | `html` |
+| HTML 속성 값 | `html_attr` |
+| 속성 안의 전체 URL | `url` |
+| 따옴표 안 JavaScript 문자열 | `js` |
+| `<style>` 안 CSS | `css` |
+
+```twig
+<a href="{{ link | escape("url") }}" title="{{ title | escape("html_attr") }}">{{ body }}</a>
+<script>const name = "{{ name | escape("js") }}";</script>
+```
+
+`url`은 `http`, `https`, `mailto`, `tel`과 상대 URL을 허용하고 나머지 스킴은 `#`으로 바꿉니다. `js`는 JavaScript 식이 아니라 따옴표 안 문자열용입니다. `slot()`이나 `raw`의 `SafeString`은 모든 전략을 우회합니다. 자세한 내용은 [docs/ESCAPING.md](docs/ESCAPING.md)를 참고하세요.
 
 ### 템플릿 언어 확장
 
@@ -166,6 +207,26 @@ page:8: WARNING: Component [card] does not declare prop [footer]
 기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
 
 Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
+
+### Natural HTML
+
+`pebble-forge-natural-html` 모듈은 브라우저에서 바로 열리는 `.html` 템플릿 로더를 제공합니다. 표현식은 Pebble이 파싱하기 전에 문맥별 이스케이프로 재작성됩니다.
+
+```java
+ClasspathLoader base = new ClasspathLoader();
+base.setPrefix("templates/");
+base.setSuffix(".html");
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(NaturalHtml.loader(base))
+        .build();
+```
+
+```html
+<a href="{{ page.url }}" title="{{ page.title }}">{{ page.body }}</a>
+```
+
+첫 범위는 표현식만 지원합니다. `{% ... %}` 태그, include, extends, 컴포넌트, 매크로, JavaScript, CSS 보간은 거부합니다. jsoup이 HTML을 검증하고, 삽입은 줄 번호를 보존하며, 소스 맵이 생성 위치를 원본 파일로 되돌립니다. 자세한 내용은 [docs/NATURAL-HTML.md](docs/NATURAL-HTML.md)를 참고하세요.
 
 ### 진단
 
@@ -419,6 +480,8 @@ pebble.forge.dev-mode=false
 - [계약 검사](docs/CONTRACTS.md)
 - [템플릿 정책](docs/TEMPLATE-POLICIES.md)
 - [진단](docs/DIAGNOSTICS.md)
+- [컨텍스트 인식 이스케이프](docs/ESCAPING.md)
+- [Natural HTML](docs/NATURAL-HTML.md)
 - [보안 정책](SECURITY.md)
 - [릴리스 체크리스트](docs/RELEASING.md)
 

@@ -53,6 +53,8 @@ The sandbox policy is fixed per engine. If one engine serves templates from diff
 
 The sandbox protects capabilities. It does not protect CPU time, memory, or wall-clock time. The path jail is lexical and does not resolve symlinks. `break` and `continue` are validated lexically, so a macro can move the signal across a call boundary.
 
+Context escaping is a data-sink boundary, not an HTML sanitizer. `html_attr` and `url` protect ordinary values in known sinks. `SafeString` from `slot()`, `raw`, or a custom function bypasses every strategy. The URL strategy validates schemes, not hosts, paths, or open redirects. Natural HTML rejects known safe producers and unsafe contexts, but a custom function that returns `SafeString` remains trusted application code.
+
 See [docs/DESIGN.md](docs/DESIGN.md) for the full list of accepted limits.
 
 ## Safe deployment guidance

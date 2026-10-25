@@ -41,13 +41,15 @@ The default template directory is `src/main/resources/templates`. The default su
 | --- | --- | --- |
 | `templatesDirectory` | `src/main/resources/templates` | Root of the template tree |
 | `templateSuffix` | `.peb` | File suffix appended by the loader |
-| `componentRoot` | `components` | Directory under the template root |
+| `componentRoot` | `components` | Default component directory under the template root |
 | `variables` | empty | Model variables the template may read |
 | `allowAnyVariable` | `false` | Disable missing-variable errors |
 | `rootTemplates` | empty | Force root status for dual-role templates |
 | `partialTemplates` | empty | Exclude a template from root inference |
 
 Names are relative to the template root with the template suffix removed. `pages/account`, not `pages/account.peb`.
+
+The core `Components` API supports a default root plus named roots such as `ui:card`, and the Boot starter binds `pebble.forge.components.roots.*`. The stock Gradle task still exposes one `componentRoot`; a custom task can pass a fully configured `Components` when a project checks namespaced components.
 
 `checkPebbleTemplates` runs as part of `check`.
 

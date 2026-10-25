@@ -22,6 +22,13 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Per-template sandbox allowlists and method access through `SandboxPolicyResolver`, with policy ownership for includes, macros, embeds, and components.
 - Development mode that reloads edited templates through a content-hash cache key.
 - Runnable demo with components, sandbox rejection, and language extensions.
+- Context-aware escaping strategies for HTML attributes and whole URLs, plus pinned tests for HTML text, JavaScript strings, and CSS.
+- Natural HTML loader for browser-openable `.html` templates with context-driven expression rewriting, jsoup validation, source maps, and line-preserving diagnostics.
+- Multiple component roots with namespaces, conflict detection, and classpath or jar component resolution.
+- JMH benchmark module with a recorded local baseline and a regression rule.
+- jqwik fuzz and property tests for the parser, path jail, and sandbox allowlists, with a failure minimizer and checked-in corpus.
+- Spring Boot 4 demo app with MVC, Security, CSRF login, components, extends, and language extensions.
+- Aggregate Javadoc site, GitHub Pages workflow, Spotless checks, and Checkstyle static analysis.
 
 ### Fixed
 
@@ -37,6 +44,13 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Contract checks use source-order flow for direct reads and lexical scope snapshots for includes and extends parents. Cross-template summaries remain presence-based. Dynamic includes and exact block ordering are not followed.
 - Diagnostics for errors inside an extended parent need `TemplateTrace.run` around the whole template evaluation. The Boot starter applies this wrapper.
 - Spring Security support covers the servlet stack only.
+- Context escaping is explicit. It does not infer the HTML context; Natural HTML does that for expressions.
+- `SafeString` from `slot()` or `raw` bypasses context escaping. The URL strategy validates schemes, not hosts or open redirects.
+- Natural HTML supports expressions only. Control flow, includes, extends, components, macros, JavaScript, and CSS interpolation are rejected in the first slice.
+- Benchmark numbers are local to one machine and JDK. They are a local regression gate, not a CI timing gate.
+- The fuzz suite found no product failure in the committed trials. The checked-in corpus is a minimized regression set, not a set of reproduced product bugs.
+- Javadoc deployment needs GitHub Pages enabled. The workflow is present but has not run from this local checkout.
+- Spotless checks whitespace and final newlines only. A full Java reformat was deliberately not applied.
 
 ## [0.1.0] - Unreleased
 

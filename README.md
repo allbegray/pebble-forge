@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Pebble Forge is an extension pack for Pebble 4. It keeps Pebble templates valid and adds the features that other template engines do better. The 0.1 release ships template-defined components, a capability sandbox, and Spring Boot and Spring Security integration.
+Pebble Forge is an extension pack for Pebble 4. It keeps Pebble templates valid and adds the features that other template engines do better. It ships template-defined components, a capability sandbox, context-aware escaping, Natural HTML, build-time contract checks, and Spring Boot and Spring Security integration.
 
 The name is a working title. The project is an extension library, not a Pebble fork.
 
@@ -18,13 +18,14 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-337 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+590 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
 | Module | Purpose |
 | --- | --- |
-| `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
+| `pebble-forge-core` | Components, sandbox, language extensions, context-aware escaping, and the `PebbleForge.engine()` builder |
+| `pebble-forge-natural-html` | Browser-openable `.html` templates with context-aware expression rewriting |
 | `pebble-forge-benchmarks` | Manual JMH throughput benchmarks for plain, component, sandbox, and language rendering |
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
 | `pebble-forge-diagnostics` | Source frames and include/extends traces for template errors |
@@ -33,6 +34,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
 | `pebble-forge-demo-app` | Runnable Spring Boot 4 MVC demo with components, language extensions, and Spring Security |
+| `pebble-forge-fuzz` | jqwik property tests for the parser, path jail, and allowlists |
 
 ## Core
 
@@ -89,6 +91,45 @@ A body without explicit `slot` tags becomes the default slot.
 `Components.suffix` is appended by Forge. If the loader already appends a suffix, set `Components.suffix("")`. The Boot starter does this. The suffix mismatch is the most common setup mistake.
 
 Slots are pre-rendered and marked safe. Emit them directly with `{{ slot("body") }}`. Concatenating or filtering a slot turns it back into a plain string and escapes it again. The slot function only emits captured slot values, so a `with` block cannot forge slot content and bypass escaping.
+
+Components can come from more than one root:
+
+```java
+Components components = Components.builder()
+        .root("components")
+        .root("ui", "lib/components")
+        .root("admin", "admin/components")
+        .suffix("")
+        .build();
+```
+
+```twig
+{% component "card" %}{% endcomponent %}
+{% component "ui:card" %}{% endcomponent %}
+```
+
+Unqualified names use the default root. A named root uses `namespace:name`. Duplicate namespaces and duplicate normalized root paths fail at build time. Components packaged as classpath resources inside a jar work through the same loader.
+
+### Context-aware escaping
+
+`PebbleForge.engine()` registers two new escaping strategies on top of Pebble's built-ins.
+
+| Context | Strategy |
+| --- | --- |
+| HTML text | `html` |
+| HTML attribute value | `html_attr` |
+| Whole URL in an attribute | `url` |
+| Quoted JavaScript string | `js` |
+| CSS in `<style>` | `css` |
+
+```twig
+<a href="{{ link | escape("url") }}" title="{{ title | escape("html_attr") }}">{{ body }}</a>
+<script>const name = "{{ name | escape("js") }}";</script>
+```
+
+`url` allows `http`, `https`, `mailto`, `tel`, and relative URLs, and turns other schemes into `#`. `js` is for a quoted string, not a JavaScript expression. `SafeString` from `slot()` or `raw` bypasses every strategy.
+
+See [docs/ESCAPING.md](docs/ESCAPING.md).
 
 ### Language extensions
 
@@ -168,6 +209,26 @@ page:8: WARNING: Component [card] does not declare prop [footer]
 The default template root is `src/main/resources/templates`. The default suffix is `.peb`. Set `allowAnyVariable` to `true` to check only components.
 
 The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
+
+### Natural HTML
+
+The `pebble-forge-natural-html` module ships a loader for browser-openable `.html` templates. Expressions are rewritten with the context strategy before Pebble parses them.
+
+```java
+ClasspathLoader base = new ClasspathLoader();
+base.setPrefix("templates/");
+base.setSuffix(".html");
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(NaturalHtml.loader(base))
+        .build();
+```
+
+```html
+<a href="{{ page.url }}" title="{{ page.title }}">{{ page.body }}</a>
+```
+
+The first slice accepts expressions only. It rejects `{% ... %}` tags, includes, extends, components, macros, JavaScript, and CSS interpolation. jsoup validates the HTML, insertions preserve line numbers, and a source map maps generated offsets back to the original file. See [docs/NATURAL-HTML.md](docs/NATURAL-HTML.md).
 
 ### Diagnostics
 
@@ -396,19 +457,36 @@ The extension registers only when Spring Security Core, Spring Security Web, Spr
 
 ## Demo
 
+The command-line demo renders a component with named slots. It shows the sandbox escaping HTML in slot data, blocking the `raw` filter, rendering `switch`, `with`, `break`, and `continue`, and printing a source-frame diagnostic for an include error.
+
 ```shell
 ./gradlew :pebble-forge-demo:run
 ```
 
-The demo renders a component with named slots. It shows the sandbox escaping HTML in slot data, blocking the `raw` filter, rendering `switch`, `with`, `break`, and `continue`, and printing a source-frame diagnostic for an include error.
+The Spring Boot 4 demo app shows the same features in a browser, plus Spring Security, a CSRF login form, and the Pebble view resolver.
+
+```shell
+./gradlew :pebble-forge-demo-app:run
+```
+
+Open <http://localhost:8080>. Demo accounts are `user` / `password` and `admin` / `password`.
 
 ## Build
 
 ```shell
 ./gradlew test
 ./gradlew build
+./gradlew javadocAll
+./gradlew spotlessCheck checkstyleMain checkstyleTest
+./gradlew :pebble-forge-benchmarks:benchmark
 ./gradlew publishToMavenLocal
 ```
+
+`build` runs tests, Spotless, and Checkstyle. CI also runs `javadoc`. `javadocAll` writes an aggregate API site to `build/docs-site/index.html`. The benchmark task is manual because JVM timing is machine-specific.
+
+## API docs
+
+The GitHub Pages workflow in `.github/workflows/docs.yml` builds and deploys the aggregate Javadoc after Pages is enabled for the repository.
 
 ## Project
 
@@ -417,6 +495,8 @@ The demo renders a component with named slots. It shows the sandbox escaping HTM
 - [Contract checks](docs/CONTRACTS.md)
 - [Template policies](docs/TEMPLATE-POLICIES.md)
 - [Diagnostics](docs/DIAGNOSTICS.md)
+- [Context-aware escaping](docs/ESCAPING.md)
+- [Natural HTML](docs/NATURAL-HTML.md)
 - [Security policy](SECURITY.md)
 - [Release checklist](docs/RELEASING.md)
 

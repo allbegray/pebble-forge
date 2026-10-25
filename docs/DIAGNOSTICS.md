@@ -117,5 +117,7 @@ pebble.forge.diagnostics.expose-in-error-attributes=false
 ## Next
 
 - Add a CLI for rendering a template with diagnostics.
+
+Natural HTML analysis errors are `NaturalHtmlException`, not `PebbleException`, so they carry `template:line:column` in the message but do not produce a `TemplateDiagnostics` source frame. The Natural HTML source map can locate generated offsets in the original file. See [NATURAL-HTML.md](NATURAL-HTML.md).
 - Add source maps for generated templates.
 - Add structured frame kinds instead of English labels.

@@ -12,13 +12,16 @@ Run one module:
 
 ```shell
 ./gradlew :pebble-forge-core:test
+./gradlew :pebble-forge-natural-html:test
 ./gradlew :pebble-forge-spring-boot-4-starter:test
+./gradlew :pebble-forge-fuzz:test
 ```
 
 Run the demo:
 
 ```shell
 ./gradlew :pebble-forge-demo:run
+./gradlew :pebble-forge-demo-app:run
 ```
 
 The build targets Java 21.
@@ -27,13 +30,17 @@ The build targets Java 21.
 
 | Module | Contents |
 | --- | --- |
-| `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge` builder |
+| `pebble-forge-core` | Components, sandbox, language extensions, context escaping, and the `PebbleForge` builder |
+| `pebble-forge-natural-html` | Browser-openable Natural HTML loader and source maps |
 | `pebble-forge-contracts` | Model variable and component prop contract checks |
 | `pebble-forge-diagnostics` | Source frames and include traces for template errors |
-| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` and `renderPebbleTemplate` Gradle tasks |
 | `pebble-forge-spring` | Spring Security functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration and properties |
-| `pebble-forge-demo` | Runnable examples |
+| `pebble-forge-demo` | Command-line examples |
+| `pebble-forge-demo-app` | Spring Boot 4 browser demo |
+| `pebble-forge-benchmarks` | Manual JMH benchmarks |
+| `pebble-forge-fuzz` | jqwik property and fuzz tests |
 
 ## Tests
 
