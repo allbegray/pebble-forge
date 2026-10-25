@@ -11,7 +11,6 @@ loader.setSuffix(".peb");
 
 PebbleEngine engine = PebbleForge.engine()
         .loader(loader)
-        .extension(new DiagnosticsExtension())
         .build();
 
 TemplateDiagnostics diagnostics = TemplateDiagnostics.builder()
@@ -26,7 +25,7 @@ try {
 }
 ```
 
-`DiagnosticsExtension` replaces the include tag with a version that records the include path. Without it, the report still shows the failing template source, but not the include chain.
+The Pebble Forge include node records the include path by default. The diagnostics module reads that trace, so no extra extension is required.
 
 ## Example
 
@@ -47,7 +46,7 @@ components/card.peb:2
 
 ## How it works
 
-1. The custom include node pushes the caller template, include line, and target template onto a thread-local stack.
+1. The Pebble Forge include node pushes the caller template, include line, and target template onto a thread-local stack.
 2. When a nested render fails, the node attaches a copy of the stack to the exception as a suppressed marker.
 3. `TemplateDiagnostics` finds the marker, reads the source through the loader, and builds a frame for each include.
 4. The failing template and line come from the `PebbleException`.

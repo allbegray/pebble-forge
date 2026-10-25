@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 128개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 21, 파일 로더 6, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 9, Boot 웹 1.
+- 테스트는 131개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 21, include 깊이 4, 파일 로더 6, 계약 검사 16, 진단 7, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 9, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -144,7 +144,7 @@
 - 상태: 진행 중. 소스 프레임, include 스택, 중첩 include, 파싱 오류, 소스 없음 처리를 구현했다.
 - 문제: Pebble 오류는 줄 번호와 파일 이름은 있지만 소스 일부와 include 경로를 보여주지 않는다.
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
-- 현재 구현: `DiagnosticsExtension` include 추적, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, 8개 테스트. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다.
+- 현재 구현: 코어 `IncludeTrace`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, 7개 테스트. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`.
 - 남은 것: extends 체인 캡처, Spring Boot 오류 페이지 연동, CLI와 Gradle 진단 태스크.
 - 1차 구현 커밋: `d61932d` diagnostics 모듈, include 추적, 데모.
 - 완료 기준: 중첩 include 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
@@ -175,8 +175,8 @@
 - 상태: 진행 중. 루프 반복 제한과 심볼릭 링크 안전 파일 로더를 추가했다.
 - 문제: 현재 샌드박스는 출력 크기와 경로 문자열은 막지만, 재귀 include와 큰 루프는 CPU를 소모할 수 있다. 파일 로더의 심볼릭 링크도 해결하지 않는다.
 - 범위: include 깊이 제한, 루프 반복 횟수 제한, 심볼릭 링크를 해석하는 파일 로더, 템플릿별 정책, 슬롯 캡처 메모리 제한을 검토한다.
-- 현재 구현: `maxLoopIterations` 기본 100,000회와 `SandboxedFileLoader` 실제 경로 검증을 추가했다. 루프 제한은 루프별이고, 파일 로더는 루트 밖 심볼릭 링크를 거부한다. 커밋 `4038221`, `ee9c89e`.
-- 남은 것: include 깊이 제한, 템플릿별 정책, 슬롯 캡처 메모리 예산, 전체 렌더 반복 예산.
+- 현재 구현: `maxLoopIterations` 기본 100,000회, `maxIncludeDepth` 기본 16회, `SandboxedFileLoader` 실제 경로 검증을 추가했다. 루프 제한은 루프별이고, 파일 로더는 루트 밖 심볼릭 링크를 거부한다. 커밋 `4038221`, `ee9c89e`, `705dace`.
+- 남은 것: 템플릿별 정책, 슬롯 캡처 메모리 예산, 전체 렌더 반복 예산.
 - 완료 기준: 재귀 include와 반복 폭탄 fixture가 제한된 시간 안에 실패한다. 심볼릭 링크가 루트 밖을 가리키면 로더가 거부한다. 심볼릭 링크 부분은 충족했다.
 - 메모: 프로세스 내부 CPU 제한은 완전하지 않다. 적대적 CPU는 별도 프로세스로 격리한다는 원칙을 유지한다.
 

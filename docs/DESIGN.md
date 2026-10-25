@@ -54,6 +54,10 @@ pebble-forge-core
 │   ├── SlotNode             captures a named block
 │   ├── PropsNode            validates required props and applies defaults
 │   └── SlotFunction         returns captured slot HTML without double escaping
+├── include
+│   ├── IncludeExtension     depth-limited include tag
+│   ├── ForgeIncludeNode     include rendering and trace capture
+│   └── IncludeTrace         include stack and frames
 ├── language
 │   ├── LanguageExtension    switch, break, continue, with, and a break-aware for
 │   ├── ForNode              for loop that catches break and continue signals
@@ -74,8 +78,7 @@ pebble-forge-contracts
 └── ContractDiagnostic       errors and warnings with template and line
 
 pebble-forge-diagnostics
-├── DiagnosticsExtension       records the include stack on failure
-├── TemplateDiagnostics        builds source frames from a PebbleException
+├── TemplateDiagnostics        builds source frames from a PebbleException and IncludeTrace
 └── DiagnosticReport           structured frames and terminal formatting
 
 pebble-forge-gradle-plugin
@@ -195,6 +198,7 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 | Raw output | Denied |
 | Output limit | 1,000,000 characters |
 | Loop limit | 100,000 iterations per loop |
+| Include depth | 16 nested includes |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
 | Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
 | Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
@@ -203,7 +207,7 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. The `allowOnly*` methods replace a default set.
 
-The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list, a recursive include, or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile. Loop limits are per loop, not a global render budget. Recursive include depth is not limited yet.
+The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile. Loop limits are per loop, not a global render budget. Include depth is limited to 16 by default.
 
 The path jail is lexical in `SandboxedLoader`. It rejects traversal in template names but does not resolve symlinks. `SandboxedFileLoader` resolves real paths and rejects symlinks that leave the root.
 
@@ -227,6 +231,8 @@ pebble.forge.components.max-depth=16
 
 pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
+pebble.forge.sandbox.max-loop-iterations=100000
+pebble.forge.sandbox.max-include-depth=16
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
@@ -299,9 +305,10 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
-| Diagnostics | 8 | Source frames, include stacks, nested includes, parse errors, missing source |
+| Diagnostics | 7 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
 | Sandbox | 21 | Real templates, real engine, whole-render assertions, loop limit |
+| Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot auto-config | 9 | Application context, official auto-config ordering, policy override, language switch, dev mode |
