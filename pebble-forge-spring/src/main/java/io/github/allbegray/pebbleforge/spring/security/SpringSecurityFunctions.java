@@ -11,8 +11,13 @@ public final class SpringSecurityFunctions {
 
     public static final List<String> NAMES = List.of(
             SpringSecurityExtension.IS_AUTHENTICATED,
+            SpringSecurityExtension.IS_ANONYMOUS,
+            SpringSecurityExtension.IS_FULLY_AUTHENTICATED,
+            SpringSecurityExtension.IS_REMEMBER_ME,
             SpringSecurityExtension.HAS_ROLE,
+            SpringSecurityExtension.HAS_ANY_ROLE,
             SpringSecurityExtension.HAS_AUTHORITY,
+            SpringSecurityExtension.HAS_ANY_AUTHORITY,
             SpringSecurityExtension.AUTHORITIES,
             SpringSecurityExtension.USERNAME,
             SpringSecurityExtension.CSRF_TOKEN,

@@ -5,6 +5,8 @@ import io.pebbletemplates.pebble.extension.Function;
 import io.pebbletemplates.pebble.template.EvaluationContext;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,25 +25,54 @@ import java.util.Map;
 public final class SpringSecurityExtension extends AbstractExtension {
 
     public static final String IS_AUTHENTICATED = "isAuthenticated";
+    public static final String IS_ANONYMOUS = "isAnonymous";
+    public static final String IS_FULLY_AUTHENTICATED = "isFullyAuthenticated";
+    public static final String IS_REMEMBER_ME = "isRememberMe";
     public static final String HAS_ROLE = "hasRole";
+    public static final String HAS_ANY_ROLE = "hasAnyRole";
     public static final String HAS_AUTHORITY = "hasAuthority";
+    public static final String HAS_ANY_AUTHORITY = "hasAnyAuthority";
     public static final String AUTHORITIES = "authorities";
     public static final String USERNAME = "username";
     public static final String CSRF_TOKEN = "csrfToken";
     public static final String CSRF_PARAMETER_NAME = "csrfParameterName";
     public static final String CSRF_HEADER_NAME = "csrfHeaderName";
 
+    private static final AuthenticationTrustResolver TRUST_RESOLVER =
+            new AuthenticationTrustResolverImpl();
+
     @Override
     public Map<String, Function> getFunctions() {
-        return Map.of(
-                IS_AUTHENTICATED, new BaseFunction() {
+        return Map.ofEntries(
+                Map.entry(IS_AUTHENTICATED, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         return isLoggedIn();
                     }
-                },
-                HAS_ROLE, new BaseFunction("role") {
+                }),
+                Map.entry(IS_ANONYMOUS, new BaseFunction() {
+                    @Override
+                    public Object execute(Map<String, Object> args, PebbleTemplate self,
+                                          EvaluationContext context, int lineNumber) {
+                        return isAnonymous();
+                    }
+                }),
+                Map.entry(IS_FULLY_AUTHENTICATED, new BaseFunction() {
+                    @Override
+                    public Object execute(Map<String, Object> args, PebbleTemplate self,
+                                          EvaluationContext context, int lineNumber) {
+                        return isFullyAuthenticated();
+                    }
+                }),
+                Map.entry(IS_REMEMBER_ME, new BaseFunction() {
+                    @Override
+                    public Object execute(Map<String, Object> args, PebbleTemplate self,
+                                          EvaluationContext context, int lineNumber) {
+                        return isRememberMe();
+                    }
+                }),
+                Map.entry(HAS_ROLE, new BaseFunction("role") {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
@@ -52,53 +83,67 @@ public final class SpringSecurityExtension extends AbstractExtension {
                         String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                         return hasAuthority(authority);
                     }
-                },
-                HAS_AUTHORITY, new BaseFunction("authority") {
+                }),
+                Map.entry(HAS_ANY_ROLE, new BaseFunction() {
+                    @Override
+                    public Object execute(Map<String, Object> args, PebbleTemplate self,
+                                          EvaluationContext context, int lineNumber) {
+                        return hasAnyRole(positionalValues(args));
+                    }
+                }),
+                Map.entry(HAS_AUTHORITY, new BaseFunction("authority") {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         return hasAuthority(stringArg(args, "authority"));
                     }
-                },
-                AUTHORITIES, new BaseFunction() {
+                }),
+                Map.entry(HAS_ANY_AUTHORITY, new BaseFunction() {
+                    @Override
+                    public Object execute(Map<String, Object> args, PebbleTemplate self,
+                                          EvaluationContext context, int lineNumber) {
+                        return hasAnyAuthority(positionalValues(args));
+                    }
+                }),
+                Map.entry(AUTHORITIES, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         return authorities();
                     }
-                },
-                USERNAME, new BaseFunction() {
+                }),
+                Map.entry(USERNAME, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                         return isLoggedIn() && authentication != null ? authentication.getName() : "";
                     }
-                },
-                CSRF_TOKEN, new BaseFunction() {
+                }),
+                Map.entry(CSRF_TOKEN, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         CsrfToken token = csrfToken();
                         return token == null ? "" : token.getToken();
                     }
-                },
-                CSRF_PARAMETER_NAME, new BaseFunction() {
+                }),
+                Map.entry(CSRF_PARAMETER_NAME, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         CsrfToken token = csrfToken();
                         return token == null ? "_csrf" : token.getParameterName();
                     }
-                },
-                CSRF_HEADER_NAME, new BaseFunction() {
+                }),
+                Map.entry(CSRF_HEADER_NAME, new BaseFunction() {
                     @Override
                     public Object execute(Map<String, Object> args, PebbleTemplate self,
                                           EvaluationContext context, int lineNumber) {
                         CsrfToken token = csrfToken();
                         return token == null ? "X-CSRF-TOKEN" : token.getHeaderName();
                     }
-                });
+                }));
     }
 
     private static boolean isLoggedIn() {
@@ -106,6 +151,47 @@ public final class SpringSecurityExtension extends AbstractExtension {
         return authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    private static boolean isAnonymous() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null || authentication instanceof AnonymousAuthenticationToken;
+    }
+
+    private static boolean isFullyAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !TRUST_RESOLVER.isAnonymous(authentication)
+                && !TRUST_RESOLVER.isRememberMe(authentication);
+    }
+
+    private static boolean isRememberMe() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && TRUST_RESOLVER.isRememberMe(authentication);
+    }
+
+    private static boolean hasAnyRole(List<String> roles) {
+        for (String role : roles) {
+            String value = role == null ? "" : role.trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            String authority = value.startsWith("ROLE_") ? value : "ROLE_" + value;
+            if (hasAuthority(authority)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasAnyAuthority(List<String> authorities) {
+        for (String authority : authorities) {
+            if (authority != null && !authority.isBlank() && hasAuthority(authority.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean hasAuthority(String authority) {
@@ -137,6 +223,17 @@ public final class SpringSecurityExtension extends AbstractExtension {
             result.add(granted.getAuthority());
         }
         return List.copyOf(result);
+    }
+
+    private static List<String> positionalValues(Map<String, Object> args) {
+        List<String> values = new ArrayList<>();
+        for (int index = 0; ; index++) {
+            Object value = args.get(String.valueOf(index));
+            if (value == null) {
+                return values;
+            }
+            values.add(String.valueOf(value));
+        }
     }
 
     private static CsrfToken csrfToken() {

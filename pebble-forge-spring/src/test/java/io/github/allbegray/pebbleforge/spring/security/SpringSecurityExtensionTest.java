@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.RememberMeAuthenticationToken;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,6 +59,68 @@ class SpringSecurityExtensionTest {
     }
 
     @Test
+    void hasAnyRoleMatchesOneOfTheRoles() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("ada", "n/a", "ROLE_ADMIN", "ROLE_OWNER"));
+
+        String output = render(Map.of("page.peb", """
+                {{ hasAnyRole("USER", "OWNER") }}|{{ hasAnyRole("USER", "GUEST") }}|{{ hasAnyRole("ROLE_ADMIN") }}
+                """), null);
+
+        assertThat(output.strip()).isEqualTo("true|false|true");
+    }
+
+    @Test
+    void hasAnyAuthorityMatchesOneOfTheAuthorities() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("ada", "n/a", "order:read", "order:write"));
+
+        String output = render(Map.of("page.peb", """
+                {{ hasAnyAuthority("user:read", "order:write") }}|{{ hasAnyAuthority("user:read") }}
+                """), null);
+
+        assertThat(output.strip()).isEqualTo("true|false");
+    }
+
+    @Test
+    void distinguishesAnonymousAndFullyAuthenticatedUsers() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser",
+                        List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
+
+        String anonymous = render(Map.of("page.peb", """
+                {{ isAnonymous() }}|{{ isFullyAuthenticated() }}|{{ isRememberMe() }}
+                """), null);
+        assertThat(anonymous.strip()).isEqualTo("true|false|false");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("ada", "n/a", "ROLE_USER"));
+        String authenticated = render(Map.of("page.peb", """
+                {{ isAnonymous() }}|{{ isFullyAuthenticated() }}|{{ isRememberMe() }}
+                """), null);
+        assertThat(authenticated.strip()).isEqualTo("false|true|false");
+
+        SecurityContextHolder.clearContext();
+        String absent = render(Map.of("page.peb", """
+                {{ isAnonymous() }}|{{ isFullyAuthenticated() }}|{{ isAuthenticated() }}
+                """), null);
+        assertThat(absent.strip()).isEqualTo("true|false|false");
+    }
+
+    @Test
+    void detectsRememberMeAuthentication() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new RememberMeAuthenticationToken("key", "ada",
+                        List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+
+        String output = render(Map.of("page.peb", """
+                {{ isAuthenticated() }}|{{ isRememberMe() }}|{{ isFullyAuthenticated() }}
+                """), null);
+
+        assertThat(output.strip()).isEqualTo("true|true|false");
+    }
+
+    @Test
     void exposesTheCsrfTokenForForms() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setAttribute(CsrfToken.class.getName(),
@@ -99,6 +162,19 @@ class SpringSecurityExtensionTest {
         String output = render(Map.of("page.peb", "{{ username() }}"), policy);
 
         assertThat(output).isEqualTo("ada");
+    }
+
+    @Test
+    void allowsTheNewFunctionsThroughTheSandboxHelper() throws Exception {
+        SandboxPolicy policy = SpringSecurityFunctions.allow(SandboxPolicy.builder()).build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("ada", "n/a", "ROLE_OWNER"));
+
+        String output = render(Map.of("page.peb", """
+                {{ hasAnyRole("USER", "OWNER") }}|{{ isAnonymous() }}|{{ isFullyAuthenticated() }}
+                """), policy);
+
+        assertThat(output.strip()).isEqualTo("true|false|true");
     }
 
     private static String render(Map<String, String> templates, SandboxPolicy policy)
