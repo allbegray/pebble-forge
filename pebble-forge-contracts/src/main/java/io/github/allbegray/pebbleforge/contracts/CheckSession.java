@@ -493,14 +493,24 @@ final class CheckSession {
             if (read.block() != null && overriddenBlocks.contains(read.block())) {
                 continue;
             }
-            if (read.block() != null && unknownParent) {
-                // The parent may declare this name in its root body or in an
-                // overridden block, so the read cannot be decided statically.
+            if (!read.complete()) {
                 continue;
             }
-            if (isLocallyDeclared(scan, read, ancestorNames, overriddenBlocks)
-                    || model.allows(read.name())
-                    || scope.names().contains(read.name())) {
+            boolean satisfied;
+            if (read.closed()) {
+                satisfied = read.visible().contains(read.name())
+                        || model.allows(read.name());
+            } else {
+                if (read.block() != null && unknownParent) {
+                    // The parent may declare this name in its root body or in an
+                    // overridden block, so the read cannot be decided statically.
+                    continue;
+                }
+                satisfied = isLocallyDeclared(scan, read, ancestorNames, overriddenBlocks)
+                        || model.allows(read.name())
+                        || scope.names().contains(read.name());
+            }
+            if (satisfied) {
                 continue;
             }
             if (site == null) {
@@ -518,17 +528,26 @@ final class CheckSession {
 
     private boolean isLocallyDeclared(TemplateScan scan, TemplateScan.VariableRead read,
             Set<String> ancestorNames, Set<String> overriddenBlocks) {
+        if (read.visible().contains(read.name())) {
+            return true;
+        }
+        if (read.closed()) {
+            return false;
+        }
+        if (ancestorNames.contains(read.name())) {
+            return true;
+        }
         if (read.block() == null) {
-            return visibleDeclarations(scan, overriddenBlocks).contains(read.name())
-                    || ancestorNames.contains(read.name());
+            // A root read sees declarations made by any non-overridden block of
+            // its own template, which is what keeps topLevelReadSeesOwnBlockSet.
+            for (Map.Entry<String, Set<String>> block : scan.blockDeclarations.entrySet()) {
+                if (!overriddenBlocks.contains(block.getKey())
+                        && block.getValue().contains(read.name())) {
+                    return true;
+                }
+            }
         }
-        if (scan.rootDeclarations.contains(read.name())) {
-            return true;
-        }
-        if (scan.blockDeclarations.getOrDefault(read.block(), Set.of()).contains(read.name())) {
-            return true;
-        }
-        return ancestorNames.contains(read.name());
+        return false;
     }
 
     private boolean hasUnknownParentScope(TemplateScan scan) {

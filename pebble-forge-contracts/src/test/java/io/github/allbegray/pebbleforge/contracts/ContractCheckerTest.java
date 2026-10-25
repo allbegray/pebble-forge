@@ -1456,6 +1456,295 @@ class ContractCheckerTest {
         });
     }
 
+    @Test
+    void readBeforeRootSetIsAnError() {
+        ContractResult result = check(
+                Map.of("page.peb", "{{ item }}{% set item = \"x\" %}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void setValueDoesNotSeeItsOwnDeclaration() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% set item = item %}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void setValueMayReadAModelVariable() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% set item = item %}"),
+                ModelSchema.builder().variable("item").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void readBeforeSetInBlockIsAnError() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% block body %}{{ item }}{% set item = "x" %}{% endblock %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void readAfterSetInBlockIsClean() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% block body %}{% set item = "x" %}{{ item }}{% endblock %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void readAfterThenOnlyAssignmentIsAnError() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% if cond %}{% set item = "x" %}{% endif %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void readAfterBothBranchesAssignIsClean() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% if cond %}{% set item = "x" %}{% else %}{% set item = "y" %}{% endif %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void thenBranchDoesNotSeeAssignmentFromElseBranch() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% if cond %}{{ item }}{% else %}{% set item = "x" %}{% endif %}
+                        """),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void ifConditionCannotSeeTheSetItGuards() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% if item %}{% set item = "x" %}{% endif %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void switchWithoutDefaultDoesNotExposeCaseSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{% endswitch %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void switchAllCasesAndDefaultExposeSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{% set item = "y" %}{% default %}{% set item = "z" %}{% endswitch %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void switchCaseDoesNotSeeAnotherCaseSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{{ item }}{% default %}{% set item = "z" %}{% endswitch %}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void switchCaseReadsItsOwnSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{{ item }}{% default %}{% set item = "z" %}{% endswitch %}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void loopVariableDoesNotLeakAfterLoop() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% for item in items %}{{ item }}{% endfor %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void loopBodySetDoesNotLeakAfterLoop() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% for entry in items %}{% set item = "x" %}{% endfor %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void withKeyDoesNotLeakAfterWith() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% with {"item": "x"} %}{{ item }}{% endwith %}{{ item }}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void withKeyIsVisibleInsideWith() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% with {"item": "x"} %}{{ item }}{% endwith %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void withOnlyBodySeesItsOwnKeys() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% with {"item": "x"} only %}{{ item }}{% endwith %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void withOnlyBodyDoesNotSeeOuterSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% set outer = "x" %}{% with only %}{{ outer }}{% endwith %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[outer]");
+        });
+    }
+
+    @Test
+    void macroArgumentDoesNotLeakAfterMacro() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% macro card(item) %}{{ item }}{% endmacro %}{{ item }}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void macroBodyDoesNotSeeOuterSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% set outer = "x" %}{% macro card(value) %}{{ outer }}{% endmacro %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[outer]");
+        });
+    }
+
+    @Test
+    void macroBodySeesItsArgument() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% macro card(item) %}{{ item }}{% endmacro %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void dynamicWithSuppressesDirectReads() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% with data %}{{ missing }}{% endwith %}
+                        """),
+                ModelSchema.builder().variable("data").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
     private static ContractChecker checker(Map<String, String> templates, ModelSchema model) {
         return checkerBuilder(templates, model).build();
     }

@@ -4,12 +4,14 @@ import io.github.allbegray.pebbleforge.component.ComponentNode;
 import io.github.allbegray.pebbleforge.component.PropsNode;
 import io.github.allbegray.pebbleforge.include.IncludeNodeView;
 import io.github.allbegray.pebbleforge.language.ForNode;
+import io.github.allbegray.pebbleforge.language.SwitchNode;
 import io.github.allbegray.pebbleforge.language.WithNode;
 import io.pebbletemplates.pebble.extension.AbstractNodeVisitor;
 import io.pebbletemplates.pebble.node.ArgumentsNode;
 import io.pebbletemplates.pebble.node.BlockNode;
 import io.pebbletemplates.pebble.node.BodyNode;
 import io.pebbletemplates.pebble.node.ExtendsNode;
+import io.pebbletemplates.pebble.node.IfNode;
 import io.pebbletemplates.pebble.node.MacroNode;
 import io.pebbletemplates.pebble.node.NamedArgumentNode;
 import io.pebbletemplates.pebble.node.Node;
@@ -30,12 +32,16 @@ import io.pebbletemplates.pebble.node.expression.MapExpression;
 import io.pebbletemplates.pebble.node.expression.TernaryExpression;
 import io.pebbletemplates.pebble.node.expression.UnaryExpression;
 import io.pebbletemplates.pebble.template.PebbleTemplateImpl;
+import io.pebbletemplates.pebble.utils.Pair;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,18 +50,20 @@ final class ContractVisitor extends AbstractNodeVisitor {
     private final TemplateScan scan;
     private final Set<Node> consumed = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Deque<ScopeFrame> scopes = new ArrayDeque<>();
+    private final Deque<FlowFrame> flows = new ArrayDeque<>();
     private final Deque<String> blocks = new ArrayDeque<>();
 
     ContractVisitor(TemplateScan scan, PebbleTemplateImpl template) {
         super(template);
         this.scan = scan;
         scopes.addLast(new ScopeFrame(true));
+        flows.addLast(new FlowFrame(true, false));
     }
 
     @Override
     public void visit(SetNode node) {
+        scan(node.getValue());
         declare(node.getName());
-        super.visit(node);
     }
 
     @Override
@@ -64,10 +72,12 @@ final class ContractVisitor extends AbstractNodeVisitor {
         consumed.add(node.getArgs());
 
         scopes.addLast(new ScopeFrame(true));
+        flows.addLast(new FlowFrame(false, true));
         for (String argument : node.getMacro().getArgumentNames()) {
             declare(argument);
         }
         scanBody(node.getBody());
+        flows.removeLast();
         scopes.removeLast();
         consumed.add(node.getBody());
     }
@@ -85,9 +95,34 @@ final class ContractVisitor extends AbstractNodeVisitor {
         blocks.addLast(node.getName());
         scan.blockDeclarations.computeIfAbsent(node.getName(),
                 name -> new LinkedHashSet<>());
+        FlowFrame outer = flows.getLast();
+        flows.addLast(new FlowFrame(outer.templateLevel, outer.closed, outer.names));
         scanBody(node.getBody());
+        flows.removeLast();
         blocks.removeLast();
         consumed.add(node.getBody());
+    }
+
+    @Override
+    public void visit(IfNode node) {
+        FlowFrame entry = flows.getLast();
+        List<Set<String>> exits = new ArrayList<>();
+        for (Pair<Expression<?>, BodyNode> branch : node.getConditionsWithBodies()) {
+            scan(branch.getLeft());
+            pushBranch(entry);
+            scanBody(branch.getRight());
+            exits.add(Set.copyOf(flows.getLast().names));
+            popBranch();
+        }
+        if (node.getElseBody() != null) {
+            pushBranch(entry);
+            scanBody(node.getElseBody());
+            exits.add(Set.copyOf(flows.getLast().names));
+            popBranch();
+        } else {
+            exits.add(Set.copyOf(entry.names));
+        }
+        joinBranches(exits);
     }
 
     @Override
@@ -118,13 +153,19 @@ final class ContractVisitor extends AbstractNodeVisitor {
         if (consumed.remove(node)) {
             return;
         }
+        if (node instanceof SwitchNode switchNode) {
+            scanSwitch(switchNode);
+            return;
+        }
         if (node instanceof IncludeNodeView include) {
             recordInclude(include);
             return;
         }
         if (node instanceof ContextVariableExpression variable) {
+            FlowFrame flow = flows.getLast();
             scan.reads.add(new TemplateScan.VariableRead(variable.getName(),
-                    variable.getLineNumber(), currentBlock()));
+                    variable.getLineNumber(), currentBlock(), Set.copyOf(flow.names),
+                    flow.closed, currentComplete()));
             return;
         }
         if (node instanceof GetAttributeExpression attribute) {
@@ -207,6 +248,8 @@ final class ContractVisitor extends AbstractNodeVisitor {
         scan(node.getIterable());
         consumed.add(node.getIterable());
 
+        FlowFrame outer = flows.getLast();
+        flows.addLast(new FlowFrame(false, outer.closed, outer.names));
         scopes.addLast(new ScopeFrame(false));
         if (node.getKeyVariableName() != null) {
             declare(node.getKeyVariableName());
@@ -215,10 +258,15 @@ final class ContractVisitor extends AbstractNodeVisitor {
         declare("loop");
         scanBody(node.getBody());
         scopes.removeLast();
+        flows.removeLast();
         consumed.add(node.getBody());
 
         if (node.getElseBody() != null) {
+            flows.addLast(new FlowFrame(false, outer.closed, outer.names));
+            scopes.addLast(new ScopeFrame(false));
             scanBody(node.getElseBody());
+            scopes.removeLast();
+            flows.removeLast();
             consumed.add(node.getElseBody());
         }
     }
@@ -230,22 +278,88 @@ final class ContractVisitor extends AbstractNodeVisitor {
             consumed.add(values);
         }
 
-        scopes.addLast(new ScopeFrame(with.isIsolated()));
-        ScopeFrame frame = scopes.getLast();
+        FlowFrame outer = flows.getLast();
+        Set<String> keys = new LinkedHashSet<>();
+        boolean dynamicKeys = false;
         if (values instanceof MapExpression map) {
             for (Expression<?> key : map.getEntries().keySet()) {
                 if (key instanceof LiteralStringExpression literal) {
-                    declare(literal.getValue());
+                    keys.add(literal.getValue());
                 } else {
-                    frame.complete = false;
+                    dynamicKeys = true;
                 }
             }
         } else if (values != null) {
-            frame.complete = false;
+            dynamicKeys = true;
+        }
+
+        FlowFrame frame = with.isIsolated()
+                ? new FlowFrame(false, true)
+                : new FlowFrame(false, outer.closed, outer.names);
+        flows.addLast(frame);
+        scopes.addLast(new ScopeFrame(with.isIsolated()));
+        if (dynamicKeys) {
+            scopes.getLast().complete = false;
+        }
+        for (String key : keys) {
+            declare(key);
         }
         scanBody(with.getBody());
         scopes.removeLast();
+        flows.removeLast();
         consumed.add(with.getBody());
+    }
+
+    private void scanSwitch(SwitchNode node) {
+        FlowFrame entry = flows.getLast();
+        scan(node.getSubject());
+        consumed.add(node.getSubject());
+
+        List<Set<String>> exits = new ArrayList<>();
+        for (SwitchNode.Case entryCase : node.getCases()) {
+            for (Expression<?> value : entryCase.values()) {
+                scan(value);
+                consumed.add(value);
+            }
+            pushBranch(entry);
+            scanBody(entryCase.body());
+            consumed.add(entryCase.body());
+            exits.add(Set.copyOf(flows.getLast().names));
+            popBranch();
+        }
+        if (node.getDefaultBody() != null) {
+            pushBranch(entry);
+            scanBody(node.getDefaultBody());
+            consumed.add(node.getDefaultBody());
+            exits.add(Set.copyOf(flows.getLast().names));
+            popBranch();
+        } else {
+            exits.add(Set.copyOf(entry.names));
+        }
+        joinBranches(exits);
+    }
+
+    private void pushBranch(FlowFrame entry) {
+        flows.addLast(new FlowFrame(entry.templateLevel, entry.closed, entry.names));
+        scopes.addLast(new ScopeFrame(false));
+    }
+
+    private void popBranch() {
+        scopes.removeLast();
+        flows.removeLast();
+    }
+
+    private void joinBranches(List<Set<String>> exits) {
+        if (exits.isEmpty()) {
+            return;
+        }
+        Set<String> joined = new LinkedHashSet<>(exits.get(0));
+        for (int index = 1; index < exits.size(); index++) {
+            joined.retainAll(exits.get(index));
+        }
+        flows.getLast().names.clear();
+        flows.getLast().names.addAll(joined);
+        scopes.getLast().names.addAll(joined);
     }
 
     private void recordInclude(IncludeNodeView include) {
@@ -314,12 +428,16 @@ final class ContractVisitor extends AbstractNodeVisitor {
     }
 
     private void declare(String name) {
-        if (blocks.isEmpty()) {
-            scan.rootDeclarations.add(name);
-        } else {
-            scan.blockDeclarations.computeIfAbsent(blocks.getLast(),
-                    block -> new LinkedHashSet<>()).add(name);
+        FlowFrame flow = flows.getLast();
+        if (flow.templateLevel) {
+            if (blocks.isEmpty()) {
+                scan.rootDeclarations.add(name);
+            } else {
+                scan.blockDeclarations.computeIfAbsent(blocks.getLast(),
+                        block -> new LinkedHashSet<>()).add(name);
+            }
         }
+        flow.names.add(name);
         scopes.getLast().names.add(name);
     }
 
@@ -386,6 +504,23 @@ final class ContractVisitor extends AbstractNodeVisitor {
 
         ScopeFrame(boolean reset) {
             this.reset = reset;
+        }
+    }
+
+    static final class FlowFrame {
+
+        private final Set<String> names = new LinkedHashSet<>();
+        private final boolean templateLevel;
+        private final boolean closed;
+
+        FlowFrame(boolean templateLevel, boolean closed) {
+            this.templateLevel = templateLevel;
+            this.closed = closed;
+        }
+
+        FlowFrame(boolean templateLevel, boolean closed, Collection<String> visible) {
+            this(templateLevel, closed);
+            names.addAll(visible);
         }
     }
 }

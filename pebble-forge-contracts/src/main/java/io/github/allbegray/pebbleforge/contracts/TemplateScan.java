@@ -26,7 +26,14 @@ final class TemplateScan {
         this.templateName = templateName;
     }
 
-    record VariableRead(String name, int line, String block) {
+    record VariableRead(String name, int line, String block, Set<String> visible,
+                        boolean closed, boolean complete) {
+        VariableRead {
+            visible = Set.copyOf(visible);
+            if (line < 0) {
+                throw new IllegalArgumentException("line must not be negative");
+            }
+        }
     }
 
     record ComponentCall(String name, Set<String> props, boolean dynamicName,
