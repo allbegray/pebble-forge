@@ -510,7 +510,8 @@ final class CheckSession {
                 error(site.callerTemplate(), site.line(), site.relation() + " template ["
                         + scan.templateName + ":" + read.line() + "] reads ["
                         + read.name() + "], which is not declared in the model schema "
-                        + "or visible at this include" + nestedChainSuffix(site.chain()));
+                        + "or visible at this call"
+                        + nestedChainSuffix(site.chain(), site.chainLabel()));
             }
         }
     }
@@ -791,8 +792,8 @@ final class CheckSession {
         return List.copyOf(chain);
     }
 
-    private static String nestedChainSuffix(List<IncludeFrame> chain) {
-        return chain.size() > 1 ? chainSuffix(chain, "include") : "";
+    private static String nestedChainSuffix(List<IncludeFrame> chain, String label) {
+        return chain.size() > 1 ? chainSuffix(chain, label) : "";
     }
 
     private static String chainSuffix(List<IncludeFrame> chain, String label) {
