@@ -384,8 +384,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | --- | --- | --- |
 | Core | 215 | Components, roots, language extensions, sandbox, escaping, include/extends traces, dev mode |
 | Contracts | 113 | Model variables, source-order flow, lexical include and extends scopes, block ownership, component props |
-| Diagnostics | 22 | Source frames, structured INCLUDE/EXTENDS/ERROR frames, include and extends stacks, parse errors, cycle and stale-frame handling |
-| Natural HTML | 129 | Rewrite, rejection matrix, source map, XSS fixtures, jsoup preview, sandbox |
+| Diagnostics | 23 | Source frames, structured INCLUDE/EXTENDS/ERROR frames, source-mapped errors, include and extends stacks, parse errors, cycle and stale-frame handling |
+| Natural HTML | 130 | Rewrite, rejection matrix, source map, diagnostics integration, XSS fixtures, jsoup preview, sandbox |
 | Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
 | CLI | 14 | Render output, JSON/YAML models, source frames, path and usage errors, exit codes |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
@@ -393,7 +393,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **622** | |
+| **Total** | **624** | |
 
 ## Non-goals
 
@@ -426,7 +426,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
 | Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
 | Quality | Spotless misc checks plus Checkstyle and Javadoc `-Werror` | Catches hygiene and API documentation regressions without a mass reformat |
-| Diagnostics | Unified include/extends trace plus a source-frame formatter with typed frame kinds | Captures the runtime chain without replacing the renderer and gives consumers structured targets |
+| Diagnostics | Unified include/extends trace plus a source-frame formatter with typed frame kinds and source-mapped errors | Captures the runtime chain without replacing the renderer and gives consumers structured targets |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
 | Gradle diagnostics | Separate `renderPebbleTemplate` task | Renders a model without a JSON dependency and prints source frames on failure |
 | CLI | Standalone render command with Jackson 3 models | Gives terminal users the same source-frame diagnostics without Gradle or a JSON-to-DSL bridge |
@@ -467,7 +467,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - `for key, value` uses the map key for entries and a zero-based index for other iterables.
 - Context escaping is explicit. It does not infer a sink; Natural HTML does that for print expressions. `SafeString` bypasses every strategy. `url` validates schemes, not hosts, paths, or open redirects.
 - Natural HTML supports expressions only. It rejects all `{% ... %}` tags, Pebble comments, includes, extends, components, macros, script/style interpolation, and foreign-content subtrees. It is per-file and has no cross-template context propagation.
-- Natural HTML analysis-time errors are `NaturalHtmlException`, not `PebbleException`. The message carries line and column; `TemplateDiagnostics` source frames are for render errors. Columns count UTF-16 code units.
+- Natural HTML analysis-time errors implement `SourceMappedError`, so `TemplateDiagnostics` can build an original-position frame. Pass the delegate/base loader, not `NaturalHtmlLoader`, or the source frame will show rewritten text. Columns count UTF-16 code units.
 - The browser preview test parses the source and rendered output with jsoup. It is not real-browser automation.
 - Component roots use a namespace map. A named-only configuration has no default root; unqualified names fail. Duplicate normalized root paths fail at build time. The stock Gradle check task exposes one `componentRoot`; the core API and Boot starter support named roots.
 - Benchmark numbers are local to one machine and JDK. They are a local review gate, not a CI timing gate.

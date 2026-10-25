@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 622개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
+테스트는 624개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
@@ -261,7 +261,7 @@ layout.peb:2
     | ^
 ```
 
-Pebble Forge의 include와 extends 노드가 기본으로 체인을 기록합니다. 부모 본문에서 난 오류까지 extends 프레임을 얻으려면 `evaluate` 전체를 `TemplateTrace.run`으로 감싸세요. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
+Pebble Forge의 include와 extends 노드가 기본으로 체인을 기록합니다. 부모 본문에서 난 오류까지 extends 프레임을 얻으려면 `evaluate` 전체를 `TemplateTrace.run`으로 감싸세요. 각 프레임은 `INCLUDE`, `EXTENDS`, `ERROR` 종류와 target을 구조화해 가집니다. Natural HTML 거부는 `SourceMappedError`로 원본 위치 프레임을 만듭니다. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
 
 Gradle 플러그인은 렌더 태스크도 제공합니다.
 

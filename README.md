@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-622 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+624 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
@@ -263,7 +263,7 @@ layout.peb:2
     | ^
 ```
 
-The Pebble Forge include and extends nodes record the chain by default. Wrap the entire `evaluate` call in `TemplateTrace.run` so an error in a parent body carries the extends frame. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+The Pebble Forge include and extends nodes record the chain by default. Wrap the entire `evaluate` call in `TemplateTrace.run` so an error in a parent body carries the extends frame. Each frame has a structured `INCLUDE`, `EXTENDS`, or `ERROR` kind and target. Natural HTML rejections implement `SourceMappedError` and get an original-position frame. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 
 The Gradle plugin also provides a render task.
 

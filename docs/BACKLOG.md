@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 622개다. core 215, contracts 113, diagnostics 22, natural-html 129, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
+- 테스트는 624개다. core 215, contracts 113, diagnostics 23, natural-html 130, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - 컴포넌트, 네임스페이스 루트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 컨텍스트 인식 이스케이프, Natural HTML 표현식, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수, JMH 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질 검사, Spring Boot 데모 앱, JSON/YAML 진단 CLI가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -41,7 +41,7 @@
 | PF-005 | P0 | 공개 문서와 릴리스 체크리스트 | S | Done | PF-001, PF-002 |
 | PF-006 | P0 | 보안 정책과 위협 모델 | S | Done | 없음 |
 | PF-101 | P1 | 타입 계약 검사 모듈 | XL | 진행 중 | PF-004 |
-| PF-102 | P1 | 소스 프레임 진단 | L | 진행 중 | 없음 |
+| PF-102 | P1 | 소스 프레임 진단 | L | Done | 없음 |
 | PF-103 | P1 | 핫 리로드 | M | Done | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | Done | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | Done | 없음 |
@@ -68,6 +68,7 @@
 | PF-005 | `79f8123` CHANGELOG, RELEASING, CONTRIBUTING |
 | PF-006 | `79f8123` SECURITY.md |
 | PF-105 | `4038221`, `ee9c89e`, `705dace`, `f71e5de`, `bbcfda6`, `934694d` 샌드박스 강화 |
+| PF-102 | `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`, `2a4f860`, `66abfd4`, `b96409b`, `50d6f86`, `8356c7a` 소스 프레임, CLI, 구조화 프레임, 소스 매핑 |
 | PF-108 | `c91c3e1` 템플릿별 전체 allowlist |
 | PF-201 | `759ddb0` `html_attr`과 `url` 이스케이프 전략 |
 | PF-202 | `3460bbc` Natural HTML 표현식 로더 (PF-202.1) |
@@ -152,11 +153,11 @@
 ### PF-102 소스 프레임 진단
 
 - 크기: L
-- 상태: 진행 중. 소스 프레임, include와 extends 체인, 중첩 체인, 파싱 오류, 소스 없음, Spring Boot 오류 디스패치를 구현했다.
+- 상태: Done. 소스 프레임, include와 extends 체인, 중첩 체인, 파싱 오류, 소스 없음, Spring Boot 오류 디스패치, CLI, 구조화 프레임, 원본 위치 소스 매핑을 구현했다.
 - 문제: Pebble 오류는 줄 번호와 파일 이름은 있지만 소스 일부와 include 경로를 보여주지 않는다.
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
-- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터, `renderPebbleTemplate` Gradle 태스크, JSON/YAML 모델을 받는 `pebble-forge-cli`, `DiagnosticFrame`의 `INCLUDE`·`EXTENDS`·`ERROR` 종류와 target. 진단 22개, Boot 진단 26개, Gradle 렌더 태스크 6개, CLI 14개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`, `2a4f860`, `66abfd4`, `b96409b`.
-- 남은 것: 소스 맵.
+- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터, `renderPebbleTemplate` Gradle 태스크, JSON/YAML 모델을 받는 `pebble-forge-cli`, `DiagnosticFrame`의 `INCLUDE`·`EXTENDS`·`ERROR` 종류와 target, `SourceMappedError` 원본 위치 프레임. 진단 23개, Boot 진단 26개, Gradle 렌더 태스크 6개, CLI 14개, Natural HTML 130개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`, `2a4f860`, `66abfd4`, `b96409b`, `50d6f86`, `8356c7a`.
+- 남은 것: 없음. PF-102 범위 완료.
 - 1차 구현 커밋: `d61932d` diagnostics 모듈, include 추적, 데모.
 - 완료 기준: 중첩 include와 extends 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
 - 메모: 렌더 시점 예외를 감싸는 방식과 파싱 시점 예외를 그대로 두는 방식을 비교한다.

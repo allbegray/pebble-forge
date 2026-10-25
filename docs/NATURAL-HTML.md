@@ -132,7 +132,7 @@ Run:
 - No cross-template context propagation.
 - `url` is scheme validation, not host or path validation.
 - `SafeString` from a custom function or model remains trusted.
-- `NaturalHtmlException` is not a `PebbleException`, so `TemplateDiagnostics` does not build a source frame for analysis-time rejections. The message carries line and column.
+- `NaturalHtmlException` implements `SourceMappedError`. Pass the delegate loader to `TemplateDiagnostics` to show the original line and caret; passing `NaturalHtmlLoader` shows rewritten text. The message also carries line and column.
 - Columns count UTF-16 code units.
 - A raw Pebble engine needs `ContextEscaping.register`; `PebbleForge.engine()` already does it.
 - The preview test parses the source and rendered output with jsoup. It is not a real-browser automation test.

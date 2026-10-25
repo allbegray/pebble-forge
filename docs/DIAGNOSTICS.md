@@ -129,18 +129,53 @@ pebble.forge.diagnostics.expose-in-error-attributes=false
 
 `expose-in-error-attributes` is off by default so source text does not leak into production API responses. When enabled and no application `ErrorAttributes` bean exists, the starter adds the two attributes. An application can also read the request attribute directly from a custom error controller.
 
+## Source-mapped errors
+
+Some errors know their original template position but are not `PebbleException`. Implement `SourceMappedError` and `TemplateDiagnostics` builds one `ERROR` frame at that line and column.
+
+```java
+public interface SourceMappedError {
+    String getTemplateName();
+    int getLineNumber();
+    int getColumnNumber();
+    String getMessage();
+}
+```
+
+Natural HTML analysis errors implement it. Pass the delegate loader to diagnostics so the source frame shows the original HTML, not the rewritten expressions.
+
+```java
+NaturalHtmlLoader loader = NaturalHtml.loader(baseLoader);
+
+try {
+    PebbleForge.engine().loader(loader).build().getTemplate("page.html");
+} catch (NaturalHtmlException error) {
+    System.err.println(TemplateDiagnostics.builder()
+            .loader(baseLoader)
+            .build()
+            .render(error)
+            .format());
+}
+```
+
+```text
+page.html:2:11: Expressions are not allowed in attribute names
+page.html:2
+> 2 |   <p data-{{ name }}="v">x</p>
+    |           ^
+```
+
+For mapped errors the caret uses the original column. Ordinary Pebble errors still use the first non-whitespace character because Pebble does not expose a column.
+
 ## Limits
 
 - Parent-body errors need `TemplateTrace.run` around the whole evaluation. A direct `evaluate` call without the wrapper may show only the failing template.
-- The caret points at the first non-whitespace character. Pebble does not expose a column number.
-- The loader must be able to read the template by name after the failure.
+- A source-mapped error needs the configured loader to read the original template. Passing a rewriting loader such as `NaturalHtmlLoader` makes the frame show generated text.
 - `embed` and cache nodes are not traced.
 - Parallel render branches use different threads and do not share the thread-local trace.
 - A committed response cannot be replaced by an error page. The view decorator records and logs the report but does not call `sendError`.
-- Source mapping for a future Natural HTML dialect is out of scope.
+- A source-mapped error produces one frame. It does not merge a separate trace chain.
 
 ## Next
 
-
-Natural HTML analysis errors are `NaturalHtmlException`, not `PebbleException`, so they carry `template:line:column` in the message but do not produce a `TemplateDiagnostics` source frame. The Natural HTML source map can locate generated offsets in the original file. See [NATURAL-HTML.md](NATURAL-HTML.md).
-- Add source maps for generated templates.
+PF-102 is closed. Remaining contract and integration work is tracked in [BACKLOG.md](BACKLOG.md).

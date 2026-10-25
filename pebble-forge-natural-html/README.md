@@ -18,7 +18,7 @@ PebbleEngine engine = PebbleForge.engine()
 
 A template is an ordinary HTML file with `{{ ... }}` expressions. The loader chooses `html`, `html_attr`, or `url` from the surrounding HTML context, rewrites the expression, and lets Pebble parse the result. Insertions preserve line numbers and the original file stays openable in a browser.
 
-The first slice supports expressions only. `{% ... %}` tags, includes, extends, components, macros, JavaScript, and CSS interpolation are rejected. See [docs/NATURAL-HTML.md](../docs/NATURAL-HTML.md) for supported and rejected contexts and the source map.
+The first slice supports expressions only. `{% ... %}` tags, includes, extends, components, macros, JavaScript, and CSS interpolation are rejected. `NaturalHtmlException` implements `SourceMappedError`, so `TemplateDiagnostics` can show the original line and column when given the delegate loader. See [docs/NATURAL-HTML.md](../docs/NATURAL-HTML.md) for supported and rejected contexts and the source map.
 
 Run:
 
