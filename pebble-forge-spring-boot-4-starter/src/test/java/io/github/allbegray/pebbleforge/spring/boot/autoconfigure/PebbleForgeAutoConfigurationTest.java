@@ -3,6 +3,7 @@ package io.github.allbegray.pebbleforge.spring.boot.autoconfigure;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
+import io.github.allbegray.pebbleforge.sandbox.SandboxPolicyResolver;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.error.PebbleException;
 import org.junit.jupiter.api.AfterEach;
@@ -118,6 +119,20 @@ class PebbleForgeAutoConfigurationTest {
     }
 
     @Test
+    void usesAUserPolicyResolver() {
+        runner.withPropertyValues("pebble.forge.sandbox.enabled=true")
+                .withUserConfiguration(PolicyResolverConfiguration.class)
+                .run(context -> {
+                    PebbleEngine engine = context.getBean(PebbleEngine.class);
+                    assertThat(render(engine, "raw", Map.of("value", "<b>x</b>")).strip())
+                            .isEqualTo("<b>x</b>");
+                    assertThatThrownBy(() -> render(engine, "security", Map.of()))
+                            .isInstanceOf(PebbleException.class)
+                            .hasMessageContaining("username");
+                });
+    }
+
+    @Test
     void usesAUserLimitsResolver() {
         runner.withPropertyValues("pebble.forge.sandbox.enabled=true")
                 .withUserConfiguration(LimitsConfiguration.class)
@@ -157,6 +172,17 @@ class PebbleForgeAutoConfigurationTest {
         SandboxLimitsResolver limitsResolver() {
             return SandboxLimitsResolver.builder(SandboxLimits.unlimited())
                     .exact("limited", SandboxLimits.builder().maxLoopIterations(1).build())
+                    .build();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class PolicyResolverConfiguration {
+
+        @Bean
+        SandboxPolicyResolver policyResolver() {
+            return SandboxPolicyResolver.builder(SandboxPolicy.strict())
+                    .exact("raw", SandboxPolicy.builder().allowRawOutput().build())
                     .build();
         }
     }

@@ -11,11 +11,15 @@ import java.io.Reader;
 public final class SandboxedLoader<T> implements Loader<T> {
 
     private final Loader<T> delegate;
-    private final SandboxPolicy policy;
+    private final SandboxPolicyResolver policies;
 
     public SandboxedLoader(Loader<T> delegate, SandboxPolicy policy) {
+        this(delegate, SandboxPolicyResolver.fixed(policy));
+    }
+
+    public SandboxedLoader(Loader<T> delegate, SandboxPolicyResolver policies) {
         this.delegate = delegate;
-        this.policy = policy;
+        this.policies = policies;
     }
 
     @Override
@@ -85,6 +89,12 @@ public final class SandboxedLoader<T> implements Loader<T> {
                 throw new LoaderException(null, "Template path traversal is not allowed: " + name);
             }
         }
+        if (name.chars().anyMatch(character ->
+                Character.isWhitespace(character) || Character.isISOControl(character)
+                        || character == '{' || character == '}' || character == '%')) {
+            throw new LoaderException(null, "Template name contains an invalid character: " + name);
+        }
+        SandboxPolicy policy = policies.resolve(name);
         if (!policy.templateNameValidator().test(name)) {
             throw new LoaderException(null, "Template name rejected by policy: " + name);
         }

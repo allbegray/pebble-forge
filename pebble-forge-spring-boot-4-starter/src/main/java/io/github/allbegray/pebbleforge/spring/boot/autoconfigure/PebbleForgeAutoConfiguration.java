@@ -4,6 +4,7 @@ import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
+import io.github.allbegray.pebbleforge.sandbox.SandboxPolicyResolver;
 import io.github.allbegray.pebbleforge.spring.SpringWebFunctions;
 import io.github.allbegray.pebbleforge.spring.security.SpringSecurityExtension;
 import io.github.allbegray.pebbleforge.spring.security.SpringSecurityFunctions;
@@ -61,6 +62,7 @@ public class PebbleForgeAutoConfiguration {
             List<Extension> extensions,
             ObjectProvider<MethodAccessValidator> methodAccessValidator,
             ObjectProvider<SandboxPolicy> sandboxPolicy,
+            ObjectProvider<SandboxPolicyResolver> policyResolver,
             ObjectProvider<SandboxLimitsResolver> limitsResolver,
             PebbleForgeProperties forgeProperties) {
 
@@ -81,7 +83,21 @@ public class PebbleForgeAutoConfiguration {
         if (properties.getDefaultLocale() != null) {
             builder.defaultLocale(properties.getDefaultLocale());
         }
-        methodAccessValidator.ifAvailable(builder::methodAccessValidator);
+        SandboxPolicyResolver resolver = policyResolver.getIfAvailable();
+        if (resolver != null) {
+            if (methodAccessValidator.getIfAvailable() != null) {
+                throw new IllegalStateException(
+                        "A MethodAccessValidator bean cannot be combined with a "
+                                + "SandboxPolicyResolver bean; set the validator on each policy");
+            }
+            if (sandboxPolicy.getIfAvailable() != null) {
+                throw new IllegalStateException(
+                        "Define either a SandboxPolicy bean or a SandboxPolicyResolver bean, not both");
+            }
+            builder.policies(resolver);
+        } else {
+            methodAccessValidator.ifAvailable(builder::methodAccessValidator);
+        }
         limitsResolver.ifAvailable(builder::limitsResolver);
 
         if (!extensions.isEmpty()) {
@@ -97,12 +113,14 @@ public class PebbleForgeAutoConfiguration {
                     .build());
         }
 
-        SandboxPolicy policy = sandboxPolicy.getIfAvailable();
-        if (policy == null && forgeProperties.getSandbox().isEnabled()) {
-            policy = buildSandboxPolicy(forgeProperties);
-        }
-        if (policy != null) {
-            builder.sandbox(policy);
+        if (resolver == null) {
+            SandboxPolicy policy = sandboxPolicy.getIfAvailable();
+            if (policy == null && forgeProperties.getSandbox().isEnabled()) {
+                policy = buildSandboxPolicy(forgeProperties);
+            }
+            if (policy != null) {
+                builder.sandbox(policy);
+            }
         }
 
         return builder.build();

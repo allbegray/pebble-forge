@@ -7,9 +7,11 @@ import io.github.allbegray.pebbleforge.language.LanguageExtension;
 import io.github.allbegray.pebbleforge.reload.ReloadingLoader;
 import io.github.allbegray.pebbleforge.sandbox.SandboxAttributeExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxExtensionCustomizer;
+import io.github.allbegray.pebbleforge.sandbox.PolicyAwareMethodAccessValidator;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
+import io.github.allbegray.pebbleforge.sandbox.SandboxPolicyResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxedExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxedLoader;
 import io.pebbletemplates.pebble.PebbleEngine;
@@ -44,6 +46,7 @@ public final class PebbleForge {
         private Loader<?> loader;
         private Components components;
         private SandboxPolicy sandbox;
+        private SandboxPolicyResolver policies;
         private SandboxLimitsResolver limitsResolver;
         private boolean language = true;
         private boolean devMode;
@@ -68,6 +71,11 @@ public final class PebbleForge {
 
         public Builder sandbox(SandboxPolicy sandbox) {
             this.sandbox = Objects.requireNonNull(sandbox, "sandbox");
+            return this;
+        }
+
+        public Builder policies(SandboxPolicyResolver policies) {
+            this.policies = Objects.requireNonNull(policies, "policies");
             return this;
         }
 
@@ -137,23 +145,43 @@ public final class PebbleForge {
         }
 
         public PebbleEngine build() {
+            if (sandbox != null && policies != null) {
+                throw new IllegalStateException(
+                        "Use sandbox(policy) or policies(resolver), not both");
+            }
+            if (methodAccessValidator != null && policies != null) {
+                throw new IllegalStateException(
+                        "methodAccessValidator(...) is not supported with policies(...); "
+                                + "set the validator on each SandboxPolicy");
+            }
+            SandboxPolicyResolver effectivePolicies = policies;
+            if (effectivePolicies == null && sandbox != null) {
+                effectivePolicies = SandboxPolicyResolver.fixed(sandbox);
+            }
             if (sandbox != null) {
                 requireSandboxSupport();
             }
+            final SandboxPolicyResolver policyResolver = effectivePolicies;
 
             Loader<?> effectiveLoader = loader == null ? new ClasspathLoader() : loader;
             if (devMode) {
                 effectiveLoader = ReloadingLoader.wrap(effectiveLoader);
             }
-            if (sandbox != null) {
-                effectiveLoader = new SandboxedLoader<>(effectiveLoader, sandbox);
-                delegate.methodAccessValidator(sandbox.methodAccessValidator());
-                delegate.maxRenderedSize(sandbox.maxRenderedChars());
+            if (effectivePolicies != null) {
+                effectiveLoader = new SandboxedLoader<>(effectiveLoader, effectivePolicies);
+                delegate.methodAccessValidator(new PolicyAwareMethodAccessValidator(effectivePolicies));
                 delegate.registerExtensionCustomizer(
-                        extension -> new SandboxExtensionCustomizer(extension, sandbox));
-                delegate.extension(new SandboxAttributeExtension(sandbox));
-            } else if (maxRenderedChars >= 0) {
-                delegate.maxRenderedSize(maxRenderedChars);
+                        extension -> new SandboxExtensionCustomizer(extension, policyResolver));
+                delegate.extension(new SandboxAttributeExtension(effectivePolicies));
+            }
+            int outputLimit = effectivePolicies == null
+                    ? -1
+                    : strictestOutputLimit(effectivePolicies);
+            if (maxRenderedChars >= 0) {
+                outputLimit = outputLimit < 0 ? maxRenderedChars : Math.min(outputLimit, maxRenderedChars);
+            }
+            if (outputLimit >= 0) {
+                delegate.maxRenderedSize(outputLimit);
             }
 
             delegate.loader(effectiveLoader);
@@ -166,11 +194,11 @@ public final class PebbleForge {
             if (executorService != null) {
                 delegate.executorService(executorService);
             }
-            if (methodAccessValidator != null && sandbox == null) {
+            if (methodAccessValidator != null) {
                 delegate.methodAccessValidator(methodAccessValidator);
             }
 
-            if (sandbox != null && sandbox.forceAutoEscaping()) {
+            if (effectivePolicies != null && forcesAutoEscaping(effectivePolicies)) {
                 delegate.autoEscaping(true);
             } else if (autoEscaping != null) {
                 delegate.autoEscaping(autoEscaping);
@@ -178,37 +206,57 @@ public final class PebbleForge {
 
             SandboxLimitsResolver effectiveLimits = limitsResolver;
             if (effectiveLimits == null) {
-                effectiveLimits = sandbox == null
+                effectiveLimits = effectivePolicies == null
                         ? SandboxLimitsResolver.fixed(SandboxLimits.unlimited())
-                        : SandboxLimitsResolver.fixed(SandboxLimits.from(sandbox));
+                        : name -> SandboxLimits.from(policyResolver.resolve(name));
             }
 
             if (components != null) {
                 Extension componentExtension = new ComponentsExtension(components, effectiveLimits);
-                delegate.extension(sandbox == null
+                delegate.extension(effectivePolicies == null
                         ? componentExtension
-                        : new SandboxedExtension(componentExtension, sandbox));
+                        : new SandboxedExtension(componentExtension, effectivePolicies));
             }
 
             Extension includeExtension = new IncludeExtension(effectiveLimits);
-            delegate.extension(sandbox == null
+            delegate.extension(effectivePolicies == null
                     ? includeExtension
-                    : new SandboxedExtension(includeExtension, sandbox));
+                    : new SandboxedExtension(includeExtension, effectivePolicies));
 
             if (language) {
                 Extension languageExtension = new LanguageExtension(effectiveLimits);
-                delegate.extension(sandbox == null
+                delegate.extension(effectivePolicies == null
                         ? languageExtension
-                        : new SandboxedExtension(languageExtension, sandbox));
+                        : new SandboxedExtension(languageExtension, effectivePolicies));
             }
 
             for (Extension extension : extensions) {
-                delegate.extension(sandbox == null
+                delegate.extension(effectivePolicies == null
                         ? extension
-                        : new SandboxedExtension(extension, sandbox));
+                        : new SandboxedExtension(extension, effectivePolicies));
             }
 
             return delegate.build();
+        }
+
+        private static int strictestOutputLimit(SandboxPolicyResolver policies) {
+            int result = -1;
+            for (SandboxPolicy policy : policies.policies()) {
+                int limit = policy.maxRenderedChars();
+                if (limit >= 0 && (result < 0 || limit < result)) {
+                    result = limit;
+                }
+            }
+            return result;
+        }
+
+        private static boolean forcesAutoEscaping(SandboxPolicyResolver policies) {
+            for (SandboxPolicy policy : policies.policies()) {
+                if (policy.forceAutoEscaping()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void requireSandboxSupport() {

@@ -13,10 +13,14 @@ import java.lang.reflect.Field;
  */
 public final class SandboxAttributeResolver implements AttributeResolver {
 
-    private final SandboxPolicy policy;
+    private final SandboxPolicyResolver policies;
 
     public SandboxAttributeResolver(SandboxPolicy policy) {
-        this.policy = policy;
+        this(SandboxPolicyResolver.fixed(policy));
+    }
+
+    public SandboxAttributeResolver(SandboxPolicyResolver policies) {
+        this.policies = policies;
     }
 
     @Override
@@ -33,6 +37,7 @@ public final class SandboxAttributeResolver implements AttributeResolver {
         }
 
         String name = String.valueOf(attributeNameValue);
+        SandboxPolicy policy = SandboxPolicySupport.policyFor(policies, filename);
         if (SandboxMethodAccessValidator.isDeniedObject(instance)) {
             throw denied(name, filename, lineNumber);
         }

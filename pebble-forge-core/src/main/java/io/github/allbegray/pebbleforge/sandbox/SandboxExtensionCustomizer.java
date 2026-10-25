@@ -11,46 +11,43 @@ import io.pebbletemplates.pebble.operator.BinaryOperator;
 import io.pebbletemplates.pebble.operator.UnaryOperator;
 import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Applies a sandbox policy to Pebble's built-in extensions.
+ * Applies a policy resolver to Pebble's built-in extensions.
  */
 public final class SandboxExtensionCustomizer extends ExtensionCustomizer {
 
-    private final SandboxPolicy policy;
+    private final SandboxPolicyResolver policies;
 
     public SandboxExtensionCustomizer(Extension delegate, SandboxPolicy policy) {
+        this(delegate, SandboxPolicyResolver.fixed(policy));
+    }
+
+    public SandboxExtensionCustomizer(Extension delegate, SandboxPolicyResolver policies) {
         super(delegate);
-        this.policy = policy;
+        this.policies = policies;
     }
 
     @Override
     public Map<String, Filter> getFilters() {
-        return filter(super.getFilters(), policy::isFilterAllowed);
+        return SandboxPolicyExtensionSupport.filters(super.getFilters(), policies);
     }
 
     @Override
     public Map<String, Test> getTests() {
-        return filter(super.getTests(), policy::isTestAllowed);
+        return SandboxPolicyExtensionSupport.tests(super.getTests(), policies);
     }
 
     @Override
     public Map<String, Function> getFunctions() {
-        return filter(super.getFunctions(), policy::isFunctionAllowed);
+        return SandboxPolicyExtensionSupport.functions(super.getFunctions(), policies);
     }
 
     @Override
     public List<TokenParser> getTokenParsers() {
-        List<TokenParser> parsers = super.getTokenParsers();
-        if (parsers == null) {
-            return List.of();
-        }
-        return parsers.stream()
-                .filter(parser -> policy.isTagAllowed(parser.getTag()))
-                .toList();
+        return SandboxPolicyExtensionSupport.tokenParsers(super.getTokenParsers(), policies);
     }
 
     @Override
@@ -65,7 +62,7 @@ public final class SandboxExtensionCustomizer extends ExtensionCustomizer {
 
     @Override
     public Map<String, Object> getGlobalVariables() {
-        return filter(super.getGlobalVariables(), policy::isGlobalVariableAllowed);
+        return SandboxPolicyExtensionSupport.globals(super.getGlobalVariables(), policies);
     }
 
     @Override
@@ -75,19 +72,7 @@ public final class SandboxExtensionCustomizer extends ExtensionCustomizer {
 
     @Override
     public List<AttributeResolver> getAttributeResolver() {
-        return super.getAttributeResolver();
-    }
-
-    private static <T> Map<String, T> filter(Map<String, T> values, java.util.function.Predicate<String> allowed) {
-        if (values == null || values.isEmpty()) {
-            return Map.of();
-        }
-        Map<String, T> result = new LinkedHashMap<>();
-        values.forEach((name, value) -> {
-            if (allowed.test(name)) {
-                result.put(name, value);
-            }
-        });
-        return Map.copyOf(result);
+        return SandboxPolicyExtensionSupport.attributeResolvers(
+                super.getAttributeResolver(), policies);
     }
 }

@@ -1,6 +1,7 @@
 package io.github.allbegray.pebbleforge.include;
 
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxRuntime;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
@@ -45,7 +46,8 @@ final class ForgeIncludeNode extends AbstractRenderableNode {
                     self.getName());
         }
 
-        SandboxLimits limits = limitsResolver.resolve(self.getName());
+        String callerName = SandboxRuntime.currentTemplateName(self);
+        SandboxLimits limits = limitsResolver.resolve(callerName);
         int maxDepth = limits.maxIncludeDepth();
         if (maxDepth >= 0 && IncludeTrace.depth() >= maxDepth) {
             throw new PebbleException(
@@ -60,10 +62,17 @@ final class ForgeIncludeNode extends AbstractRenderableNode {
             map = mapExpression.evaluate(self, context);
         }
 
-        IncludeTrace.push(new IncludeTrace.IncludeFrame(self.getName(), getLineNumber(),
+        IncludeTrace.push(new IncludeTrace.IncludeFrame(callerName, getLineNumber(),
                 templateName));
         try {
-            self.includeTemplate(writer, context, templateName, map);
+            String resolved = self.resolveRelativePath(templateName);
+            if (resolved == null) {
+                resolved = templateName;
+            }
+            String includedName = resolved;
+            Map<?, ?> includedMap = map;
+            SandboxRuntime.runWith(includedName,
+                    () -> self.includeTemplate(writer, context, templateName, includedMap));
         } catch (RuntimeException error) {
             IncludeTrace.attach(error);
             throw error;

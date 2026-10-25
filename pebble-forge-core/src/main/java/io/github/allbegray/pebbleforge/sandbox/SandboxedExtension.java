@@ -11,47 +11,48 @@ import io.pebbletemplates.pebble.operator.BinaryOperator;
 import io.pebbletemplates.pebble.operator.UnaryOperator;
 import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Applies a sandbox policy to a user-provided extension.
+ * Applies a policy resolver to a user-provided extension.
  */
 public final class SandboxedExtension extends AbstractExtension {
 
     private final Extension delegate;
-    private final SandboxPolicy policy;
+    private final SandboxPolicyResolver policies;
 
     public SandboxedExtension(Extension delegate, SandboxPolicy policy) {
+        this(delegate, SandboxPolicyResolver.fixed(policy));
+    }
+
+    public SandboxedExtension(Extension delegate, SandboxPolicyResolver policies) {
         this.delegate = delegate;
-        this.policy = policy;
+        this.policies = policies;
     }
 
     @Override
     public Map<String, Filter> getFilters() {
-        return filter(delegate.getFilters(), policy::isFilterAllowed);
+        Map<String, Filter> filters = delegate.getFilters();
+        rejectReservedFilters(filters);
+        return SandboxPolicyExtensionSupport.filters(filters, policies);
     }
 
     @Override
     public Map<String, Test> getTests() {
-        return filter(delegate.getTests(), policy::isTestAllowed);
+        Map<String, Test> tests = delegate.getTests();
+        rejectReservedTests(tests);
+        return SandboxPolicyExtensionSupport.tests(tests, policies);
     }
 
     @Override
     public Map<String, Function> getFunctions() {
-        return filter(delegate.getFunctions(), policy::isFunctionAllowed);
+        return SandboxPolicyExtensionSupport.functions(delegate.getFunctions(), policies);
     }
 
     @Override
     public List<TokenParser> getTokenParsers() {
-        List<TokenParser> parsers = delegate.getTokenParsers();
-        if (parsers == null) {
-            return List.of();
-        }
-        return parsers.stream()
-                .filter(parser -> policy.isTagAllowed(parser.getTag()))
-                .toList();
+        return SandboxPolicyExtensionSupport.tokenParsers(delegate.getTokenParsers(), policies);
     }
 
     @Override
@@ -66,7 +67,7 @@ public final class SandboxedExtension extends AbstractExtension {
 
     @Override
     public Map<String, Object> getGlobalVariables() {
-        return filter(delegate.getGlobalVariables(), policy::isGlobalVariableAllowed);
+        return SandboxPolicyExtensionSupport.globals(delegate.getGlobalVariables(), policies);
     }
 
     @Override
@@ -79,16 +80,18 @@ public final class SandboxedExtension extends AbstractExtension {
         return List.of();
     }
 
-    private static <T> Map<String, T> filter(Map<String, T> values, java.util.function.Predicate<String> allowed) {
-        if (values == null || values.isEmpty()) {
-            return Map.of();
+    private static void rejectReservedFilters(Map<String, Filter> filters) {
+        if (filters != null && (filters.containsKey("escape")
+                || filters.containsKey("default"))) {
+            throw new IllegalArgumentException(
+                    "User extensions cannot override the escape or default filter");
         }
-        Map<String, T> result = new LinkedHashMap<>();
-        values.forEach((name, value) -> {
-            if (allowed.test(name)) {
-                result.put(name, value);
-            }
-        });
-        return Map.copyOf(result);
+    }
+
+    private static void rejectReservedTests(Map<String, Test> tests) {
+        if (tests != null && tests.containsKey("defined")) {
+            throw new IllegalArgumentException(
+                    "User extensions cannot override the defined test");
+        }
     }
 }

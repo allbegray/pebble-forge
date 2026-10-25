@@ -10,14 +10,18 @@ import java.util.List;
  */
 public final class SandboxAttributeExtension extends AbstractExtension {
 
-    private final SandboxPolicy policy;
+    private final SandboxPolicyResolver policies;
 
     public SandboxAttributeExtension(SandboxPolicy policy) {
-        this.policy = policy;
+        this(SandboxPolicyResolver.fixed(policy));
+    }
+
+    public SandboxAttributeExtension(SandboxPolicyResolver policies) {
+        this.policies = policies;
     }
 
     @Override
     public List<AttributeResolver> getAttributeResolver() {
-        return List.of(new SandboxAttributeResolver(policy));
+        return List.of(new SandboxAttributeResolver(policies));
     }
 }

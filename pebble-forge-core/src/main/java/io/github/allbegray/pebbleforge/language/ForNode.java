@@ -1,6 +1,7 @@
 package io.github.allbegray.pebbleforge.language;
 
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxRuntime;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
@@ -77,7 +78,7 @@ public final class ForNode extends AbstractRenderableNode {
             LoopVariables loop = null;
             int index = 0;
             int iterations = 0;
-            SandboxLimits limits = limitsResolver.resolve(self.getName());
+            SandboxLimits limits = limitsResolver.resolve(SandboxRuntime.currentTemplateName(self));
             int maxLoopIterations = limits.maxLoopIterations();
             int maxTotalIterations = limits.maxTotalIterations();
             IterationBudget.Counter budget = maxTotalIterations >= 0

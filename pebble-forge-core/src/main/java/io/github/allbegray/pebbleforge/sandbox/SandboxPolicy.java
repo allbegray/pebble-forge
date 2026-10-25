@@ -224,7 +224,8 @@ public final class SandboxPolicy {
         public Builder denyFilters(String... filters) {
             for (String filter : filters) {
                 if ("escape".equals(filter)) {
-                    throw new IllegalArgumentException("The escape filter is required by autoescaping");
+                    throw new IllegalArgumentException(
+                            "The escape filter is required by autoescaping");
                 }
                 deniedFilters.add(requireName(filter, "filter"));
             }

@@ -1,6 +1,7 @@
 package io.github.allbegray.pebbleforge.component;
 
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxRuntime;
 import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
 import io.pebbletemplates.pebble.extension.escaper.SafeString;
@@ -137,7 +138,8 @@ public final class ComponentNode extends AbstractRenderableNode {
         scope.put("__slots", slots);
         scope.put("__component", componentPath);
 
-        self.includeTemplate(writer, context, componentPath, scope);
+        SandboxRuntime.runWith(componentPath,
+                () -> self.includeTemplate(writer, context, componentPath, scope));
     }
 
     private Map<String, Object> captureSlots(
@@ -182,7 +184,7 @@ public final class ComponentNode extends AbstractRenderableNode {
 
     private int slotLimit(PebbleTemplateImpl self, EvaluationContextImpl context) {
         int outputLimit = context.getMaxRenderedSize();
-        SandboxLimits limits = limitsResolver.resolve(self.getName());
+        SandboxLimits limits = limitsResolver.resolve(SandboxRuntime.currentTemplateName(self));
         int componentLimit = components.maxSlotChars();
         int templateLimit = limits.maxSlotChars();
         if (componentLimit < 0) {
