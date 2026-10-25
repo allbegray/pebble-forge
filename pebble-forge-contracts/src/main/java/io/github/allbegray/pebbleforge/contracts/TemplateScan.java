@@ -1,12 +1,13 @@
 package io.github.allbegray.pebbleforge.contracts;
 
-import io.pebbletemplates.pebble.error.LoaderException;
+import io.github.allbegray.pebbleforge.component.PropsNode;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 final class TemplateScan {
@@ -15,10 +16,10 @@ final class TemplateScan {
     final Set<String> declaredVariables = new LinkedHashSet<>();
     final List<VariableRead> reads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();
+    final List<IncludeEdge> includes = new ArrayList<>();
     final Map<String, Boolean> props = new LinkedHashMap<>();
-    boolean failed;
-    boolean complete;
-    LoaderException loadError;
+    ParentCall parent;
+    Failure failure;
 
     TemplateScan(String templateName) {
         this.templateName = templateName;
@@ -31,7 +32,60 @@ final class TemplateScan {
                          boolean dynamicProps, int line) {
     }
 
-    void declareProps(List<io.github.allbegray.pebbleforge.component.PropsNode.Prop> declared) {
+    sealed interface IncludeTarget permits StaticTarget, DynamicTarget {
+    }
+
+    record StaticTarget(String name) implements IncludeTarget {
+        StaticTarget {
+            Objects.requireNonNull(name, "name");
+        }
+    }
+
+    record DynamicTarget() implements IncludeTarget {
+    }
+
+    record IncludeEdge(IncludeTarget target, String literalTarget, String resolvedTarget,
+                       String resolutionError, Set<String> withKeys, boolean dynamicWithKeys,
+                       Set<String> visibleAtCall, int line) {
+        IncludeEdge {
+            Objects.requireNonNull(target, "target");
+            withKeys = Set.copyOf(withKeys);
+            visibleAtCall = Set.copyOf(visibleAtCall);
+            if (line < 0) {
+                throw new IllegalArgumentException("line must not be negative");
+            }
+        }
+    }
+
+    record ParentCall(String literalTarget, String resolvedTarget, String resolutionError,
+                      boolean dynamicTarget, int line) {
+        ParentCall {
+            if (line < 0) {
+                throw new IllegalArgumentException("line must not be negative");
+            }
+        }
+    }
+
+    sealed interface Failure permits LoadFailure, ParseFailure {
+        String message();
+    }
+
+    record LoadFailure(String message) implements Failure {
+        LoadFailure {
+            Objects.requireNonNull(message, "message");
+        }
+    }
+
+    record ParseFailure(String message, int line) implements Failure {
+        ParseFailure {
+            Objects.requireNonNull(message, "message");
+            if (line < 0) {
+                throw new IllegalArgumentException("line must not be negative");
+            }
+        }
+    }
+
+    void declareProps(List<PropsNode.Prop> declared) {
         for (var prop : declared) {
             props.put(prop.name(), prop.defaultValue() == null);
             declaredVariables.add(prop.name());

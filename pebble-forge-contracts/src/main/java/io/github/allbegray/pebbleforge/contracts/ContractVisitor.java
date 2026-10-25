@@ -2,12 +2,15 @@ package io.github.allbegray.pebbleforge.contracts;
 
 import io.github.allbegray.pebbleforge.component.ComponentNode;
 import io.github.allbegray.pebbleforge.component.PropsNode;
+import io.github.allbegray.pebbleforge.include.IncludeNodeView;
 import io.github.allbegray.pebbleforge.language.ForNode;
 import io.github.allbegray.pebbleforge.language.WithNode;
 import io.pebbletemplates.pebble.extension.AbstractNodeVisitor;
 import io.pebbletemplates.pebble.node.ArgumentsNode;
+import io.pebbletemplates.pebble.node.ExtendsNode;
 import io.pebbletemplates.pebble.node.MacroNode;
 import io.pebbletemplates.pebble.node.NamedArgumentNode;
+import io.pebbletemplates.pebble.node.Node;
 import io.pebbletemplates.pebble.node.PositionalArgumentNode;
 import io.pebbletemplates.pebble.node.SetNode;
 import io.pebbletemplates.pebble.node.TestInvocationExpression;
@@ -26,12 +29,15 @@ import io.pebbletemplates.pebble.node.expression.TernaryExpression;
 import io.pebbletemplates.pebble.node.expression.UnaryExpression;
 import io.pebbletemplates.pebble.template.PebbleTemplateImpl;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 final class ContractVisitor extends AbstractNodeVisitor {
 
     private final TemplateScan scan;
+    private final Set<Node> consumed = Collections.newSetFromMap(new IdentityHashMap<>());
     private MapExpression withMap;
 
     ContractVisitor(TemplateScan scan, PebbleTemplateImpl template) {
@@ -52,7 +58,37 @@ final class ContractVisitor extends AbstractNodeVisitor {
     }
 
     @Override
-    public void visit(io.pebbletemplates.pebble.node.Node node) {
+    public void visit(ExtendsNode node) {
+        Expression<?> parent = node.getParentExpression();
+        String literal = parent instanceof LiteralStringExpression expression
+                ? expression.getValue()
+                : null;
+        String resolved = null;
+        String resolutionError = null;
+        if (literal != null) {
+            try {
+                resolved = getTemplate().resolveRelativePath(literal);
+            } catch (RuntimeException error) {
+                resolutionError = PebbleErrors.messageOf(error);
+            }
+            if (resolved == null) {
+                resolved = literal;
+            }
+        }
+        scan.parent = new TemplateScan.ParentCall(literal, resolved, resolutionError,
+                literal == null, node.getLineNumber());
+        super.visit(node);
+    }
+
+    @Override
+    public void visit(Node node) {
+        if (consumed.remove(node)) {
+            return;
+        }
+        if (node instanceof IncludeNodeView include) {
+            recordInclude(include);
+            return;
+        }
         if (node instanceof ContextVariableExpression variable) {
             scan.reads.add(new TemplateScan.VariableRead(variable.getName(),
                     variable.getLineNumber()));
@@ -137,6 +173,59 @@ final class ContractVisitor extends AbstractNodeVisitor {
             withMap = with.getValuesExpression() instanceof MapExpression map ? map : null;
             return;
         }
+    }
+
+    private void recordInclude(IncludeNodeView include) {
+        Expression<?> target = include.getTargetExpression();
+        String literal = target instanceof LiteralStringExpression expression
+                ? expression.getValue()
+                : null;
+
+        String resolved = null;
+        String resolutionError = null;
+        if (literal != null) {
+            try {
+                resolved = getTemplate().resolveRelativePath(literal);
+            } catch (RuntimeException error) {
+                resolutionError = PebbleErrors.messageOf(error);
+            }
+            if (resolved == null) {
+                resolved = literal;
+            }
+        }
+
+        Set<String> visibleAtCall = Set.copyOf(scan.declaredVariables);
+        Set<String> withKeys = new LinkedHashSet<>();
+        boolean dynamicWithKeys = false;
+
+        MapExpression with = include.getWithExpression();
+        if (with != null) {
+            consumed.add(with);
+            for (var entry : with.getEntries().entrySet()) {
+                if (entry.getKey() instanceof LiteralStringExpression key) {
+                    withKeys.add(key.getValue());
+                } else {
+                    dynamicWithKeys = true;
+                    scan(entry.getKey());
+                }
+                scan(entry.getValue());
+            }
+        }
+
+        if (target instanceof ContextVariableExpression) {
+            consumed.add(target);
+        } else {
+            scan(target);
+            consumed.add(target);
+        }
+
+        TemplateScan.IncludeTarget includeTarget = literal == null
+                ? new TemplateScan.DynamicTarget()
+                : new TemplateScan.StaticTarget(resolved);
+
+        scan.includes.add(new TemplateScan.IncludeEdge(includeTarget, literal, resolved,
+                resolutionError, withKeys, dynamicWithKeys, visibleAtCall,
+                include.getLineNumber()));
     }
 
     private void recordComponent(ComponentNode component) {

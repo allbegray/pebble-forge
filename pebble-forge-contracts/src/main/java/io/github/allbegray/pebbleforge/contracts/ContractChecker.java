@@ -3,17 +3,12 @@ package io.github.allbegray.pebbleforge.contracts;
 import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
 import io.pebbletemplates.pebble.PebbleEngine;
-import io.pebbletemplates.pebble.error.LoaderException;
-import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.loader.Loader;
-import io.pebbletemplates.pebble.template.PebbleTemplate;
-import io.pebbletemplates.pebble.template.PebbleTemplateImpl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Checks template variable reads and component prop calls against a model schema.
@@ -23,10 +18,14 @@ public final class ContractChecker {
     private final PebbleEngine engine;
     private final Components components;
     private final ModelSchema model;
+    private final Set<String> rootTemplates;
+    private final Set<String> partialTemplates;
 
     private ContractChecker(Builder builder) {
         this.components = builder.components;
         this.model = builder.model;
+        this.rootTemplates = builder.rootTemplates;
+        this.partialTemplates = builder.partialTemplates;
         this.engine = PebbleForge.engine()
                 .loader(builder.loader)
                 .components(builder.components)
@@ -39,123 +38,26 @@ public final class ContractChecker {
         return new Builder();
     }
 
+    /**
+     * Checks one template as a root and follows its static includes.
+     */
     public ContractResult check(String templateName) {
-        List<ContractDiagnostic> diagnostics = new ArrayList<>();
-        TemplateScan scan = scan(templateName, new HashMap<>(), diagnostics);
-        if (scan.loadError != null) {
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    templateName, 0, "Could not load template: " + scan.loadError.getMessage()));
-        }
-        return new ContractResult(diagnostics);
+        Objects.requireNonNull(templateName, "templateName");
+        return session().check(templateName);
     }
 
-    private TemplateScan scan(String templateName, Map<String, TemplateScan> scans,
-            List<ContractDiagnostic> diagnostics) {
-        TemplateScan existing = scans.get(templateName);
-        if (existing != null) {
-            return existing;
-        }
-
-        TemplateScan scan = new TemplateScan(templateName);
-        scans.put(templateName, scan);
-
-        try {
-            PebbleTemplate template = engine.getTemplate(templateName);
-            if (!(template instanceof PebbleTemplateImpl implementation)) {
-                diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.WARNING,
-                        templateName, 0, "Template is not a PebbleTemplateImpl and was skipped"));
-                return scan;
-            }
-
-            implementation.getRootNode().accept(new ContractVisitor(scan, implementation));
-            reportMissingVariables(scan, diagnostics);
-
-            for (TemplateScan.ComponentCall call : scan.componentCalls) {
-                validateComponentCall(call, scan.templateName, scans, diagnostics);
-            }
-        } catch (LoaderException e) {
-            scan.failed = true;
-            scan.loadError = e;
-        } catch (PebbleException e) {
-            scan.failed = true;
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    templateName, lineOf(e),
-                    "Could not parse template: " + e.getMessage()));
-        } finally {
-            scan.complete = true;
-        }
-
-        return scan;
+    /**
+     * Checks a complete template set, inferring which templates are roots.
+     * Every supplied template is parsed and structurally analyzed. Roots are
+     * evaluated with an empty scope and follow their static includes.
+     */
+    public ContractResult checkAll(Collection<String> templateNames) {
+        Objects.requireNonNull(templateNames, "templateNames");
+        return session().checkAll(templateNames);
     }
 
-    private static int lineOf(PebbleException error) {
-        Integer line = error.getLineNumber();
-        return line == null ? 0 : line;
-    }
-
-    private void reportMissingVariables(TemplateScan scan, List<ContractDiagnostic> diagnostics) {
-        if (model.allowsAny()) {
-            return;
-        }
-        for (TemplateScan.VariableRead read : scan.reads) {
-            if (scan.declaredVariables.contains(read.name()) || model.allows(read.name())) {
-                continue;
-            }
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    scan.templateName, read.line(),
-                    "Variable [" + read.name() + "] is not declared in the model schema"));
-        }
-    }
-
-    private void validateComponentCall(TemplateScan.ComponentCall call, String templateName,
-            Map<String, TemplateScan> scans, List<ContractDiagnostic> diagnostics) {
-        if (call.dynamicName()) {
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.WARNING,
-                    templateName, call.line(),
-                    "Component name is dynamic and cannot be checked"));
-            return;
-        }
-
-        String componentPath;
-        try {
-            componentPath = components.resolvePath(call.name());
-        } catch (IllegalArgumentException e) {
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    templateName, call.line(), "Invalid component name: " + e.getMessage()));
-            return;
-        }
-
-        TemplateScan component = scan(componentPath, scans, diagnostics);
-        if (component.loadError != null) {
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                    templateName, call.line(),
-                    "Component [" + call.name() + "] template [" + componentPath
-                            + "] could not be loaded: " + component.loadError.getMessage()));
-            return;
-        }
-        if (!component.complete || component.failed) {
-            return;
-        }
-
-        for (Map.Entry<String, Boolean> prop : component.props.entrySet()) {
-            if (prop.getValue() && !call.props().contains(prop.getKey())) {
-                diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.ERROR,
-                        templateName, call.line(),
-                        "Component [" + call.name() + "] requires prop [" + prop.getKey() + "]"));
-            }
-        }
-        for (String prop : call.props()) {
-            if (!component.props.containsKey(prop)) {
-                diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.WARNING,
-                        templateName, call.line(),
-                        "Component [" + call.name() + "] does not declare prop [" + prop + "]"));
-            }
-        }
-        if (call.dynamicProps()) {
-            diagnostics.add(new ContractDiagnostic(ContractDiagnostic.Severity.WARNING,
-                    templateName, call.line(),
-                    "Component [" + call.name() + "] uses a dynamic prop name and cannot be checked"));
-        }
+    private CheckSession session() {
+        return new CheckSession(engine, components, model, rootTemplates, partialTemplates);
     }
 
     public static final class Builder {
@@ -163,6 +65,8 @@ public final class ContractChecker {
         private Loader<?> loader;
         private Components components = Components.defaults();
         private ModelSchema model = ModelSchema.any();
+        private Set<String> rootTemplates = Set.of();
+        private Set<String> partialTemplates = Set.of();
 
         public Builder loader(Loader<?> loader) {
             this.loader = Objects.requireNonNull(loader, "loader");
@@ -179,11 +83,44 @@ public final class ContractChecker {
             return this;
         }
 
+        /**
+         * Forces the named templates to be checked as roots. Wins over
+         * {@link #partialTemplates(Collection)}.
+         */
+        public Builder rootTemplates(Collection<String> names) {
+            this.rootTemplates = copyNames(names, "rootTemplates");
+            return this;
+        }
+
+        /**
+         * Keeps the named templates out of root inference. They are still
+         * checked when a root or component reaches them statically.
+         */
+        public Builder partialTemplates(Collection<String> names) {
+            this.partialTemplates = copyNames(names, "partialTemplates");
+            return this;
+        }
+
         public ContractChecker build() {
             if (loader == null) {
                 throw new IllegalStateException("A loader is required");
             }
             return new ContractChecker(this);
+        }
+
+        private static Set<String> copyNames(Collection<String> names, String label) {
+            Objects.requireNonNull(names, label);
+            Set<String> copy = new LinkedHashSet<>();
+            for (String name : names) {
+                Objects.requireNonNull(name, "templateName");
+                String trimmed = name.trim();
+                if (trimmed.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            label + " must not contain an empty template name");
+                }
+                copy.add(trimmed);
+            }
+            return Set.copyOf(copy);
         }
     }
 }

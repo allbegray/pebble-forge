@@ -4,6 +4,7 @@ import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.contracts.testing.MapLoader;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -232,12 +233,652 @@ class ContractCheckerTest {
         assertThat(result.format()).contains("[missing]");
     }
 
-    private static ContractResult check(Map<String, String> templates, ModelSchema model) {
+    @Test
+    void includeWithLiteralWithKeyIsClean() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" with {"item": "x"} %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeWithoutWithUsesCallerLoopLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% for item in items %}{% include "partial.peb" %}{% endfor %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeWithoutWithUsesCallerSetLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% set item = "x" %}{% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeInsideWithBlockSeesKeys() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% with {"item": "x"} %}{% include "partial.peb" %}{% endwith %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeInsideComponentSeesProps() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% component "card" with {"item": "x"} %}{% endcomponent %}
+                                """,
+                        "components/card.peb", """
+                                {% props item %}{% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeDoesNotSeeLaterCallerLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" %}{% set item = "x" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void includeMergesCallerLocalsAndWithKeys() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% set outer = "x" %}{% include "partial.peb" with {"item": "y"} %}
+                                """,
+                        "partial.peb", "{{ outer }}{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void includeWithKeysDoNotLeakToCaller() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" with {"item": "x"} %}{{ item }}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void includeWithValueReadsAreChecked() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" with {"item": missing} %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[missing]");
+        });
+    }
+
+    @Test
+    void nestedIncludesSeeTransitiveCallerNames() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% set item = "x" %}{% include "middle.peb" %}
+                                """,
+                        "middle.peb", """
+                                {% include "leaf.peb" %}
+                                """,
+                        "leaf.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void sameScopeFromTwoCallersReportsBothCallSites() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% include \"partial.peb\" %}",
+                        "other.peb", "{% include \"partial.peb\" %}",
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "other.peb", "partial.peb"));
+
+        assertThat(result.errors()).hasSize(2);
+        assertThat(result.errors()).extracting(ContractDiagnostic::template)
+                .containsExactlyInAnyOrder("page.peb", "other.peb");
+    }
+
+    @Test
+    void multipleCallersGetPerCallSiteDiagnostics() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% for item in items %}{% include "partial.peb" with {"item": item} %}{% endfor %}
+                        """,
+                "other.peb", """
+                        {% include "partial.peb" %}
+                        """,
+                "partial.peb", "{{ item }}");
+
+        ContractResult result = checker(templates,
+                ModelSchema.builder().variable("items").build())
+                .checkAll(List.of("page.peb", "other.peb", "partial.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("other.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void includeTargetResolvesRelativeToCaller() {
+        Map<String, String> templates = Map.of(
+                "pages/page.peb", """
+                        {% include "./partial.peb" with {"item": "x"} %}
+                        """,
+                "pages/partial.peb", "{{ item }}");
+
+        ContractResult result = checker(templates, ModelSchema.builder().build())
+                .check("pages/page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void dynamicIncludeTargetWarnsWithoutReportingTarget() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% include partial %}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.hasErrors()).isFalse();
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.line()).isEqualTo(1);
+            assertThat(warning.message()).contains("dynamic");
+        });
+    }
+
+    @Test
+    void dynamicCompoundIncludeTargetStillReportsBaseRead() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% include page.layout %}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.warnings()).singleElement()
+                .satisfies(warning -> assertThat(warning.message()).contains("dynamic"));
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message()).contains("[page]"));
+    }
+
+    @Test
+    void dynamicWithKeyMakesScopeIncomplete() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" with {key: "x"} %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().variable("key").build());
+
+        assertThat(result.hasErrors()).isFalse();
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.line()).isEqualTo(1);
+            assertThat(warning.message()).contains("dynamic with key");
+        });
+    }
+
+    @Test
+    void dynamicWithKeyIsACallerRead() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "partial.peb" with {key: "x"} %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message()).contains("[key]"));
+        assertThat(result.format()).doesNotContain("[item]");
+    }
+
+    @Test
+    void missingIncludeTargetIsDiagnostic() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        first line
+                        {% include "missing.peb" %}
+                        """),
+                ModelSchema.any());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(2);
+            assertThat(error.message()).contains("Included template [missing.peb]");
+        });
+    }
+
+    @Test
+    void missingIncludeTargetReportsEachCaller() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% include \"missing.peb\" %}",
+                        "other.peb", "{% include \"missing.peb\" %}"),
+                ModelSchema.any())
+                .checkAll(List.of("page.peb", "other.peb"));
+
+        assertThat(result.errors()).hasSize(2);
+        assertThat(result.errors()).extracting(ContractDiagnostic::template)
+                .containsExactlyInAnyOrder("page.peb", "other.peb");
+    }
+
+    @Test
+    void includedParseFailureKeepsItsLineAndChain() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                first line
+                                {% include "broken.peb" %}
+                                """,
+                        "broken.peb", "{% if %}"),
+                ModelSchema.any());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("broken.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Included template [broken.peb]")
+                    .contains("page.peb:2");
+        });
+    }
+
+    @Test
+    void invalidIncludeTargetIsDiagnostic() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% include \"../..\" %}"),
+                ModelSchema.any());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("Include target [../..] is invalid");
+        });
+    }
+
+    @Test
+    void nestedMissingReadPointsAtTheInnerIncludeWithItsChain() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% include "middle.peb" %}
+                                """,
+                        "middle.peb", """
+                                {% include "leaf.peb" %}
+                                """,
+                        "leaf.peb", """
+                                first line
+                                {{ item }}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("middle.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("leaf.peb:2")
+                    .contains("[item]")
+                    .contains("include path: page.peb:1 -> middle.peb:1");
+        });
+    }
+
+    @Test
+    void includeCycleIsReportedOnce() {
+        ContractResult result = checker(
+                Map.of(
+                        "a.peb", """
+                                {% include "b.peb" %}
+                                """,
+                        "b.peb", """
+                                {% include "a.peb" %}
+                                """),
+                ModelSchema.any())
+                .check("a.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("b.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Include cycle: a.peb -> b.peb -> a.peb");
+        });
+    }
+
+    @Test
+    void selfIncludeIsReported() {
+        ContractResult result = checker(
+                Map.of("a.peb", "{% include \"a.peb\" %}"),
+                ModelSchema.any())
+                .check("a.peb");
+
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message())
+                        .contains("Include cycle: a.peb -> a.peb"));
+    }
+
+    @Test
+    void componentDoesNotSeeCallerLocals() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% set item = "x" %}{% component "card" %}{% endcomponent %}
+                                """,
+                        "components/card.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/card.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void checkAllDoesNotCheckIncludedPartialAsRoot() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% for item in items %}{% include "partial.peb" %}{% endfor %}
+                        """,
+                "partial.peb", "{{ item }}");
+        ContractChecker checker = checker(templates,
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(checker.checkAll(List.of("page.peb", "partial.peb")).isClean()).isTrue();
+    }
+
+    @Test
+    void checkOnPartialStillChecksItAsRoot() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% for item in items %}{% include "partial.peb" %}{% endfor %}
+                        """,
+                "partial.peb", "{{ item }}");
+        ContractChecker checker = checker(templates,
+                ModelSchema.builder().variable("items").build());
+
+        ContractResult result = checker.check("partial.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("partial.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void checkAllStillChecksTrueRoot() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{{ missing }}",
+                        "partial.peb", "{% set unused = 1 %}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "partial.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[missing]");
+        });
+    }
+
+    @Test
+    void checkAllStillChecksComponentModelReads() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% component "card" %}{% endcomponent %}
+                                """,
+                        "components/card.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "components/card.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/card.peb");
+            assertThat(error.message()).contains("[missing]");
+        });
+    }
+
+    @Test
+    void componentStatusWinsOverPartialOverride() {
+        ContractResult result = checkerBuilder(
+                Map.of(
+                        "page.peb", """
+                                {% component "card" %}{% endcomponent %}
+                                """,
+                        "components/card.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .partialTemplates(List.of("components/card.peb"))
+                .build()
+                .checkAll(List.of("page.peb", "components/card.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/card.peb");
+            assertThat(error.message()).contains("[missing]");
+        });
+    }
+
+    @Test
+    void checkAllReportsPureCycle() {
+        ContractResult result = checker(
+                Map.of(
+                        "a.peb", """
+                                {% include "b.peb" %}
+                                """,
+                        "b.peb", """
+                                {% include "a.peb" %}
+                                """),
+                ModelSchema.any())
+                .checkAll(List.of("a.peb", "b.peb"));
+
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message())
+                        .contains("Include cycle: a.peb -> b.peb -> a.peb"));
+    }
+
+    @Test
+    void explicitRootWinsOverIncludedPartialInference() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% for item in items %}{% include "partial.peb" with {"item": item} %}{% endfor %}
+                        """,
+                "partial.peb", "{{ item }}");
+
+        ContractResult inferred = checker(templates,
+                ModelSchema.builder().variable("items").build())
+                .checkAll(List.of("page.peb", "partial.peb"));
+        assertThat(inferred.isClean()).isTrue();
+
+        ContractResult forced = checkerBuilder(templates,
+                ModelSchema.builder().variable("items").build())
+                .rootTemplates(List.of("partial.peb"))
+                .build()
+                .checkAll(List.of("page.peb", "partial.peb"));
+        assertThat(forced.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("partial.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void explicitPartialIsNotCheckedAsRoot() {
+        Map<String, String> templates = Map.of("shared.peb", "{{ item }}");
+        ModelSchema model = ModelSchema.builder().build();
+
+        ContractResult inferred = checker(templates, model)
+                .checkAll(List.of("shared.peb"));
+        assertThat(inferred.errors()).singleElement()
+                .satisfies(error -> assertThat(error.template()).isEqualTo("shared.peb"));
+
+        ContractResult excluded = checkerBuilder(templates, model)
+                .partialTemplates(List.of("shared.peb"))
+                .build()
+                .checkAll(List.of("shared.peb"));
+        assertThat(excluded.isClean()).isTrue();
+    }
+
+    @Test
+    void checkAllReportsPureSelfCycle() {
+        ContractResult result = checker(
+                Map.of("a.peb", "{% include \"a.peb\" %}"),
+                ModelSchema.any())
+                .checkAll(List.of("a.peb"));
+
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message())
+                        .contains("Include cycle: a.peb -> a.peb"));
+    }
+
+    @Test
+    void checkAllReportsStructuralErrorInUnreachablePartial() {
+        ContractResult result = checkerBuilder(
+                Map.of(
+                        "page.peb", "",
+                        "broken.peb", "{% if %}"),
+                ModelSchema.any())
+                .partialTemplates(List.of("broken.peb"))
+                .build()
+                .checkAll(List.of("page.peb", "broken.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("broken.peb");
+            assertThat(error.message()).contains("Could not parse template");
+        });
+    }
+
+    @Test
+    void extendsParentIsNotFollowedInThisSlice() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block body %}hello{% endblock %}
+                                """,
+                        "layout.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void dynamicExtendsParentRemainsAModelRead() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends layout %}{% block body %}hello{% endblock %}
+                                """,
+                        "layout.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[layout]");
+        });
+    }
+
+    @Test
+    void explicitRootOutsideUniverseSuppliesScope() {
+        ContractResult result = checkerBuilder(
+                Map.of(
+                        "page.peb", "{{ item }}",
+                        "layout.peb", """
+                                {% set item = "x" %}{% include "page.peb" %}
+                                """),
+                ModelSchema.builder().build())
+                .rootTemplates(List.of("layout.peb"))
+                .build()
+                .checkAll(List.of("page.peb"));
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void diagnosticsAreDeterministic() {
+        ContractChecker checker = checker(
+                Map.of(
+                        "page.peb", "{{ missing }}",
+                        "other.peb", "{{ alsoMissing }}"),
+                ModelSchema.builder().build());
+
+        String first = checker
+                .checkAll(List.of("other.peb", "page.peb"))
+                .format();
+        String second = checker
+                .checkAll(List.of("page.peb", "other.peb"))
+                .format();
+
+        assertThat(first).isEqualTo(second);
+        assertThat(first.indexOf("other.peb")).isLessThan(first.indexOf("page.peb"));
+    }
+
+    private static ContractChecker checker(Map<String, String> templates, ModelSchema model) {
+        return checkerBuilder(templates, model).build();
+    }
+
+    private static ContractChecker.Builder checkerBuilder(Map<String, String> templates,
+            ModelSchema model) {
         return ContractChecker.builder()
                 .loader(new MapLoader(templates))
                 .components(Components.defaults())
-                .model(model)
-                .build()
-                .check("page.peb");
+                .model(model);
+    }
+
+    private static ContractResult check(Map<String, String> templates, ModelSchema model) {
+        return checker(templates, model).check("page.peb");
     }
 }
