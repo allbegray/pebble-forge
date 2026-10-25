@@ -12,13 +12,13 @@ java {
 dependencies {
     api(project(":pebble-forge-core"))
 
-    compileOnly("org.springframework:spring-web:7.0.7")
+    compileOnly("org.springframework:spring-web:7.0.10")
     compileOnly("org.springframework.security:spring-security-core:7.0.8")
     compileOnly("org.springframework.security:spring-security-web:7.0.8")
     compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
 
-    testImplementation("org.springframework:spring-web:7.0.7")
-    testImplementation("org.springframework:spring-test:7.0.7")
+    testImplementation("org.springframework:spring-web:7.0.10")
+    testImplementation("org.springframework:spring-test:7.0.10")
     testImplementation("org.springframework.security:spring-security-core:7.0.8")
     testImplementation("org.springframework.security:spring-security-web:7.0.8")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
