@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-131 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+134 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -234,6 +234,7 @@ pebble.forge.dev-mode=true
 | Output limit | 1,000,000 characters |
 | Loop limit | 100,000 iterations per loop |
 | Include depth | 16 nested includes |
+| Slot capture | 1,000,000 characters per component |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
 | Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
 | Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
@@ -262,6 +263,7 @@ pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
 pebble.forge.sandbox.max-include-depth=16
+pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 

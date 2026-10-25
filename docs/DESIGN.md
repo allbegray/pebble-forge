@@ -199,6 +199,7 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 | Output limit | 1,000,000 characters |
 | Loop limit | 100,000 iterations per loop |
 | Include depth | 16 nested includes |
+| Slot capture | 1,000,000 characters per component |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
 | Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
 | Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
@@ -233,6 +234,7 @@ pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
 pebble.forge.sandbox.max-include-depth=16
+pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
@@ -300,14 +302,14 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 
 | Area | Tests | What it proves |
 | --- | --- | --- |
-| Components | 13 | Real templates, real engine, exact output, slot isolation |
+| Components | 15 | Real templates, real engine, exact output, slot isolation |
 | Language | 28 | Switch, break, continue, with, destructuring, multi-value cases, sandbox on and off |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
 | Diagnostics | 7 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
-| Sandbox | 21 | Real templates, real engine, whole-render assertions, loop limit |
+| Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
@@ -354,7 +356,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The break-aware `for` replaces Pebble's built-in `for`. It mirrors the current loop variables, map, array, enumeration, parallel, and `else` behavior. A future Pebble change to `for` must be mirrored here.
 - Component depth uses a static thread-local counter. Nested renders across different engines on the same thread share that counter. The counter resets at depth zero.
 - A sandbox policy is fixed per engine. One engine that serves multiple trust levels applies the same policy to all of them. Build separate engines for separate trust levels.
-- The output limit caps written output. Slot capture uses a separate cap per slot, so many large slots can allocate memory before the main output limit fails.
+- The output limit caps written output. Slot capture has a separate per-component budget, and captured content is counted again when written to the main output.
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
