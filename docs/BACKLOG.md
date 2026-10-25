@@ -15,7 +15,7 @@
 ## 현재 상태
 
 - 버전은 `0.3.0` GitHub release다. main은 `0.4.0`이고 Maven Central과 Gradle Plugin Portal 배포는 보류 중이다.
-- 테스트는 688개다. core 215, contracts 164, diagnostics 23, natural-html 130, Gradle 플러그인 45, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
+- 테스트는 702개다. core 215, contracts 178, diagnostics 23, natural-html 130, Gradle 플러그인 45, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-cli`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - P0, P1, P2는 완료했다. WebFlux는 지원하지 않으며 WebMVC만 지원한다.
 - PF-101과 PF-202.1은 완료로 닫았고, 아래 `완료 항목의 후속`에 남은 범위를 따로 적는다.
@@ -41,7 +41,6 @@
 
 ### PF-101 계약 검사
 
-- 상향(ancestor) 블록 가시성의 줄 순서. 하향 extends는 부모 블록 시작 줄로 제한했지만, 자식이 부모 블록 로컬을 볼 때는 아직 줄을 비교하지 않는다.
 - 표현식 수준 타입 검사, union, optional, nullability, 컴포넌트 prop 타입.
 - `required` 속성 강제. 현재는 스키마에서 파싱만 한다.
 - inline suppression comments.
@@ -104,5 +103,5 @@
 | 릴리스 | 포함 | 완료 조건 |
 | --- | --- | --- |
 | 0.3.0 | P0, P1, P2 | Maven Central 6개 모듈, Gradle Plugin Portal 2개 플러그인, CI 초록색, Javadoc Pages, 라이선스와 릴리스 노트 |
-| 0.4.0 | 완료 항목의 후속 | 교차 템플릿 블록 순서, 표현식 타입, Natural HTML 확장, inline suppression |
+| 0.4.0 | 완료 항목의 후속 | 표현식 타입, `required` 강제, Natural HTML 확장, inline suppression |
 | 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |

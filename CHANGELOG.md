@@ -7,6 +7,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Fixed
 
 - Parent reads and includes now see a child block declaration only after the corresponding parent block starts. Child root declarations remain visible before every parent read.
+- Child block reads now see ancestor root and block declarations only before the ancestor block tag. Child root reads no longer see ancestor declarations.
 
 ## [0.3.0] - 2026-10-25
 

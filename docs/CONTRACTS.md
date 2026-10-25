@@ -210,7 +210,7 @@ Components stay closed over props and the model. The renderer shares the caller 
 - Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. A child conditional set does not satisfy a parent read unless every branch leaves it visible.
 - Extends parent reads are reported at the parent template and line. Load and parse failures at the extends edge include an extends path. Parent-body read errors do not repeat the whole chain.
 - A dynamic or missing parent suppresses scope-dependent missing reads owned by blocks because the parent declarations are unknown. Model reads inside the child block are still checked.
-- Cross-template block ownership is presence-based, but block summaries are definite end-of-flow names. An unconditional block declaration can satisfy a later parent content read. A conditional or loop-only block declaration cannot. A root read in the same template sees a block only when the block starts at or before the read line. A parent read or include sees a descendant block declaration only after the parent block starts. Ancestor block visibility remains line-blind upward. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
+- Cross-template block ownership is presence-based, but block summaries are definite end-of-flow names. An unconditional block declaration can satisfy a later parent content read. A conditional or loop-only block declaration cannot. A root read in the same template sees a block only when the block starts at or before the read line. A parent read or include sees a descendant block declaration only after the parent block starts. A child block read sees ancestor names only before the ancestor block tag, and a child root read sees none. Ancestor root ordering uses the earliest declaration line, so a branch-only declaration can still be a false negative. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
 - Dynamic include targets and dynamic `with` keys are warnings. A dynamic target whose base expression is a model read still checks that base.
 - A partial reached only through a dynamic include is inferred as a root unless it is listed in `partialTemplates`.
 - Components do not see caller locals at check time, even though runtime `includeTemplate` shares the scope chain.
@@ -228,6 +228,5 @@ Components stay closed over props and the model. The renderer shares the caller 
 
 ## Next slices
 
-- Line-sensitive upward ancestor block visibility.
 - Publish the Gradle plugin to the Plugin Portal with release credentials.
 - Inline suppression comments for intentional dynamic templates.

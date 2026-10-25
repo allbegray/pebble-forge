@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The source release is at <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>. The snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal` until Maven Central is available.
 
-688 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+702 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 

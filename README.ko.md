@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 소스 릴리스는 <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>에 있습니다. Maven Central이 준비되기 전까지는 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 688개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
+테스트는 702개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
