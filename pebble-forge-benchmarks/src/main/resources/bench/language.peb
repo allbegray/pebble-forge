@@ -1,0 +1,2 @@
+{% with {"role": role} %}{% switch role %}{% case "admin", "owner" %}A{% case "user" %}U{% default %}D{% endswitch %}{% endwith %}
+{% for n in numbers %}{% if n == 2 %}{% continue %}{% endif %}{% if n == 6 %}{% break %}{% endif %}{{ n }};{% endfor %}

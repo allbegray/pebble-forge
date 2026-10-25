@@ -1,0 +1,3 @@
+{% component "card" with {"title": title, "count": items | length} %}
+{% slot "body" %}<p>{{ message }}</p>{% endslot %}
+{% endcomponent %}

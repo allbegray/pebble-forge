@@ -1,0 +1,2 @@
+{% extends "sandbox-layout" %}
+{% block body %}{% component "card" with {"title": title, "count": items | length} %}{% slot "body" %}<p>{{ message }}</p>{% endslot %}{% endcomponent %}{% with {"role": role} %}{% switch role %}{% case "admin", "owner" %}A{% case "user" %}U{% default %}D{% endswitch %}{% endwith %}{% endblock %}

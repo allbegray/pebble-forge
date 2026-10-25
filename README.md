@@ -25,6 +25,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | Module | Purpose |
 | --- | --- |
 | `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
+| `pebble-forge-benchmarks` | Manual JMH throughput benchmarks for plain, component, sandbox, and language rendering |
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
 | `pebble-forge-diagnostics` | Source frames and include/extends traces for template errors |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` and `renderPebbleTemplate` Gradle tasks |

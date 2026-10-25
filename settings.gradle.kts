@@ -14,6 +14,7 @@ rootProject.name = "pebble-forge"
 
 include("pebble-forge-core")
 include("pebble-forge-contracts")
+include("pebble-forge-benchmarks")
 include("pebble-forge-diagnostics")
 include("pebble-forge-gradle-plugin")
 include("pebble-forge-spring")
