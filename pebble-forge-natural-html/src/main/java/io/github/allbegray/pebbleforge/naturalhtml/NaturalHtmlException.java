@@ -1,9 +1,11 @@
 package io.github.allbegray.pebbleforge.naturalhtml;
 
+import io.github.allbegray.pebbleforge.diagnostics.SourceMappedError;
+
 /**
  * A template rejection with a position in the original source.
  */
-public final class NaturalHtmlException extends RuntimeException {
+public final class NaturalHtmlException extends RuntimeException implements SourceMappedError {
 
     /**
      * The template name.

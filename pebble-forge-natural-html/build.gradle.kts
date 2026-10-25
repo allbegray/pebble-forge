@@ -11,6 +11,7 @@ java {
 
 dependencies {
     api(project(":pebble-forge-core"))
+    api(project(":pebble-forge-diagnostics"))
     implementation("org.jsoup:jsoup:1.20.1")
 
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
