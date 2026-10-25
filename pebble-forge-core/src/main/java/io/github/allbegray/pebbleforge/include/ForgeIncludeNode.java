@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Include node with depth limiting and failure tracing.
  */
-final class ForgeIncludeNode extends AbstractRenderableNode {
+final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNodeView {
 
     private final Expression<?> includeExpression;
     private final MapExpression mapExpression;
@@ -31,6 +31,16 @@ final class ForgeIncludeNode extends AbstractRenderableNode {
         this.includeExpression = includeExpression;
         this.mapExpression = mapExpression;
         this.limitsResolver = limitsResolver;
+    }
+
+    @Override
+    public Expression<?> getTargetExpression() {
+        return includeExpression;
+    }
+
+    @Override
+    public MapExpression getWithExpression() {
+        return mapExpression;
     }
 
     @Override
