@@ -32,7 +32,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `break` and `continue` are validated lexically.
 - The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
 - Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
-- Contract checks follow static includes with a presence-based scope snapshot. Extends, dynamic includes, and flow-sensitive block scopes are not followed.
+- Contract checks follow static includes with a lexical scope snapshot. Direct reads remain presence-based. Extends, dynamic includes, and full flow-sensitive block scopes are not followed.
 - Spring Security support covers the servlet stack only.
 
 ## [0.1.0] - Unreleased

@@ -198,9 +198,9 @@ Pebble Forge adds these language features that Pebble does not ship.
 
 The contracts module parses each template once into context-free facts. A node visitor records root reads, local declarations, component calls, and include edges. An include edge carries the literal and resolved target, resolution errors, literal `with` keys, dynamic flags, the include line, and a snapshot of the caller's declared names at that point.
 
-A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads, follows static includes with `caller scope + visible names at the call + literal with keys`, and evaluates components closed over props and the model. Evaluation is memoized by template and scope. The current policy is presence-based, not flow-sensitive.
+A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and evaluates components closed over props and the model. Evaluation is memoized by template and scope. The current policy is presence-based, not flow-sensitive.
 
-A template with no incoming static include edge is a root. Components are always roots. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. Static include cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete. Extends records a parent edge but is not followed in this slice.
+A template with no incoming static include edge is a root. Direct component entry points and static component call targets are roots. A nested template under the component root that is only included is a partial. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. A non-component, non-partial template that no root reaches is checked as a fallback root. Static include cycles and component cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete. Extends records a parent edge but is not followed in this slice.
 
 ## Sandbox
 
@@ -332,9 +332,9 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Iteration budget | 3 | Sequential loops, nested loops, per-render reset |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
-| Contracts | 57 | Model variables, include scopes, root policy, component props, dynamic names, cycles, missing targets, schema bypass |
+| Contracts | 72 | Model variables, lexical include scopes, root policy, fallback roots, component props, dynamic names, cycles, missing targets, schema bypass |
 | Diagnostics | 7 | Source frames, include stacks, nested includes, parse errors, missing source |
-| Gradle plugin | 12 | TestKit projects cover partials, true roots, components, dynamic includes, root/partial overrides, and unknown names |
+| Gradle plugin | 14 | TestKit projects cover partials, true roots, components, dynamic includes, root/partial overrides, unknown names, and direct task registration |
 | Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
@@ -394,7 +394,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
-- Contract checks follow static includes with a flat snapshot of the caller scope. They do not follow extends, dynamic includes, or flow-sensitive block scopes. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
+- Contract checks follow static includes with a lexical snapshot of the caller scope. Direct reads still use a flat declared-name set, so a loop or with declaration can satisfy a read after the construct. They do not follow extends, dynamic includes, or full flow-sensitive block scopes.
+- A non-component, non-partial template that is not reachable from a root is checked as a fallback root. A nested template under the component root that is only included is treated as a partial.
 - Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.
 - A partial reached only through a dynamic include has no static incoming edge and is inferred as a root unless it is listed in `partialTemplates`.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).

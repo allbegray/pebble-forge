@@ -32,7 +32,7 @@ ContractResult all = checker.checkAll(List.of("page", "partial", "components/car
 
 `check(name)` treats the name as a root. `checkAll(names)` infers roots from the static include graph, checks partials through their callers, and checks components closed over props and the model. Add `.rootTemplates(...)` or `.partialTemplates(...)` when inference is not enough.
 
-The checker is presence-based. It follows static includes with a flat scope snapshot. It does not perform Java type checking, flow-sensitive block analysis, or extends propagation.
+The checker is presence-based for direct reads. It follows static includes with a lexical scope snapshot. It does not perform Java type checking, full flow-sensitive block analysis, or extends propagation.
 
 For the Gradle task, use the `pebble-forge-gradle-plugin` module or the documented `checkPebbleTemplates` task.
 

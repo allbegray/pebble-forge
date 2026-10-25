@@ -58,10 +58,12 @@ The plugin is not on the Gradle Plugin Portal yet. Use the included build or pub
 The task walks the template tree once and calls `ContractChecker.checkAll`. It does not check each file as an independent root.
 
 1. A name in `rootTemplates` is a root.
-2. A component is always a root. Component membership wins over `partialTemplates`, and the task logs a warning when a component is listed there.
+2. A direct component entry point, or a template called by a static `{% component %}` call, is a root. Component membership wins over `partialTemplates`, and the task logs a warning when a direct component is listed there.
 3. A name in `partialTemplates` is not a root.
-4. A non-component template with no incoming static include edge is a root.
-5. Everything else is checked only through the includes that reach it.
+4. A nested template under the component root that is only included, not called as a component, is treated as a partial.
+5. A non-component template with no incoming static include edge is a root.
+6. Everything else is checked only through the includes that reach it.
+7. A non-component, non-partial template that no root reaches is checked as a fallback root. This keeps an excluded partial from hiding a page with a missing variable.
 
 A static include target is resolved with the loader's `resolveRelativePath`, the same call the renderer uses. A template name in the Gradle DSL is validated against the walked template set, so a typo fails the build instead of silently disabling a check.
 
@@ -101,8 +103,8 @@ ContractResult templateSet = checker.checkAll(List.of("page", "partial", "compon
 3. Include edges carry the literal target, resolved target, resolution error, literal `with` keys, dynamic flags, line, and a snapshot of the caller's declared names at the include point. Extends records a parent edge but does not follow it.
 4. The analyze pass checks every parsed template for parse failures, missing include targets, invalid targets, dynamic targets, dynamic `with` keys, component calls, and prop mismatches. Unreachable partials still get these structural checks.
 5. Root inference uses the static include graph and the explicit root and partial sets.
-6. The evaluate pass checks reads. It follows a static include with `caller scope + visible names at the call + literal with keys`. A component is evaluated closed over its props and the model.
-7. Include cycles are errors. A dynamic include target or a dynamic `with` key makes the affected child scope incomplete, so missing-variable errors are suppressed for that call site and a warning explains why.
+6. The evaluate pass checks reads. It follows a static include with `caller scope + lexical visible names at the call + literal with keys`. A component is evaluated closed over its props and the model. A component call that repeats a template already being rendered is reported as a component cycle.
+7. Include cycles are errors. A dynamic include target is checked for its target-variable read but is not followed. A dynamic `with` map or dynamic `with` key makes the affected child scope incomplete, so missing-variable errors are suppressed for that call site and a warning explains why.
 8. Local declarations include `set` names, `for` variables, `loop`, `with` map keys, macro arguments, and component props.
 
 Parsed templates are cached per run. Diagnostic order is deterministic.
@@ -128,12 +130,16 @@ Components stay closed over props and the model. The renderer shares the caller 
 
 ## Known limits
 
-- The check is presence-based, not flow-sensitive. A variable assigned later in a template satisfies an earlier read.
-- Static includes are followed with a flat snapshot of the caller's declared names. This is not a block-scoped analysis.
+- Direct reads use a presence-based declared-name set, not flow-sensitive analysis. A variable assigned later in a template satisfies an earlier read.
+- Include visibility uses a lexical snapshot at the include point. Loop variables, `with` keys, and macro arguments stop being visible when their construct ends.
+- `set` declarations inside `if`, `switch`, and block bodies are still added to the enclosing scope. This is the remaining presence-based approximation.
 - Extends parents are recorded but not followed. A parent template is checked as its own root when it is in the template set.
 - Dynamic include targets and dynamic `with` keys are warnings. A dynamic target whose base expression is a model read still checks that base.
 - A partial reached only through a dynamic include is inferred as a root unless it is listed in `partialTemplates`.
 - Components do not see caller locals at check time, even though runtime `includeTemplate` shares the scope chain.
+- A bare dynamic include target is checked as a model read. A compound target checks its base expression. Neither can be followed to a template.
+- A nested template under the component root is a partial unless a static component call targets it or `rootTemplates` forces it.
+- A component cycle is reported at the call line. Component analysis is closed, so a component that intentionally reads caller state still fails.
 - A `with` block must use a map literal for its keys to be visible to the checker. A dynamic map produces incomplete scope information.
 - `with only` isolation is not modeled. A variable visible outside the block can satisfy a read inside it.
 - Macros imported from another template are not expanded.

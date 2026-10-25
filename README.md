@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-221 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+238 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -153,7 +153,7 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-A template with no incoming static include edge is a root. Components are always roots. A partial is checked through the includes that reach it. `rootTemplates` forces a dual-role template. `partialTemplates` covers a fragment reached only through a dynamic include. Names are relative to the template root with the suffix removed.
+A template with no incoming static include edge is a root. Direct components and statically called component templates are roots. A nested template under the component root that is only included is a partial. A partial is checked through the includes that reach it. A non-partial template that no root reaches is checked as a fallback root. `rootTemplates` forces a dual-role template. `partialTemplates` covers a fragment reached only through a dynamic include. Names are relative to the template root with the suffix removed.
 
 A missing model variable or required component prop fails the build. Dynamic include targets, dynamic `with` keys, unknown props, and dynamic component names are warnings. Include cycles are errors.
 

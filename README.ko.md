@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 221개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 238개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -153,7 +153,7 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-정적 include가 들어오지 않는 템플릿은 루트입니다. 컴포넌트는 항상 루트입니다. partial은 자신을 include하는 경로를 통해서만 검사합니다. `rootTemplates`는 루트이면서 partial인 템플릿을 강제로 검사합니다. `partialTemplates`는 동적 include로만 도달하는 조각을 루트 추론에서 뺍니다. 이름은 템플릿 루트 기준 상대 경로에서 접미사를 뺀 값입니다.
+정적 include가 들어오지 않는 템플릿은 루트입니다. 직접 컴포넌트와 정적 컴포넌트 호출 대상은 루트입니다. 컴포넌트 루트 아래에서 include로만 쓰이는 중첩 템플릿은 partial입니다. partial은 자신을 include하는 경로를 통해서만 검사합니다. 어떤 루트에서도 도달하지 않는 non-partial 템플릿은 fallback 루트로 검사합니다. `rootTemplates`는 루트이면서 partial인 템플릿을 강제로 검사합니다. `partialTemplates`는 동적 include로만 도달하는 조각을 루트 추론에서 뺍니다. 이름은 템플릿 루트 기준 상대 경로에서 접미사를 뺀 값입니다.
 
 없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 동적 include 대상, 동적 `with` 키, 알 수 없는 prop, 동적 컴포넌트 이름은 경고입니다. include 순환은 오류입니다.
 
