@@ -9,10 +9,13 @@ import io.pebbletemplates.pebble.loader.FileLoader;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
@@ -22,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -73,6 +77,16 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
     public abstract SetProperty<String> getVariables();
 
     /**
+     * Returns the optional JSON or YAML schema file with model variables.
+     *
+     * @return the schema file
+     */
+    @InputFile
+    @Optional
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract RegularFileProperty getSchemaFile();
+
+    /**
      * Returns whether every model variable is allowed.
      *
      * @return true when the model schema allows any variable
@@ -115,10 +129,17 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
                 .suffix("")
                 .build();
 
-        ModelSchema schema = getAllowAnyVariable().get()
+        SchemaFileLoader.Schema fileSchema = getSchemaFile().isPresent()
+                ? SchemaFileLoader.load(getSchemaFile().get().getAsFile())
+                : SchemaFileLoader.Schema.empty();
+        Set<String> variables = new LinkedHashSet<>(getVariables().get());
+        variables.addAll(fileSchema.variables());
+        boolean allowAnyVariable = getAllowAnyVariable().get() || fileSchema.allowAnyVariable();
+
+        ModelSchema schema = allowAnyVariable
                 ? ModelSchema.any()
                 : ModelSchema.builder()
-                        .variables(getVariables().get().toArray(String[]::new))
+                        .variables(variables.toArray(String[]::new))
                         .build();
 
         Set<String> templateNames = templateNames(root.toPath(), suffix);

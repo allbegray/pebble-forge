@@ -1,6 +1,7 @@
 package io.github.allbegray.pebbleforge.gradle;
 
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 
@@ -42,6 +43,13 @@ public abstract class PebbleForgeContractsExtension {
      * @return the variable names
      */
     public abstract SetProperty<String> getVariables();
+
+    /**
+     * Returns the optional JSON or YAML schema file with model variables.
+     *
+     * @return the schema file
+     */
+    public abstract RegularFileProperty getSchemaFile();
 
     /**
      * Returns whether every model variable is allowed.

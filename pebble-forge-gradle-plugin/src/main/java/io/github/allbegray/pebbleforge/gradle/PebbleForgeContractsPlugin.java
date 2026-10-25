@@ -49,6 +49,7 @@ public final class PebbleForgeContractsPlugin implements Plugin<Project> {
                     check.getTemplateSuffix().set(extension.getTemplateSuffix());
                     check.getComponentRoot().set(extension.getComponentRoot());
                     check.getVariables().set(extension.getVariables());
+                    check.getSchemaFile().set(extension.getSchemaFile());
                     check.getAllowAnyVariable().set(extension.getAllowAnyVariable());
                     check.getRootTemplates().set(extension.getRootTemplates());
                     check.getPartialTemplates().set(extension.getPartialTemplates());

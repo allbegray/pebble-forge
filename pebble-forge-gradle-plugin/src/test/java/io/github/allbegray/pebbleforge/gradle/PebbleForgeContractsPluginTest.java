@@ -189,6 +189,160 @@ class PebbleForgeContractsPluginTest {
                 .contains("with the template suffix removed");
     }
 
+    @Test
+    void jsonSchemaDeclaresAVariable() throws IOException {
+        writeSchemaProject("schema.json", """
+                {
+                  "$schema": "https://example.com/contract.schema.json",
+                  "variables": ["page"],
+                  "allowAnyVariable": false
+                }
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void yamlSchemaDeclaresAVariable() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  - page
+                allowAnyVariable: false
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void schemaVariablesDoNotIncludeUndeclaredNames() throws IOException {
+        writeSchemaProject("schema.yml", """
+                variables:
+                  - items
+                """, "{{ missing }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput()).contains("Variable [missing]");
+    }
+
+    @Test
+    void schemaVariablesMergeWithTheDsl() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  - items
+                """, "{{ page.title }} {{ items }}",
+                "variables.add(\"page\")");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void schemaAllowAnyVariableSuppressesMissingVariableErrors() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables: []
+                allowAnyVariable: true
+                """, "{{ missing }}");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput())
+                .contains("BUILD SUCCESSFUL")
+                .doesNotContain("Variable [missing]");
+    }
+
+    @Test
+    void malformedJsonFailsWithTheSchemaPath() throws IOException {
+        writeSchemaProject("schema.json", "{\"variables\": [}", "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Could not parse schema file")
+                .contains("schema.json");
+    }
+
+    @Test
+    void malformedYamlFailsWithTheSchemaPath() throws IOException {
+        writeSchemaProject("schema.yaml", "variables: [page", "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Could not parse schema file")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void unknownSchemaFieldNamesTheField() throws IOException {
+        writeSchemaProject("schema.yaml", """
+                variables:
+                  - page
+                unexpected: true
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Unknown schema field [unexpected]")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void nonArrayVariablesFails() throws IOException {
+        writeSchemaProject("schema.yaml", "variables: page\n", "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Schema field [variables] must be an array")
+                .contains("schema.yaml");
+    }
+
+    @Test
+    void unsupportedSchemaExtensionFails() throws IOException {
+        writeSchemaProject("schema.txt", """
+                variables:
+                  - page
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("Unsupported schema file extension")
+                .contains("schema.txt");
+    }
+
+    @Test
+    void blankSchemaVariableFails() throws IOException {
+        writeSchemaProject("schema.json", """
+                {"variables": ["page", "  "]}
+                """, "{{ page.title }}");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("must be a non-blank string")
+                .contains("index 1");
+    }
+
+    @Test
+    void missingSchemaFileFailsClearly() throws IOException {
+        writeProject("{{ page.title }}", null);
+        configureProject(false, "schemaFile.set(file(\"missing.yaml\"))");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("missing.yaml")
+                .contains("does not exist");
+    }
+
     private GradleRunner runner() {
         return GradleRunner.create()
                 .withProjectDir(projectDir.toFile())
@@ -208,6 +362,27 @@ class PebbleForgeContractsPluginTest {
     private void writeProject(Map<String, String> templates, String... configuration)
             throws IOException {
         configureProject(configuration);
+        writeTemplates(templates);
+    }
+
+    private void writeSchemaProject(
+            String schemaFileName, String schema, String page, String... configuration)
+            throws IOException {
+        writeSchemaProject(schemaFileName, schema, Map.of("page.peb", page), configuration);
+    }
+
+    private void writeSchemaProject(
+            String schemaFileName, String schema, Map<String, String> templates,
+            String... configuration) throws IOException {
+        writeTemplates(templates);
+        Files.writeString(projectDir.resolve(schemaFileName), schema);
+        String[] schemaConfiguration = new String[configuration.length + 1];
+        schemaConfiguration[0] = "schemaFile.set(file(\"" + schemaFileName + "\"))";
+        System.arraycopy(configuration, 0, schemaConfiguration, 1, configuration.length);
+        configureProject(false, schemaConfiguration);
+    }
+
+    private void writeTemplates(Map<String, String> templates) throws IOException {
         Path root = projectDir.resolve("src/main/resources/templates");
         for (Map.Entry<String, String> template : templates.entrySet()) {
             Path file = root.resolve(template.getKey());
@@ -217,9 +392,16 @@ class PebbleForgeContractsPluginTest {
     }
 
     private void configureProject(String... configuration) throws IOException {
+        configureProject(true, configuration);
+    }
+
+    private void configureProject(boolean declarePage, String... configuration) throws IOException {
         Files.writeString(projectDir.resolve("settings.gradle.kts"),
                 "rootProject.name = \"contracts-test\"\n");
         StringBuilder extra = new StringBuilder();
+        if (declarePage) {
+            extra.append("    variables.add(\"page\")\n");
+        }
         for (String line : configuration) {
             extra.append("    ").append(line).append('\n');
         }
@@ -229,7 +411,6 @@ class PebbleForgeContractsPluginTest {
                 }
 
                 pebbleForgeContracts {
-                    variables.add("page")
                 %s}
                 """.formatted(extra));
     }
