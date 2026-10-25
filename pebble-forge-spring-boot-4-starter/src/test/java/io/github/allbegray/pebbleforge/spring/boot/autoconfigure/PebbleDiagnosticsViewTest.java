@@ -95,6 +95,26 @@ class PebbleDiagnosticsViewTest {
     }
 
     @Test
+    void parentBodyFailureCarriesTheExtendsFrame() throws Exception {
+        View view = new PebbleDiagnosticsViewResolver(officialResolver(), diagnostics)
+                .resolveViewName("extends-child", Locale.ENGLISH);
+        MockHttpServletRequest request = request();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        view.render(Map.of(), request, response);
+
+        assertThat(response.getStatus()).isEqualTo(500);
+        DiagnosticReport report = (DiagnosticReport) request.getAttribute(
+                PebbleDiagnosticsAttributes.REPORT);
+        assertThat(report).isNotNull();
+        assertThat(report.frames()).extracting(DiagnosticFrame::label)
+                .contains("extends extends-layout");
+        assertThat(report.format())
+                .contains("extends-child:1 extends extends-layout")
+                .contains("extends-layout:2");
+    }
+
+    @Test
     void renderFailureStillSends500WhenDiagnosticsAreDisabled() throws Exception {
         View view = new PebbleDiagnosticsViewResolver(officialResolver(), null)
                 .resolveViewName("broken-view", Locale.ENGLISH);

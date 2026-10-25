@@ -2,6 +2,7 @@ package io.github.allbegray.pebbleforge.spring.boot.autoconfigure;
 
 import io.github.allbegray.pebbleforge.diagnostics.DiagnosticReport;
 import io.github.allbegray.pebbleforge.diagnostics.TemplateDiagnostics;
+import io.github.allbegray.pebbleforge.trace.TemplateTrace;
 import io.pebbletemplates.spring.servlet.PebbleView;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -54,29 +55,40 @@ final class PebbleDiagnosticsView implements View {
         try {
             // PebbleView flushes the response writer in a finally block, which would commit the
             // response before we can turn a render failure into an error dispatch.
-            delegate.render(model, request, bufferedResponse);
+            TemplateTrace.run(() -> {
+                try {
+                    delegate.render(model, request, bufferedResponse);
+                } catch (IOException error) {
+                    throw error;
+                } catch (Exception error) {
+                    throw new RenderException(error);
+                }
+            });
+        } catch (RenderException error) {
+            handle(error, error.getCause(), request, response);
+            return;
         } catch (Exception error) {
-            handle(error, request, response);
+            handle(error, error, request, response);
             return;
         }
         bufferedResponse.flushAfterSuccessfulRender();
     }
 
-    private void handle(Exception error, HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        DiagnosticReport report = diagnostics == null ? null : diagnostics.render(error);
+    private void handle(Exception reportError, Throwable servletError,
+            HttpServletRequest request, HttpServletResponse response) throws IOException {
+        DiagnosticReport report = diagnostics == null ? null : diagnostics.render(reportError);
         if (report != null && !report.frames().isEmpty()) {
             request.setAttribute(PebbleDiagnosticsAttributes.REPORT, report);
         }
 
         if (response.isCommitted()) {
             LOG.warn("Pebble template render failed after the response was committed; "
-                    + "report:\n{}", report == null ? error : report.format(), error);
+                    + "report:\n{}", report == null ? servletError : report.format(), servletError);
             return;
         }
 
         request.setAttribute(ERROR_HANDLING_ATTRIBUTE, Boolean.TRUE);
-        request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, error);
+        request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, servletError);
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,
                 HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         response.resetBuffer();
@@ -86,6 +98,13 @@ final class PebbleDiagnosticsView implements View {
     private static boolean isErrorHandling(HttpServletRequest request) {
         return Boolean.TRUE.equals(request.getAttribute(ERROR_HANDLING_ATTRIBUTE))
                 || request.getDispatcherType() == DispatcherType.ERROR;
+    }
+
+    private static final class RenderException extends RuntimeException {
+
+        private RenderException(Exception cause) {
+            super(cause);
+        }
     }
 
     private static final class FlushSuppressingResponse extends HttpServletResponseWrapper {
