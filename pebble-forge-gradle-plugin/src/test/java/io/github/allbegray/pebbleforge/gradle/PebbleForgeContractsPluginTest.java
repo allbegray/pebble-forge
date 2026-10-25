@@ -488,6 +488,82 @@ class PebbleForgeContractsPluginTest {
                 .contains("does not exist");
     }
 
+    @Test
+    void namedComponentRootResolvesANamespacedComponent() throws IOException {
+        writeProject(Map.of(
+                "page.peb", "{% component \"ui:card\" %}{% endcomponent %}",
+                "ui-components/card.peb", "{{ page.title }}"),
+                "componentRoots.put(\"ui\", \"ui-components\")");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput())
+                .contains("BUILD SUCCESSFUL")
+                .doesNotContain("Unknown component namespace");
+    }
+
+    @Test
+    void twoNamedComponentRootsResolveSeparateCards() throws IOException {
+        writeProject(Map.of(
+                "page.peb", """
+                        {% component "ui:card" with {"label": "Card"} %}{% endcomponent %}
+                        {% component "admin:card" with {"title": "Panel"} %}{% endcomponent %}
+                        """,
+                "ui-components/card.peb", "{% props label %}<p>{{ label }}</p>",
+                "admin-components/card.peb", "{% props title %}<h1>{{ title }}</h1>"),
+                "componentRoots.put(\"ui\", \"ui-components\")",
+                "componentRoots.put(\"admin\", \"admin-components\")");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput()).contains("BUILD SUCCESSFUL");
+    }
+
+    @Test
+    void namedComponentRootTemplateIsCheckedAsAComponent() throws IOException {
+        writeProject(Map.of(
+                "page.peb", "{% component \"ui:card\" %}{% endcomponent %}",
+                "ui-components/card.peb", "{{ missing }}"),
+                "componentRoots.put(\"ui\", \"ui-components\")");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("ui-components/card:1")
+                .contains("Variable [missing]");
+    }
+
+    @Test
+    void duplicateComponentRootsFailWithTheBuilderMessage() throws IOException {
+        writeProject(Map.of("page.peb", "{{ page.title }}"),
+                "componentRoots.put(\"ui\", \"shared-components\")",
+                "componentRoots.put(\"admin\", \"shared-components\")");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("resolve to the same root: shared-components");
+    }
+
+    @Test
+    void namedComponentRootTemplateInPartialTemplatesWarnsAndStaysAComponent()
+            throws IOException {
+        writeProject(Map.of(
+                "page.peb", "{% component \"ui:card\" %}{% endcomponent %}",
+                "ui-components/card.peb", "{{ missing }}"),
+                "componentRoots.put(\"ui\", \"ui-components\")",
+                "partialTemplates.add(\"ui-components/card\")");
+
+        BuildResult result = runner().buildAndFail();
+
+        assertThat(result.getOutput())
+                .contains("listed in partialTemplates")
+                .contains("component root [ui-components]")
+                .contains("checked as a component")
+                .contains("ui-components/card:1")
+                .contains("Variable [missing]");
+    }
+
     private GradleRunner runner() {
         return GradleRunner.create()
                 .withProjectDir(projectDir.toFile())

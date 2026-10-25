@@ -11,6 +11,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
@@ -40,9 +41,10 @@ import java.util.stream.Stream;
 public abstract class CheckPebbleTemplatesTask extends DefaultTask {
 
     /**
-     * Creates the task and sets empty template set conventions.
+     * Creates the task and sets empty conventions.
      */
     public CheckPebbleTemplatesTask() {
+        getComponentRoots().convention(Map.of());
         getRootTemplates().convention(Set.of());
         getPartialTemplates().convention(Set.of());
     }
@@ -71,6 +73,14 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
      */
     @Input
     public abstract Property<String> getComponentRoot();
+
+    /**
+     * Returns namespace-to-root-directory mappings for named component roots.
+     *
+     * @return the named component roots
+     */
+    @Input
+    public abstract MapProperty<String, String> getComponentRoots();
 
     /**
      * Returns the model variables that templates may read.
@@ -128,10 +138,13 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
         FileLoader loader = new FileLoader(root.getAbsolutePath());
         loader.setSuffix(suffix);
 
-        Components components = Components.builder()
+        Components.Builder componentsBuilder = Components.builder()
                 .root(getComponentRoot().get())
-                .suffix("")
-                .build();
+                .suffix("");
+        getComponentRoots().get().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> componentsBuilder.root(entry.getKey(), entry.getValue()));
+        Components components = componentsBuilder.build();
 
         SchemaFileLoader.Schema fileSchema = getSchemaFile().isPresent()
                 ? SchemaFileLoader.load(getSchemaFile().get().getAsFile())
@@ -160,18 +173,16 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
         Set<String> partialTemplates = configuredTemplates(
                 "partialTemplates", getPartialTemplates().get(), templateNames);
 
-        String componentPrefix = components.root().isEmpty()
-                ? null
-                : components.root() + "/";
         for (String name : partialTemplates) {
-            if (componentPrefix == null || !name.startsWith(componentPrefix)) {
+            String componentRoot = componentRootFor(name, components);
+            if (componentRoot == null) {
                 continue;
             }
-            String relative = name.substring(componentPrefix.length());
+            String relative = name.substring(componentRoot.length() + 1);
             if (!relative.contains("/")) {
                 getLogger().warn("Template [{}] is listed in partialTemplates but belongs "
                                 + "to the component root [{}]; it is checked as a component.",
-                        name, components.root());
+                        name, componentRoot);
             }
         }
 
@@ -199,6 +210,19 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
             throw new GradleException("Pebble template contract check failed");
         }
         getLogger().info("Checked Pebble templates under {}", root);
+    }
+
+    private static String componentRootFor(String templateName, Components components) {
+        String match = null;
+        for (String root : components.roots().values()) {
+            if (root.isEmpty() || !templateName.startsWith(root + "/")) {
+                continue;
+            }
+            if (match == null || root.length() > match.length()) {
+                match = root;
+            }
+        }
+        return match;
     }
 
     private static Set<String> templateNames(Path root, String suffix) {

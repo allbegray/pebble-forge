@@ -2,6 +2,7 @@ package io.github.allbegray.pebbleforge.gradle;
 
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 
@@ -36,6 +37,13 @@ public abstract class PebbleForgeContractsExtension {
      * @return the component root
      */
     public abstract Property<String> getComponentRoot();
+
+    /**
+     * Returns namespace-to-root-directory mappings for named component roots.
+     *
+     * @return the named component roots
+     */
+    public abstract MapProperty<String, String> getComponentRoots();
 
     /**
      * Returns the model variables that templates may read.

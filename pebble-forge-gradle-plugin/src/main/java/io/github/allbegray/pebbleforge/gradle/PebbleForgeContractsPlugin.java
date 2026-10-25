@@ -4,6 +4,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -37,6 +38,7 @@ public final class PebbleForgeContractsPlugin implements Plugin<Project> {
                 project.getLayout().getProjectDirectory().dir("src/main/resources/templates"));
         extension.getTemplateSuffix().convention(".peb");
         extension.getComponentRoot().convention("components");
+        extension.getComponentRoots().convention(Map.of());
         extension.getAllowAnyVariable().convention(false);
         extension.getRootTemplates().convention(Set.of());
         extension.getPartialTemplates().convention(Set.of());
@@ -48,6 +50,7 @@ public final class PebbleForgeContractsPlugin implements Plugin<Project> {
                     check.getTemplatesDirectory().set(extension.getTemplatesDirectory());
                     check.getTemplateSuffix().set(extension.getTemplateSuffix());
                     check.getComponentRoot().set(extension.getComponentRoot());
+                    check.getComponentRoots().set(extension.getComponentRoots());
                     check.getVariables().set(extension.getVariables());
                     check.getSchemaFile().set(extension.getSchemaFile());
                     check.getAllowAnyVariable().set(extension.getAllowAnyVariable());
