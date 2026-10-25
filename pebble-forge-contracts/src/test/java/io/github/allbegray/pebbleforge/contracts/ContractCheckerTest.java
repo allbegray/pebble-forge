@@ -103,6 +103,32 @@ class ContractCheckerTest {
     }
 
     @Test
+    void checksComponentsAcrossNamedRoots() {
+        ContractChecker checker = ContractChecker.builder()
+                .loader(new MapLoader(Map.of(
+                        "page.peb", """
+                                {% component "ui:card" %}{% endcomponent %}
+                                {% component "admin:card" %}{% endcomponent %}
+                                """,
+                        "ui/card.peb", "{% props title %}<h1>{{ title }}</h1>",
+                        "admin/card.peb", "{% props title %}<h1>{{ title }}</h1>")))
+                .components(Components.builder()
+                        .root("ui", "ui")
+                        .root("admin", "admin")
+                        .build())
+                .model(ModelSchema.builder().build())
+                .build();
+
+        ContractResult result = checker.checkAll(
+                List.of("page.peb", "ui/card.peb", "admin/card.peb"));
+
+        assertThat(result.hasErrors()).isTrue();
+        assertThat(result.format())
+                .contains("Component [ui:card] requires prop [title]")
+                .contains("Component [admin:card] requires prop [title]");
+    }
+
+    @Test
     void warnsOnUnknownProp() {
         ContractResult result = check(
                 Map.of(

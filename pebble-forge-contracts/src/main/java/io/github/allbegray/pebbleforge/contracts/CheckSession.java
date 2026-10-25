@@ -233,20 +233,28 @@ final class CheckSession {
     }
 
     private boolean isComponent(String name) {
-        String root = components.root();
-        if (root.isEmpty() || !name.startsWith(root + "/")) {
-            return false;
+        for (String root : components.roots().values()) {
+            if (root.isEmpty() || !name.startsWith(root + "/")) {
+                continue;
+            }
+            String relative = name.substring(root.length() + 1);
+            if (!relative.contains("/") || componentTargets.contains(name)) {
+                return true;
+            }
         }
-        String relative = name.substring(root.length() + 1);
-        return !relative.contains("/") || componentTargets.contains(name);
+        return false;
     }
 
     private boolean isNestedComponent(String name) {
-        String root = components.root();
-        if (root.isEmpty() || !name.startsWith(root + "/")) {
-            return false;
+        for (String root : components.roots().values()) {
+            if (root.isEmpty() || !name.startsWith(root + "/")) {
+                continue;
+            }
+            if (name.substring(root.length() + 1).contains("/")) {
+                return true;
+            }
         }
-        return name.substring(root.length() + 1).contains("/");
+        return false;
     }
 
     private TemplateScan scan(String name) {
