@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -440,11 +441,11 @@ final class CheckSession {
     }
 
     private void evaluate(TemplateScan scan, Scope scope, Site site) {
-        evaluate(scan, scope, site, Set.of());
+        evaluate(scan, scope, site, Set.of(), Map.of());
     }
 
     private void evaluate(TemplateScan scan, Scope scope, Site site,
-            Set<String> overriddenBlocks) {
+            Set<String> overriddenBlocks, Map<String, Set<String>> inheritedBlocks) {
         if (scan.failure != null) {
             return;
         }
@@ -456,11 +457,12 @@ final class CheckSession {
         Scope effective = scope.retain(
                 relevantNames.getOrDefault(scan.templateName, scope.names()));
         Set<String> ancestorNames = ancestorVisibleDeclarations(scan, overriddenBlocks);
-        checkReads(scan, effective, site, overriddenBlocks, ancestorNames);
-        checkAttributeReads(scan, effective, site, overriddenBlocks, ancestorNames);
+        checkReads(scan, effective, site, overriddenBlocks, ancestorNames, inheritedBlocks);
+        checkAttributeReads(scan, effective, site, overriddenBlocks, ancestorNames,
+                inheritedBlocks);
         Set<String> overrides = Set.copyOf(overriddenBlocks);
         if (!evaluated.add(new ContextKey(scan.templateName, effective.names(),
-                effective.complete(), overrides))) {
+                effective.complete(), overrides, inheritedBlocks))) {
             return;
         }
         int contexts = contextCounts.merge(scan.templateName, 1, Integer::sum);
@@ -480,7 +482,9 @@ final class CheckSession {
                 if (edge.block() != null && overrides.contains(edge.block())) {
                     continue;
                 }
-                evaluateInclude(scan, edge, edge.block() == null ? effective : blockScope, site);
+                Scope callerScope = edge.block() == null ? effective : blockScope;
+                evaluateInclude(scan, edge,
+                        scopeAt(scan, callerScope, inheritedBlocks, edge.line()), site);
             }
             for (TemplateScan.ComponentCall call : scan.componentCalls) {
                 if (call.block() != null && overrides.contains(call.block())) {
@@ -488,14 +492,15 @@ final class CheckSession {
                 }
                 evaluateComponent(scan, call);
             }
-            evaluateParent(scan, effective, overrides);
+            evaluateParent(scan, effective, overrides, inheritedBlocks);
         } finally {
             includeStack.removeLast();
         }
     }
 
     private void checkReads(TemplateScan scan, Scope scope, Site site,
-            Set<String> overriddenBlocks, Set<String> ancestorNames) {
+            Set<String> overriddenBlocks, Set<String> ancestorNames,
+            Map<String, Set<String>> inheritedBlocks) {
         if (model.allowsAny() || !scope.complete()) {
             return;
         }
@@ -507,6 +512,7 @@ final class CheckSession {
             if (!read.complete()) {
                 continue;
             }
+            Scope visible = scopeAt(scan, scope, inheritedBlocks, read.line());
             boolean satisfied;
             if (read.closed()) {
                 satisfied = read.visible().contains(read.name())
@@ -519,7 +525,7 @@ final class CheckSession {
                 }
                 satisfied = isLocallyDeclared(scan, read, ancestorNames, overriddenBlocks)
                         || model.allows(read.name())
-                        || scope.names().contains(read.name());
+                        || visible.names().contains(read.name());
             }
             if (satisfied) {
                 continue;
@@ -571,7 +577,8 @@ final class CheckSession {
     }
 
     private void checkAttributeReads(TemplateScan scan, Scope scope, Site site,
-            Set<String> overriddenBlocks, Set<String> ancestorNames) {
+            Set<String> overriddenBlocks, Set<String> ancestorNames,
+            Map<String, Set<String>> inheritedBlocks) {
         if (model.allowsAny() || !scope.complete()) {
             return;
         }
@@ -589,7 +596,8 @@ final class CheckSession {
             if (read.visible().contains(read.variable())) {
                 continue;
             }
-            if (!read.closed() && (scope.names().contains(read.variable())
+            Scope visible = scopeAt(scan, scope, inheritedBlocks, read.line());
+            if (!read.closed() && (visible.names().contains(read.variable())
                     || isLocallyDeclared(scan, read.variable(), read.line(), read.block(),
                             read.visible(), read.closed(), ancestorNames, overriddenBlocks))) {
                 continue;
@@ -727,7 +735,8 @@ final class CheckSession {
         evaluate(component, Scope.EMPTY, null);
     }
 
-    private void evaluateParent(TemplateScan scan, Scope scope, Set<String> overriddenBlocks) {
+    private void evaluateParent(TemplateScan scan, Scope scope, Set<String> overriddenBlocks,
+            Map<String, Set<String>> inheritedBlocks) {
         TemplateScan.ParentCall parent = scan.parent;
         if (parent == null || parent.dynamicTarget() || parent.resolutionError() != null) {
             return;
@@ -745,21 +754,35 @@ final class CheckSession {
             return;
         }
 
-        Scope parentScope = scope.plus(visibleDeclarations(scan, overriddenBlocks));
+        Scope parentScope = scope.plus(scan.rootDeclarations);
         Set<String> parentOverrides = new LinkedHashSet<>(overriddenBlocks);
         parentOverrides.addAll(scan.blockDeclarations.keySet());
-        evaluate(parentScan, parentScope, null, parentOverrides);
-    }
-
-    private static Set<String> visibleDeclarations(TemplateScan scan,
-            Set<String> overriddenBlocks) {
-        Set<String> names = new LinkedHashSet<>(scan.rootDeclarations);
+        Map<String, Set<String>> parentBlocks = new LinkedHashMap<>(inheritedBlocks);
         for (Map.Entry<String, Set<String>> block : scan.blockDeclarations.entrySet()) {
             if (!overriddenBlocks.contains(block.getKey())) {
-                names.addAll(block.getValue());
+                parentBlocks.put(block.getKey(), block.getValue());
             }
         }
-        return names;
+        evaluate(parentScan, parentScope, null, parentOverrides, parentBlocks);
+    }
+
+    /**
+     * Adds a descendant block's declarations once the parent block that renders
+     * them has started. A block the parent does not declare never renders.
+     */
+    static Scope scopeAt(TemplateScan parent, Scope base,
+            Map<String, Set<String>> inheritedBlocks, int line) {
+        if (inheritedBlocks.isEmpty()) {
+            return base;
+        }
+        Set<String> visible = new LinkedHashSet<>();
+        for (Map.Entry<String, Set<String>> block : inheritedBlocks.entrySet()) {
+            Integer blockLine = parent.blockLines.get(block.getKey());
+            if (blockLine != null && blockLine <= line) {
+                visible.addAll(block.getValue());
+            }
+        }
+        return base.plus(visible);
     }
 
     private Set<String> ancestorVisibleDeclarations(TemplateScan scan,
@@ -1006,6 +1029,7 @@ final class CheckSession {
     }
 
     private record ContextKey(String template, Set<String> names, boolean complete,
-                              Set<String> overriddenBlocks) {
+                              Set<String> overriddenBlocks,
+                              Map<String, Set<String>> inheritedBlocks) {
     }
 }
