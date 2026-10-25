@@ -1,17 +1,16 @@
 package io.github.allbegray.pebbleforge.gradle;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.gradle.api.GradleException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,7 +21,7 @@ final class SchemaFileLoader {
     private static final Set<String> ALLOWED_FIELDS =
             Set.of("variables", "allowAnyVariable", "$schema");
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper YAML = new YAMLMapper();
 
     private SchemaFileLoader() {
     }
@@ -42,11 +41,9 @@ final class SchemaFileLoader {
         JsonNode root;
         try {
             root = mapper.readTree(file);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new GradleException("Could not parse schema file [" + file + "]: "
                     + e.getOriginalMessage(), e);
-        } catch (IOException e) {
-            throw new GradleException("Could not read schema file [" + file + "]", e);
         }
 
         if (root == null) {
@@ -56,11 +53,10 @@ final class SchemaFileLoader {
             throw new GradleException("Schema file root must be an object: " + file);
         }
 
-        for (Iterator<String> fields = root.fieldNames(); fields.hasNext(); ) {
-            String field = fields.next();
-            if (!ALLOWED_FIELDS.contains(field)) {
-                throw new GradleException("Unknown schema field [" + field + "] in " + file
-                        + ". Allowed fields are variables, allowAnyVariable, and $schema.");
+        for (Map.Entry<String, JsonNode> field : root.properties()) {
+            if (!ALLOWED_FIELDS.contains(field.getKey())) {
+                throw new GradleException("Unknown schema field [" + field.getKey() + "] in "
+                        + file + ". Allowed fields are variables, allowAnyVariable, and $schema.");
             }
         }
 
@@ -73,11 +69,11 @@ final class SchemaFileLoader {
             }
             int index = 0;
             for (JsonNode variable : variablesNode) {
-                if (!variable.isTextual() || variable.textValue().isBlank()) {
+                if (!variable.isString() || variable.stringValue().isBlank()) {
                     throw new GradleException("Schema variable at index " + index
                             + " must be a non-blank string in " + file);
                 }
-                variables.add(variable.textValue().trim());
+                variables.add(variable.stringValue().trim());
                 index++;
             }
         }

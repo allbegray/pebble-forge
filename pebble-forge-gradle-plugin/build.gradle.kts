@@ -13,8 +13,8 @@ dependencies {
     implementation(project(":pebble-forge-contracts"))
     implementation(project(":pebble-forge-core"))
     implementation(project(":pebble-forge-diagnostics"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.22.3")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.3")
+    implementation("tools.jackson.core:jackson-databind:3.2.4")
+    implementation("tools.jackson.dataformat:jackson-dataformat-yaml:3.2.4")
 
     testImplementation(gradleTestKit())
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
