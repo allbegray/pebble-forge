@@ -1,5 +1,6 @@
 package io.github.allbegray.pebbleforge.include;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.ParserException;
 import io.pebbletemplates.pebble.lexer.Token;
 import io.pebbletemplates.pebble.lexer.TokenStream;
@@ -11,10 +12,10 @@ import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
 final class ForgeIncludeTokenParser implements TokenParser {
 
-    private final int maxDepth;
+    private final SandboxLimitsResolver limitsResolver;
 
-    ForgeIncludeTokenParser(int maxDepth) {
-        this.maxDepth = maxDepth;
+    ForgeIncludeTokenParser(SandboxLimitsResolver limitsResolver) {
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -42,7 +43,7 @@ final class ForgeIncludeTokenParser implements TokenParser {
         }
 
         stream.expect(Token.Type.EXECUTE_END);
-        return new ForgeIncludeNode(lineNumber, includeExpression, mapExpression, maxDepth);
+        return new ForgeIncludeNode(lineNumber, includeExpression, mapExpression, limitsResolver);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.include;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
 import io.pebbletemplates.pebble.node.AbstractRenderableNode;
@@ -20,14 +22,14 @@ final class ForgeIncludeNode extends AbstractRenderableNode {
 
     private final Expression<?> includeExpression;
     private final MapExpression mapExpression;
-    private final int maxDepth;
+    private final SandboxLimitsResolver limitsResolver;
 
     ForgeIncludeNode(int lineNumber, Expression<?> includeExpression,
-            MapExpression mapExpression, int maxDepth) {
+            MapExpression mapExpression, SandboxLimitsResolver limitsResolver) {
         super(lineNumber);
         this.includeExpression = includeExpression;
         this.mapExpression = mapExpression;
-        this.maxDepth = maxDepth;
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -43,6 +45,8 @@ final class ForgeIncludeNode extends AbstractRenderableNode {
                     self.getName());
         }
 
+        SandboxLimits limits = limitsResolver.resolve(self.getName());
+        int maxDepth = limits.maxIncludeDepth();
         if (maxDepth >= 0 && IncludeTrace.depth() >= maxDepth) {
             throw new PebbleException(
                     null,

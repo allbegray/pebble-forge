@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.component;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
 import io.pebbletemplates.pebble.extension.escaper.SafeString;
 import io.pebbletemplates.pebble.node.AbstractRenderableNode;
@@ -30,6 +32,7 @@ public final class ComponentNode extends AbstractRenderableNode {
     private final MapExpression propsExpression;
     private final BodyNode body;
     private final Components components;
+    private final SandboxLimitsResolver limitsResolver;
 
     public ComponentNode(
             int lineNumber,
@@ -37,11 +40,23 @@ public final class ComponentNode extends AbstractRenderableNode {
             MapExpression propsExpression,
             BodyNode body,
             Components components) {
+        this(lineNumber, nameExpression, propsExpression, body, components,
+                SandboxLimitsResolver.fixed(SandboxLimits.unlimited()));
+    }
+
+    public ComponentNode(
+            int lineNumber,
+            Expression<?> nameExpression,
+            MapExpression propsExpression,
+            BodyNode body,
+            Components components,
+            SandboxLimitsResolver limitsResolver) {
         super(lineNumber);
         this.nameExpression = nameExpression;
         this.propsExpression = propsExpression;
         this.body = body;
         this.components = components;
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -127,7 +142,7 @@ public final class ComponentNode extends AbstractRenderableNode {
 
     private Map<String, Object> captureSlots(
             PebbleTemplateImpl self, EvaluationContextImpl context) throws IOException {
-        SlotBudget budget = new SlotBudget(slotLimit(context));
+        SlotBudget budget = new SlotBudget(slotLimit(self, context));
         boolean hasExplicitSlots = body.getChildren().stream().anyMatch(SlotNode.class::isInstance);
         if (!hasExplicitSlots) {
             Map<String, Object> slots = new LinkedHashMap<>();
@@ -165,9 +180,16 @@ public final class ComponentNode extends AbstractRenderableNode {
         return slots;
     }
 
-    private int slotLimit(EvaluationContextImpl context) {
+    private int slotLimit(PebbleTemplateImpl self, EvaluationContextImpl context) {
         int outputLimit = context.getMaxRenderedSize();
+        SandboxLimits limits = limitsResolver.resolve(self.getName());
         int componentLimit = components.maxSlotChars();
+        int templateLimit = limits.maxSlotChars();
+        if (componentLimit < 0) {
+            componentLimit = templateLimit;
+        } else if (templateLimit >= 0) {
+            componentLimit = Math.min(componentLimit, templateLimit);
+        }
         if (componentLimit < 0) {
             return outputLimit;
         }

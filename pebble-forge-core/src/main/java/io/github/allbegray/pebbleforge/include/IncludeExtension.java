@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.include;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.extension.AbstractExtension;
 import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
@@ -10,21 +12,22 @@ import java.util.List;
  */
 public final class IncludeExtension extends AbstractExtension {
 
-    private final int maxDepth;
+    private final SandboxLimitsResolver limitsResolver;
 
     public IncludeExtension() {
-        this(-1);
+        this(SandboxLimitsResolver.fixed(SandboxLimits.unlimited()));
     }
 
     public IncludeExtension(int maxDepth) {
-        if (maxDepth < -1) {
-            throw new IllegalArgumentException("maxDepth must be -1 or greater");
-        }
-        this.maxDepth = maxDepth;
+        this(SandboxLimitsResolver.fixed(SandboxLimits.builder().maxIncludeDepth(maxDepth).build()));
+    }
+
+    public IncludeExtension(SandboxLimitsResolver limitsResolver) {
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
     public List<TokenParser> getTokenParsers() {
-        return List.of(new ForgeIncludeTokenParser(maxDepth));
+        return List.of(new ForgeIncludeTokenParser(limitsResolver));
     }
 }

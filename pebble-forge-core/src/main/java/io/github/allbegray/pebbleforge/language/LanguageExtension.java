@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.language;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.extension.AbstractExtension;
 import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
@@ -11,32 +13,27 @@ import java.util.List;
  */
 public final class LanguageExtension extends AbstractExtension {
 
-    private final int maxLoopIterations;
-    private final int maxTotalIterations;
+    private final SandboxLimitsResolver limitsResolver;
 
     public LanguageExtension() {
-        this(-1, -1);
-    }
-
-    public LanguageExtension(int maxLoopIterations) {
-        this(maxLoopIterations, -1);
+        this(SandboxLimitsResolver.fixed(SandboxLimits.unlimited()));
     }
 
     public LanguageExtension(int maxLoopIterations, int maxTotalIterations) {
-        if (maxLoopIterations < -1) {
-            throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
-        }
-        if (maxTotalIterations < -1) {
-            throw new IllegalArgumentException("maxTotalIterations must be -1 or greater");
-        }
-        this.maxLoopIterations = maxLoopIterations;
-        this.maxTotalIterations = maxTotalIterations;
+        this(SandboxLimitsResolver.fixed(SandboxLimits.builder()
+                .maxLoopIterations(maxLoopIterations)
+                .maxTotalIterations(maxTotalIterations)
+                .build()));
+    }
+
+    public LanguageExtension(SandboxLimitsResolver limitsResolver) {
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
     public List<TokenParser> getTokenParsers() {
         return List.of(
-                new ForTokenParser(maxLoopIterations, maxTotalIterations),
+                new ForTokenParser(limitsResolver),
                 new SwitchTokenParser(),
                 new BreakTokenParser(),
                 new ContinueTokenParser(),

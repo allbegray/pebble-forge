@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.spring.boot.autoconfigure;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.error.PebbleException;
@@ -15,6 +17,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -115,6 +118,17 @@ class PebbleForgeAutoConfigurationTest {
     }
 
     @Test
+    void usesAUserLimitsResolver() {
+        runner.withPropertyValues("pebble.forge.sandbox.enabled=true")
+                .withUserConfiguration(LimitsConfiguration.class)
+                .run(context -> assertThatThrownBy(() -> render(
+                        context.getBean(PebbleEngine.class), "limited",
+                        Map.of("items", List.of(1, 2))))
+                        .isInstanceOf(PebbleException.class)
+                        .hasMessageContaining("Loop iteration limit of 1"));
+    }
+
+    @Test
     void canDisableTheSecurityExtension() {
         runner.withPropertyValues("pebble.forge.security.enabled=false").run(context ->
                 assertThat(context).doesNotHaveBean("springSecurityExtension"));
@@ -133,6 +147,17 @@ class PebbleForgeAutoConfigurationTest {
         @Bean
         MessageSource messageSource() {
             return new StaticMessageSource();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class LimitsConfiguration {
+
+        @Bean
+        SandboxLimitsResolver limitsResolver() {
+            return SandboxLimitsResolver.builder(SandboxLimits.unlimited())
+                    .exact("limited", SandboxLimits.builder().maxLoopIterations(1).build())
+                    .build();
         }
     }
 

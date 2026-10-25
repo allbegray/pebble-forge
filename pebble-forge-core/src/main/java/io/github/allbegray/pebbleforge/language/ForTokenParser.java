@@ -1,5 +1,6 @@
 package io.github.allbegray.pebbleforge.language;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.ParserException;
 import io.pebbletemplates.pebble.lexer.Token;
 import io.pebbletemplates.pebble.lexer.TokenStream;
@@ -14,12 +15,10 @@ import io.pebbletemplates.pebble.tokenParser.TokenParser;
  */
 final class ForTokenParser implements TokenParser {
 
-    private final int maxLoopIterations;
-    private final int maxTotalIterations;
+    private final SandboxLimitsResolver limitsResolver;
 
-    ForTokenParser(int maxLoopIterations, int maxTotalIterations) {
-        this.maxLoopIterations = maxLoopIterations;
-        this.maxTotalIterations = maxTotalIterations;
+    ForTokenParser(SandboxLimitsResolver limitsResolver) {
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -75,6 +74,6 @@ final class ForTokenParser implements TokenParser {
         stream.next();
         stream.expect(Token.Type.EXECUTE_END);
         return new ForNode(lineNumber, keyVariable, valueVariable, iterable, body, elseBody,
-                maxLoopIterations, maxTotalIterations);
+                limitsResolver);
     }
 }

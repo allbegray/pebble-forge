@@ -2,6 +2,7 @@ package io.github.allbegray.pebbleforge.spring.boot.autoconfigure;
 
 import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
 import io.github.allbegray.pebbleforge.spring.SpringWebFunctions;
 import io.github.allbegray.pebbleforge.spring.security.SpringSecurityExtension;
@@ -60,6 +61,7 @@ public class PebbleForgeAutoConfiguration {
             List<Extension> extensions,
             ObjectProvider<MethodAccessValidator> methodAccessValidator,
             ObjectProvider<SandboxPolicy> sandboxPolicy,
+            ObjectProvider<SandboxLimitsResolver> limitsResolver,
             PebbleForgeProperties forgeProperties) {
 
         PebbleForge.Builder builder = PebbleForge.engine()
@@ -80,6 +82,7 @@ public class PebbleForgeAutoConfiguration {
             builder.defaultLocale(properties.getDefaultLocale());
         }
         methodAccessValidator.ifAvailable(builder::methodAccessValidator);
+        limitsResolver.ifAvailable(builder::limitsResolver);
 
         if (!extensions.isEmpty()) {
             builder.extension(extensions.toArray(Extension[]::new));

@@ -1,5 +1,7 @@
 package io.github.allbegray.pebbleforge.language;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
 import io.pebbletemplates.pebble.node.AbstractRenderableNode;
@@ -28,20 +30,18 @@ public final class ForNode extends AbstractRenderableNode {
     private final Expression<?> iterableExpression;
     private final BodyNode body;
     private final BodyNode elseBody;
-    private final int maxLoopIterations;
-    private final int maxTotalIterations;
+    private final SandboxLimitsResolver limitsResolver;
 
     ForNode(int lineNumber, String keyVariableName, String valueVariableName,
             Expression<?> iterableExpression, BodyNode body, BodyNode elseBody,
-            int maxLoopIterations, int maxTotalIterations) {
+            SandboxLimitsResolver limitsResolver) {
         super(lineNumber);
         this.keyVariableName = keyVariableName;
         this.valueVariableName = valueVariableName;
         this.iterableExpression = iterableExpression;
         this.body = body;
         this.elseBody = elseBody;
-        this.maxLoopIterations = maxLoopIterations;
-        this.maxTotalIterations = maxTotalIterations;
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -77,6 +77,9 @@ public final class ForNode extends AbstractRenderableNode {
             LoopVariables loop = null;
             int index = 0;
             int iterations = 0;
+            SandboxLimits limits = limitsResolver.resolve(self.getName());
+            int maxLoopIterations = limits.maxLoopIterations();
+            int maxTotalIterations = limits.maxTotalIterations();
             IterationBudget.Counter budget = maxTotalIterations >= 0
                     ? IterationBudget.forScope(context.getScopeChain(), maxTotalIterations)
                     : null;

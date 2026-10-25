@@ -7,6 +7,8 @@ import io.github.allbegray.pebbleforge.language.LanguageExtension;
 import io.github.allbegray.pebbleforge.reload.ReloadingLoader;
 import io.github.allbegray.pebbleforge.sandbox.SandboxAttributeExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxExtensionCustomizer;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimits;
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
 import io.github.allbegray.pebbleforge.sandbox.SandboxedExtension;
 import io.github.allbegray.pebbleforge.sandbox.SandboxedLoader;
@@ -42,6 +44,7 @@ public final class PebbleForge {
         private Loader<?> loader;
         private Components components;
         private SandboxPolicy sandbox;
+        private SandboxLimitsResolver limitsResolver;
         private boolean language = true;
         private boolean devMode;
         private boolean strictVariables = true;
@@ -65,6 +68,11 @@ public final class PebbleForge {
 
         public Builder sandbox(SandboxPolicy sandbox) {
             this.sandbox = Objects.requireNonNull(sandbox, "sandbox");
+            return this;
+        }
+
+        public Builder limitsResolver(SandboxLimitsResolver limitsResolver) {
+            this.limitsResolver = Objects.requireNonNull(limitsResolver, "limitsResolver");
             return this;
         }
 
@@ -168,34 +176,27 @@ public final class PebbleForge {
                 delegate.autoEscaping(autoEscaping);
             }
 
+            SandboxLimitsResolver effectiveLimits = limitsResolver;
+            if (effectiveLimits == null) {
+                effectiveLimits = sandbox == null
+                        ? SandboxLimitsResolver.fixed(SandboxLimits.unlimited())
+                        : SandboxLimitsResolver.fixed(SandboxLimits.from(sandbox));
+            }
+
             if (components != null) {
-                Components effectiveComponents = components;
-                if (sandbox != null) {
-                    int slotLimit = components.maxSlotChars();
-                    int policyLimit = sandbox.maxSlotChars();
-                    int effectiveLimit = slotLimit < 0
-                            ? policyLimit
-                            : (policyLimit < 0 ? slotLimit : Math.min(slotLimit, policyLimit));
-                    if (effectiveLimit != slotLimit) {
-                        effectiveComponents = components.withMaxSlotChars(effectiveLimit);
-                    }
-                }
-                Extension componentExtension = new ComponentsExtension(effectiveComponents);
+                Extension componentExtension = new ComponentsExtension(components, effectiveLimits);
                 delegate.extension(sandbox == null
                         ? componentExtension
                         : new SandboxedExtension(componentExtension, sandbox));
             }
 
-            Extension includeExtension = new IncludeExtension(
-                    sandbox == null ? -1 : sandbox.maxIncludeDepth());
+            Extension includeExtension = new IncludeExtension(effectiveLimits);
             delegate.extension(sandbox == null
                     ? includeExtension
                     : new SandboxedExtension(includeExtension, sandbox));
 
             if (language) {
-                Extension languageExtension = new LanguageExtension(
-                        sandbox == null ? -1 : sandbox.maxLoopIterations(),
-                        sandbox == null ? -1 : sandbox.maxTotalIterations());
+                Extension languageExtension = new LanguageExtension(effectiveLimits);
                 delegate.extension(sandbox == null
                         ? languageExtension
                         : new SandboxedExtension(languageExtension, sandbox));

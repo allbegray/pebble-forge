@@ -1,5 +1,6 @@
 package io.github.allbegray.pebbleforge.component;
 
+import io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver;
 import io.pebbletemplates.pebble.lexer.Token;
 import io.pebbletemplates.pebble.lexer.TokenStream;
 import io.pebbletemplates.pebble.node.BodyNode;
@@ -15,9 +16,16 @@ import io.pebbletemplates.pebble.tokenParser.TokenParser;
 public final class ComponentTokenParser implements TokenParser {
 
     private final Components components;
+    private final SandboxLimitsResolver limitsResolver;
 
     public ComponentTokenParser(Components components) {
+        this(components, io.github.allbegray.pebbleforge.sandbox.SandboxLimitsResolver.fixed(
+                io.github.allbegray.pebbleforge.sandbox.SandboxLimits.unlimited()));
+    }
+
+    public ComponentTokenParser(Components components, SandboxLimitsResolver limitsResolver) {
         this.components = components;
+        this.limitsResolver = limitsResolver;
     }
 
     @Override
@@ -56,7 +64,8 @@ public final class ComponentTokenParser implements TokenParser {
         stream.next();
         stream.expect(Token.Type.EXECUTE_END);
 
-        return new ComponentNode(lineNumber, nameExpression, propsExpression, body, components);
+        return new ComponentNode(lineNumber, nameExpression, propsExpression, body, components,
+                limitsResolver);
     }
 
     @Override
