@@ -43,7 +43,7 @@ pebble.forge.language.enabled=true
 pebble.forge.dev-mode=false
 ```
 
-A `SandboxPolicy` bean replaces the policy built from properties.
+A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxLimitsResolver` bean supplies per-template resource limits.
 
 ## Verification
 

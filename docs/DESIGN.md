@@ -70,6 +70,8 @@ pebble-forge-core
     ├── SandboxedExtension   filters a user extension
     ├── SandboxedLoader      rejects absolute paths and parent traversal
     ├── SandboxedFileLoader  resolves real paths and rejects symlink escapes
+    ├── SandboxLimits        per-template loop, include, and slot limits
+    ├── SandboxLimitsResolver resolves limits by template name
     └── SandboxMethodAccessValidator  blocks dangerous classes, methods, and return types
 
 pebble-forge-contracts
@@ -213,6 +215,8 @@ The sandbox is an in-process capability guard, not a CPU quota. It stops capabil
 
 The path jail is lexical in `SandboxedLoader`. It rejects traversal in template names but does not resolve symlinks. `SandboxedFileLoader` resolves real paths and rejects symlinks that leave the root.
 
+Resource limits can vary by template name through `SandboxLimitsResolver`. Exact rules beat prefix rules, and the longest prefix wins. Allowlists and method access still apply to the whole engine. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
+
 ## Spring Boot 4
 
 The starter targets Spring Boot 4.0.6, Spring Framework 7.0.7, Spring Security 7.0.8, and Pebble's `pebble-spring-boot-starter:4.1.2`. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.
@@ -245,7 +249,7 @@ pebble.forge.language.enabled=true
 pebble.forge.dev-mode=false
 ```
 
-The language switch is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble. A `SandboxPolicy` bean replaces the policy built from properties. If an application defines its own `PebbleEngine`, the starter backs off. If it defines its own `pebbleLoader` or `springExtension`, the starter uses those beans.
+The language switch is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble. A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxLimitsResolver` bean supplies per-template resource limits. If an application defines its own `PebbleEngine`, the starter backs off. If it defines its own `pebbleLoader` or `springExtension`, the starter uses those beans.
 
 The property-built sandbox policy adds `SpringWebFunctions`, which allows `message`, `href`, and the form binding result functions. It also allows `extends` and `block` so layouts work. A hand-written policy calls `SpringWebFunctions.allow(builder)` and allows the layout tags it uses.
 
@@ -315,8 +319,9 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
+| Template limits | 6 | Resolver matching, loop/include/slot limits by prefix |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
-| Boot auto-config | 9 | Application context, official auto-config ordering, policy override, language switch, dev mode |
+| Boot auto-config | 10 | Application context, official auto-config ordering, policy override, language switch, dev mode, limits resolver |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |
 
 ## Non-goals
@@ -349,6 +354,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Diagnostics | Custom include parser plus a source-frame formatter | Captures the include path without replacing the renderer |
 | Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
 | Language follow-ups | Comma-separated case values, key/value destructuring, local-only with | Fits the existing tags without a new expression language |
+| Template limits | Resolver by exact name and longest prefix | Different trust levels can share one engine with different resource budgets |
 | Test style | Real templates, real engine, real output | Proves the feature, not a mock |
 
 ## Accepted limits
@@ -362,6 +368,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The output limit caps written output. Slot capture has a separate per-component budget, and captured content is counted again when written to the main output.
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
+- Per-template limits cover loops, include depth, and slot capture. Output limits and allowlists remain engine-wide. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Dev mode reads and hashes each template on lookup and leaves old cache keys behind. It is for development, not long-running production processes. Classpath resources inside a jar cannot change.
@@ -374,6 +381,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Should a component allow unknown props? Current answer is yes. A warning mode is a later addition.
 - Should the contract schema move from the Gradle DSL to JSON or YAML?
 - Should the Gradle plugin be published to the Plugin Portal?
+- Should full per-template allowlists use a union parser with policy-aware wrappers, or one engine per policy?
 - Should the sandbox replace the built-in `include` tag with a depth-guarded version? The output limit covers the easy bomb, not recursive CPU.
 - Should the component root be one directory or a list of loaders? A list is needed for shared component libraries.
 - Should component depth use per-engine state instead of a static thread-local?

@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 137개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 144개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -248,6 +248,32 @@ pebble.forge.dev-mode=true
 
 경로 제한은 문자열 기준입니다. 템플릿 이름의 상위 경로 이동은 막지만 심볼릭 링크는 해석하지 않습니다. 파일 로더 루트에 심볼릭 링크가 없도록 하거나, 실제 경로를 검사하는 로더를 사용하세요.
 
+### 템플릿별 한도
+
+템플릿 이름에 따라 자원 한도를 다르게 적용할 수 있습니다.
+
+```java
+SandboxLimitsResolver limits = SandboxLimitsResolver
+        .builder(SandboxLimits.from(policy))
+        .prefix("public/", SandboxLimits.builder()
+                .maxLoopIterations(1_000)
+                .maxTotalIterations(10_000)
+                .maxIncludeDepth(8)
+                .maxSlotChars(100_000)
+                .build())
+        .build();
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .sandbox(policy)
+        .limitsResolver(limits)
+        .build();
+```
+
+정확한 규칙이 prefix 규칙보다 우선하고, 가장 긴 prefix가 이깁니다. Spring Boot는 `SandboxLimitsResolver` 빈을 자동으로 사용합니다.
+
+허용 목록과 메서드 접근은 아직 엔진 전체에 적용됩니다. 템플릿별 전체 allowlist는 별도 작업입니다. 자세한 내용은 [docs/TEMPLATE-POLICIES.md](docs/TEMPLATE-POLICIES.md)를 참고하세요.
+
 ## Spring Boot 4
 
 ```kotlin
@@ -280,7 +306,7 @@ pebble.forge.dev-mode=false
 
 언어 확장은 기본으로 켜집니다. 순수 Pebble로 파싱하려면 `pebble.forge.language.enabled=false`로 두세요.
 
-`SandboxPolicy` 빈을 직접 정의하면 프로퍼티로 만든 정책을 대체합니다. `PebbleEngine` 빈을 직접 정의하면 스타터는 적용되지 않습니다. `pebbleLoader`나 `springExtension` 빈을 직접 정의하면 그 빈을 사용합니다.
+`SandboxPolicy` 빈을 직접 정의하면 프로퍼티로 만든 정책을 대체합니다. `SandboxLimitsResolver` 빈은 템플릿별 자원 한도를 제공합니다. `PebbleEngine` 빈을 직접 정의하면 스타터는 적용되지 않습니다. `pebbleLoader`나 `springExtension` 빈을 직접 정의하면 그 빈을 사용합니다.
 
 스타터가 만든 샌드박스 정책에는 Pebble Spring 함수와 `extends`, `block` 태그가 자동으로 추가됩니다. 정책을 직접 만들 때는 `SpringWebFunctions.allow(builder)`를 호출하고, 레이아웃에 필요한 태그를 허용하세요.
 
@@ -339,6 +365,7 @@ pebble.forge.dev-mode=false
 - [변경 기록](CHANGELOG.md)
 - [기여 가이드](CONTRIBUTING.md)
 - [계약 검사](docs/CONTRACTS.md)
+- [템플릿 정책](docs/TEMPLATE-POLICIES.md)
 - [진단](docs/DIAGNOSTICS.md)
 - [보안 정책](SECURITY.md)
 - [릴리스 체크리스트](docs/RELEASING.md)

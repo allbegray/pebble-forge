@@ -16,6 +16,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include traces for template errors.
 - Symlink-safe file loader that resolves real paths and rejects escapes.
+- Per-template resource limits for loops, include depth, and slot capture through `SandboxLimitsResolver`.
 - Development mode that reloads edited templates through a content-hash cache key.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
