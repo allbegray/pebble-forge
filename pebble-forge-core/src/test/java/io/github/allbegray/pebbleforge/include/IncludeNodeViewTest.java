@@ -35,8 +35,8 @@ class IncludeNodeViewTest {
                 LiteralStringExpression.class,
                 literal -> assertThat(literal.getValue()).isEqualTo("a.peb"));
         assertThat(withMap.getLineNumber()).isEqualTo(2);
-        assertThat(withMap.getWithExpression()).isNotNull();
-        assertThat(withMap.getWithExpression().getEntries())
+        assertThat(withMap.getWithArguments()).isNotNull();
+        assertThat(withMap.getWithArguments())
                 .hasSize(1)
                 .allSatisfy((key, value) -> {
                     assertThat(key).isInstanceOfSatisfying(LiteralStringExpression.class,
@@ -49,7 +49,7 @@ class IncludeNodeViewTest {
                 LiteralStringExpression.class,
                 literal -> assertThat(literal.getValue()).isEqualTo("b.peb"));
         assertThat(withoutMap.getLineNumber()).isEqualTo(3);
-        assertThat(withoutMap.getWithExpression()).isNull();
+        assertThat(withoutMap.getWithArguments()).isNull();
     }
 
     private static List<IncludeNodeView> collect(String source) {

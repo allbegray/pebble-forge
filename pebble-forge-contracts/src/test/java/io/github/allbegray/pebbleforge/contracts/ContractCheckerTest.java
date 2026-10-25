@@ -436,16 +436,28 @@ class ContractCheckerTest {
     }
 
     @Test
-    void dynamicIncludeTargetWarnsWithoutReportingTarget() {
+    void dynamicIncludeTargetWarnsAndReportsTargetRead() {
         ContractResult result = check(
                 Map.of("page.peb", "{% include partial %}"),
                 ModelSchema.builder().build());
 
-        assertThat(result.hasErrors()).isFalse();
         assertThat(result.warnings()).singleElement().satisfies(warning -> {
             assertThat(warning.line()).isEqualTo(1);
             assertThat(warning.message()).contains("dynamic");
         });
+        assertThat(result.errors()).singleElement()
+                .satisfies(error -> assertThat(error.message()).contains("[partial]"));
+    }
+
+    @Test
+    void dynamicIncludeTargetWithDeclaredVariableIsCleanApartFromWarning() {
+        ContractResult result = check(
+                Map.of("page.peb", "{% include partial %}"),
+                ModelSchema.builder().variable("partial").build());
+
+        assertThat(result.hasErrors()).isFalse();
+        assertThat(result.warnings()).singleElement()
+                .satisfies(warning -> assertThat(warning.message()).contains("dynamic"));
     }
 
     @Test
@@ -694,6 +706,16 @@ class ContractCheckerTest {
     }
 
     @Test
+    void unusedNestedComponentPartialIsNotRoot() {
+        ContractResult result = checker(
+                Map.of("components/card/head.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("components/card/head.peb"));
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
     void componentStatusWinsOverPartialOverride() {
         ContractResult result = checkerBuilder(
                 Map.of(
@@ -864,6 +886,235 @@ class ContractCheckerTest {
 
         assertThat(first).isEqualTo(second);
         assertThat(first.indexOf("other.peb")).isLessThan(first.indexOf("page.peb"));
+    }
+
+    @Test
+    void includeAfterLoopDoesNotSeeTheLoopVariable() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% for item in items %}{{ item }}{% endfor %}{% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void includeAfterWithDoesNotSeeItsKeys() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% with {"item": "x"} %}{{ item }}{% endwith %}{% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void includeAfterMacroDoesNotSeeMacroArguments() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% macro card(item) %}{{ item }}{% endmacro %}{% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void includeInsideDynamicWithWarnsAndSkipsChildReads() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% with data %}{% include "partial.peb" %}{% endwith %}
+                                """,
+                        "partial.peb", "{{ missing }}"),
+                ModelSchema.builder().variable("data").build());
+
+        assertThat(result.hasErrors()).isFalse();
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.line()).isEqualTo(1);
+            assertThat(warning.message()).contains("dynamic with scope");
+        });
+    }
+
+    @Test
+    void partialTemplateDoesNotHideAnUnreachablePage() {
+        ContractResult result = checkerBuilder(
+                Map.of(
+                        "partial.peb", "{% include \"page.peb\" %}",
+                        "page.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .partialTemplates(List.of("partial.peb"))
+                .build()
+                .checkAll(List.of("page.peb", "partial.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[missing]");
+        });
+    }
+
+    @Test
+    void checkAllDiscoversTransitiveHelperOutsideTheUniverse() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% include \"helper.peb\" %}",
+                        "helper.peb", "{% include \"target.peb\" %}",
+                        "target.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "target.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("helper.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("target.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void nestedComponentPartialIncludedByComponentIsNotForcedToARoot() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% component "card" with {"title": "x"} %}{% endcomponent %}
+                                """,
+                        "components/card.peb", """
+                                {% props title %}{% with {"item": title} %}{% include "components/card/detail.peb" %}{% endwith %}
+                                """,
+                        "components/card/detail.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "components/card.peb",
+                        "components/card/detail.peb"));
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void nestedComponentPartialCalledAsComponentIsCheckedClosed() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% component \"card/detail\" %}{% endcomponent %}",
+                        "components/card/detail.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "components/card/detail.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/card/detail.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void componentSelfCycleIsReportedAtTheCallLine() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% component \"loop\" %}{% endcomponent %}",
+                        "components/loop.peb",
+                        "{% component \"loop\" %}{% endcomponent %}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "components/loop.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/loop.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Component cycle")
+                    .contains("components/loop.peb -> components/loop.peb");
+        });
+    }
+
+    @Test
+    void mutualComponentCycleIsReportedOnce() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% component \"a\" %}{% endcomponent %}",
+                        "components/a.peb", "{% component \"b\" %}{% endcomponent %}",
+                        "components/b.peb", "{% component \"a\" %}{% endcomponent %}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "components/a.peb", "components/b.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("components/b.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Component cycle")
+                    .contains("components/a.peb -> components/b.peb -> components/a.peb");
+        });
+    }
+
+    @Test
+    void includedParseFailureIsReportedPerCaller() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", "{% include \"broken.peb\" %}",
+                        "other.peb", "{% include \"broken.peb\" %}",
+                        "broken.peb", "{% if %}"),
+                ModelSchema.any())
+                .checkAll(List.of("page.peb", "other.peb"));
+
+        assertThat(result.errors()).hasSize(2);
+        assertThat(result.errors()).extracting(ContractDiagnostic::message)
+                .anySatisfy(message -> assertThat(message).contains("page.peb:1"))
+                .anySatisfy(message -> assertThat(message).contains("other.peb:1"));
+    }
+
+    @Test
+    void dynamicComponentPropKeySuppressesRequiredPropError() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb",
+                        "{% component \"card\" with {key: \"x\"} %}{% endcomponent %}",
+                        "components/card.peb", "{% props title %}{{ title }}"),
+                ModelSchema.builder().variable("key").build());
+
+        assertThat(result.hasErrors()).isFalse();
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.message()).contains("dynamic prop name");
+        });
+    }
+
+    @Test
+    void invalidExtendsTargetIsReportedAtTheExtendsLine() {
+        ContractResult result = checker(
+                Map.of("page.peb", """
+                        first line
+                        {% extends "../.." %}{% block body %}{% endblock %}
+                        """),
+                ModelSchema.any())
+                .check("page.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(2);
+            assertThat(error.message()).contains("Extends target [../..] is invalid");
+        });
     }
 
     private static ContractChecker checker(Map<String, String> templates, ModelSchema model) {

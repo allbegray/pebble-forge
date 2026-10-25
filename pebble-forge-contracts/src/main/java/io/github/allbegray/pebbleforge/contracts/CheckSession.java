@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 final class CheckSession {
@@ -31,6 +32,7 @@ final class CheckSession {
     private final Set<String> partialTemplates;
 
     private final Map<String, TemplateScan> scans = new TreeMap<>();
+    private final Set<String> componentTargets = new HashSet<>();
     private final Set<String> analyzed = new HashSet<>();
     private final Set<ContextKey> evaluated = new HashSet<>();
     private final Set<String> evaluatedTemplates = new HashSet<>();
@@ -59,14 +61,20 @@ final class CheckSession {
         for (String name : templateNames) {
             universe.add(Objects.requireNonNull(name, "templateName"));
         }
-        for (String name : universe) {
-            scan(name);
-        }
-        for (String name : rootTemplates) {
-            scan(name);
-        }
+
+        SortedSet<String> seeds = new TreeSet<>(universe);
+        seeds.addAll(rootTemplates);
+        discover(seeds);
 
         SortedSet<String> roots = inferRoots(universe);
+        Set<String> reachable = reachableFrom(roots);
+        for (String name : universe) {
+            if (!roots.contains(name) && !isComponent(name)
+                    && !isNestedComponent(name)
+                    && !partialTemplates.contains(name) && !reachable.contains(name)) {
+                roots.add(name);
+            }
+        }
         for (String root : roots) {
             analyze(scan(root), null);
         }
@@ -78,6 +86,60 @@ final class CheckSession {
         }
         detectUnreachedCycles(universe);
         return result();
+    }
+
+    private void discover(Collection<String> seeds) {
+        Deque<String> pending = new ArrayDeque<>(seeds);
+        Set<String> visited = new HashSet<>();
+        while (!pending.isEmpty()) {
+            String name = pending.removeFirst();
+            if (!visited.add(name)) {
+                continue;
+            }
+            TemplateScan scan = scan(name);
+            if (scan.failure != null) {
+                continue;
+            }
+            forEachStaticTarget(scan, pending::addLast);
+        }
+    }
+
+    private Set<String> reachableFrom(Collection<String> roots) {
+        Set<String> reachable = new HashSet<>();
+        Deque<String> pending = new ArrayDeque<>(roots);
+        while (!pending.isEmpty()) {
+            String name = pending.removeFirst();
+            if (!reachable.add(name)) {
+                continue;
+            }
+            TemplateScan scan = scan(name);
+            if (scan.failure != null) {
+                continue;
+            }
+            forEachStaticTarget(scan, pending::addLast);
+        }
+        return reachable;
+    }
+
+    private void forEachStaticTarget(TemplateScan scan, Consumer<String> target) {
+        for (TemplateScan.IncludeEdge edge : scan.includes) {
+            if (edge.resolutionError() == null
+                    && edge.target() instanceof TemplateScan.StaticTarget include) {
+                target.accept(include.name());
+            }
+        }
+        for (TemplateScan.ComponentCall call : scan.componentCalls) {
+            if (call.dynamicName()) {
+                continue;
+            }
+            try {
+                String path = components.resolvePath(call.name());
+                componentTargets.add(path);
+                target.accept(path);
+            } catch (IllegalArgumentException error) {
+                // Invalid names are reported at the call site during analysis.
+            }
+        }
     }
 
     private SortedSet<String> inferRoots(SortedSet<String> universe) {
@@ -99,6 +161,8 @@ final class CheckSession {
                 roots.add(name);
             } else if (partialTemplates.contains(name)) {
                 continue;
+            } else if (isNestedComponent(name)) {
+                continue;
             } else if (!incoming.contains(name)) {
                 roots.add(name);
             }
@@ -109,7 +173,19 @@ final class CheckSession {
 
     private boolean isComponent(String name) {
         String root = components.root();
-        return !root.isEmpty() && name.startsWith(root + "/");
+        if (root.isEmpty() || !name.startsWith(root + "/")) {
+            return false;
+        }
+        String relative = name.substring(root.length() + 1);
+        return !relative.contains("/") || componentTargets.contains(name);
+    }
+
+    private boolean isNestedComponent(String name) {
+        String root = components.root();
+        if (root.isEmpty() || !name.startsWith(root + "/")) {
+            return false;
+        }
+        return name.substring(root.length() + 1).contains("/");
     }
 
     private TemplateScan scan(String name) {
@@ -142,19 +218,32 @@ final class CheckSession {
             reportFailure(scan, site);
             return;
         }
-        if (!analyzed.add(scan.templateName)) {
-            return;
-        }
-        if (scan.failure != null) {
+        if (scan.failure instanceof TemplateScan.ParseFailure) {
+            if (site == null && !analyzed.add(scan.templateName)) {
+                return;
+            }
             reportFailure(scan, site);
             return;
         }
+        if (!analyzed.add(scan.templateName)) {
+            return;
+        }
+        reportInvalidParent(scan);
         for (TemplateScan.IncludeEdge edge : scan.includes) {
             analyzeInclude(scan, edge, site);
         }
         for (TemplateScan.ComponentCall call : scan.componentCalls) {
             analyzeComponentCall(scan, call);
         }
+    }
+
+    private void reportInvalidParent(TemplateScan scan) {
+        TemplateScan.ParentCall parent = scan.parent;
+        if (parent == null || parent.resolutionError() == null) {
+            return;
+        }
+        error(scan.templateName, parent.line(), "Extends target ["
+                + parent.literalTarget() + "] is invalid: " + parent.resolutionError());
     }
 
     private void reportFailure(TemplateScan scan, IncludeSite site) {
@@ -189,6 +278,10 @@ final class CheckSession {
             warning(scan.templateName, edge.line(), "Include [" + targetLabel(edge)
                     + "] uses a dynamic with key; variables in the included template "
                     + "cannot be fully checked");
+        } else if (edge.scopeIncomplete()) {
+            warning(scan.templateName, edge.line(), "Include [" + targetLabel(edge)
+                    + "] is inside a dynamic with scope; variables in the included "
+                    + "template cannot be fully checked");
         }
         if (edge.target() instanceof TemplateScan.DynamicTarget) {
             return;
@@ -232,10 +325,12 @@ final class CheckSession {
             return;
         }
 
-        for (Map.Entry<String, Boolean> prop : component.props.entrySet()) {
-            if (prop.getValue() && !call.props().contains(prop.getKey())) {
-                error(owner.templateName, call.line(), "Component [" + call.name()
-                        + "] requires prop [" + prop.getKey() + "]");
+        if (!call.dynamicProps()) {
+            for (Map.Entry<String, Boolean> prop : component.props.entrySet()) {
+                if (prop.getValue() && !call.props().contains(prop.getKey())) {
+                    error(owner.templateName, call.line(), "Component [" + call.name()
+                            + "] requires prop [" + prop.getKey() + "]");
+                }
             }
         }
         for (String prop : call.props()) {
@@ -256,7 +351,7 @@ final class CheckSession {
             return;
         }
         if (includeStack.contains(scan.templateName)) {
-            reportCycle(scan.templateName, site);
+            reportCycle(scan.templateName, site, "Include");
             return;
         }
 
@@ -274,7 +369,7 @@ final class CheckSession {
                 evaluateInclude(scan, edge, scope, site);
             }
             for (TemplateScan.ComponentCall call : scan.componentCalls) {
-                evaluateComponent(call);
+                evaluateComponent(scan, call);
             }
             evaluateParent(scan, scope);
         } finally {
@@ -318,7 +413,7 @@ final class CheckSession {
         Scope child = callerScope
                 .plus(edge.visibleAtCall())
                 .plus(edge.withKeys());
-        if (edge.dynamicWithKeys()) {
+        if (edge.dynamicWithKeys() || edge.scopeIncomplete()) {
             child = child.incomplete();
         }
 
@@ -326,7 +421,7 @@ final class CheckSession {
                 append(site, caller.templateName, edge.line())));
     }
 
-    private void evaluateComponent(TemplateScan.ComponentCall call) {
+    private void evaluateComponent(TemplateScan owner, TemplateScan.ComponentCall call) {
         if (call.dynamicName()) {
             return;
         }
@@ -341,6 +436,11 @@ final class CheckSession {
             return;
         }
         analyze(component, null);
+        if (includeStack.contains(path)) {
+            reportCycle(path, new IncludeSite(owner.templateName, call.line(), List.of()),
+                    "Component");
+            return;
+        }
         evaluate(component, Scope.EMPTY, null);
     }
 
@@ -348,7 +448,7 @@ final class CheckSession {
         // EXTENDS SEAM: ParentCall is recorded, but parent propagation lands here.
     }
 
-    private void reportCycle(String target, IncludeSite site) {
+    private void reportCycle(String target, IncludeSite site, String kind) {
         if (site == null) {
             return;
         }
@@ -361,7 +461,7 @@ final class CheckSession {
         cycle.add(target);
         String canonical = canonicalCycle(cycle);
         if (reportedCycles.add(canonical)) {
-            error(site.callerTemplate(), site.line(), "Include cycle: " + canonical);
+            error(site.callerTemplate(), site.line(), kind + " cycle: " + canonical);
         }
     }
 

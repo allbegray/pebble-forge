@@ -101,7 +101,8 @@ class PebbleForgeContractsPluginTest {
 
     @Test
     void warnsOnADynamicIncludeTargetAndSucceeds() throws IOException {
-        writeProject(Map.of("page.peb", "{% include fragment %}"));
+        writeProject(Map.of("page.peb", "{% include fragment %}"),
+                "variables.add(\"fragment\")");
 
         BuildResult result = runner().build();
 
@@ -115,12 +116,13 @@ class PebbleForgeContractsPluginTest {
         writeProject(Map.of(
                 "page.peb", "{% for item in items %}{% include fragment %}{% endfor %}",
                 "fragment.peb", "{{ item }}"),
-                "variables.add(\"items\")");
+                "variables.add(\"items\")", "variables.add(\"fragment\")");
 
         BuildResult withoutSetting = runner().buildAndFail();
         assertThat(withoutSetting.getOutput()).contains("Variable [item]");
 
-        configureProject("variables.add(\"items\")", "partialTemplates.add(\"fragment\")");
+        configureProject("variables.add(\"items\")", "variables.add(\"fragment\")",
+                "partialTemplates.add(\"fragment\")");
 
         BuildResult withSetting = runner().build();
         assertThat(withSetting.getOutput()).contains("BUILD SUCCESSFUL");
@@ -158,6 +160,21 @@ class PebbleForgeContractsPluginTest {
                 .contains("checked as a component")
                 .contains("components/card:1")
                 .contains("Variable [missing]");
+    }
+
+    @Test
+    void nestedComponentPartialListedAsPartialDoesNotWarn() throws IOException {
+        writeProject(Map.of(
+                "page.peb", "{% component \"card\" %}{% endcomponent %}",
+                "components/card.peb", "{% include \"components/card/detail\" %}",
+                "components/card/detail.peb", "detail"),
+                "partialTemplates.add(\"components/card/detail\")");
+
+        BuildResult result = runner().build();
+
+        assertThat(result.getOutput())
+                .contains("BUILD SUCCESSFUL")
+                .doesNotContain("listed in partialTemplates");
     }
 
     @Test

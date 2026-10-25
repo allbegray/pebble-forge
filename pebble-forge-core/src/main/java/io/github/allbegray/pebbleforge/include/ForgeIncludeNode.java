@@ -23,6 +23,7 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
 
     private final Expression<?> includeExpression;
     private final MapExpression mapExpression;
+    private final Map<Expression<?>, Expression<?>> withArguments;
     private final SandboxLimitsResolver limitsResolver;
 
     ForgeIncludeNode(int lineNumber, Expression<?> includeExpression,
@@ -30,6 +31,9 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
         super(lineNumber);
         this.includeExpression = includeExpression;
         this.mapExpression = mapExpression;
+        this.withArguments = mapExpression == null
+                ? null
+                : Map.copyOf(mapExpression.getEntries());
         this.limitsResolver = limitsResolver;
     }
 
@@ -39,8 +43,8 @@ final class ForgeIncludeNode extends AbstractRenderableNode implements IncludeNo
     }
 
     @Override
-    public MapExpression getWithExpression() {
-        return mapExpression;
+    public Map<Expression<?>, Expression<?>> getWithArguments() {
+        return withArguments;
     }
 
     @Override

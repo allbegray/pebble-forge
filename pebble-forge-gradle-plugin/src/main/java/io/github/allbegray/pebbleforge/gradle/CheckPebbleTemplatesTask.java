@@ -31,6 +31,11 @@ import java.util.stream.Stream;
  */
 public abstract class CheckPebbleTemplatesTask extends DefaultTask {
 
+    public CheckPebbleTemplatesTask() {
+        getRootTemplates().convention(Set.of());
+        getPartialTemplates().convention(Set.of());
+    }
+
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
     public abstract DirectoryProperty getTemplatesDirectory();
@@ -85,7 +90,11 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
                 ? null
                 : components.root() + "/";
         for (String name : partialTemplates) {
-            if (componentPrefix != null && name.startsWith(componentPrefix)) {
+            if (componentPrefix == null || !name.startsWith(componentPrefix)) {
+                continue;
+            }
+            String relative = name.substring(componentPrefix.length());
+            if (!relative.contains("/")) {
                 getLogger().warn("Template [{}] is listed in partialTemplates but belongs "
                                 + "to the component root [{}]; it is checked as a component.",
                         name, components.root());

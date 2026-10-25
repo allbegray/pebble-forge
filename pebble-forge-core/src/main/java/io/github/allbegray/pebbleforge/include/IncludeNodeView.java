@@ -1,10 +1,11 @@
 package io.github.allbegray.pebbleforge.include;
 
 import io.pebbletemplates.pebble.node.expression.Expression;
-import io.pebbletemplates.pebble.node.expression.MapExpression;
+
+import java.util.Map;
 
 /**
- * Read-only view of an include node.
+ * Read-only view of an include node's parsed arguments.
  */
 public interface IncludeNodeView {
 
@@ -14,9 +15,10 @@ public interface IncludeNodeView {
     Expression<?> getTargetExpression();
 
     /**
-     * Returns the {@code with} map, or {@code null} when the include has none.
+     * Returns an immutable copy of the {@code with} arguments, or {@code null}
+     * when the include has none.
      */
-    MapExpression getWithExpression();
+    Map<Expression<?>, Expression<?>> getWithArguments();
 
     /**
      * Returns the line of the include tag.

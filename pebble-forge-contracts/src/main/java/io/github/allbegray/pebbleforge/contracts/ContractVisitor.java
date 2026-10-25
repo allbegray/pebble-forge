@@ -7,6 +7,7 @@ import io.github.allbegray.pebbleforge.language.ForNode;
 import io.github.allbegray.pebbleforge.language.WithNode;
 import io.pebbletemplates.pebble.extension.AbstractNodeVisitor;
 import io.pebbletemplates.pebble.node.ArgumentsNode;
+import io.pebbletemplates.pebble.node.BodyNode;
 import io.pebbletemplates.pebble.node.ExtendsNode;
 import io.pebbletemplates.pebble.node.MacroNode;
 import io.pebbletemplates.pebble.node.NamedArgumentNode;
@@ -29,31 +30,51 @@ import io.pebbletemplates.pebble.node.expression.TernaryExpression;
 import io.pebbletemplates.pebble.node.expression.UnaryExpression;
 import io.pebbletemplates.pebble.template.PebbleTemplateImpl;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 final class ContractVisitor extends AbstractNodeVisitor {
 
     private final TemplateScan scan;
     private final Set<Node> consumed = Collections.newSetFromMap(new IdentityHashMap<>());
-    private MapExpression withMap;
+    private final Deque<ScopeFrame> scopes = new ArrayDeque<>();
 
     ContractVisitor(TemplateScan scan, PebbleTemplateImpl template) {
         super(template);
         this.scan = scan;
+        scopes.addLast(new ScopeFrame(true));
     }
 
     @Override
     public void visit(SetNode node) {
-        scan.declaredVariables.add(node.getName());
+        declare(node.getName());
         super.visit(node);
     }
 
     @Override
     public void visit(MacroNode node) {
-        scan.declaredVariables.addAll(node.getMacro().getArgumentNames());
+        scanArguments(node.getArgs());
+        consumed.add(node.getArgs());
+
+        scopes.addLast(new ScopeFrame(true));
+        for (String argument : node.getMacro().getArgumentNames()) {
+            declare(argument);
+        }
+        scanBody(node.getBody());
+        scopes.removeLast();
+        consumed.add(node.getBody());
+    }
+
+    @Override
+    public void visit(BodyNode node) {
+        if (consumed.remove(node)) {
+            return;
+        }
         super.visit(node);
     }
 
@@ -63,19 +84,15 @@ final class ContractVisitor extends AbstractNodeVisitor {
         String literal = parent instanceof LiteralStringExpression expression
                 ? expression.getValue()
                 : null;
-        String resolved = null;
         String resolutionError = null;
         if (literal != null) {
             try {
-                resolved = getTemplate().resolveRelativePath(literal);
+                getTemplate().resolveRelativePath(literal);
             } catch (RuntimeException error) {
                 resolutionError = PebbleErrors.messageOf(error);
             }
-            if (resolved == null) {
-                resolved = literal;
-            }
         }
-        scan.parent = new TemplateScan.ParentCall(literal, resolved, resolutionError,
+        scan.parent = new TemplateScan.ParentCall(literal, resolutionError,
                 literal == null, node.getLineNumber());
         super.visit(node);
     }
@@ -133,10 +150,6 @@ final class ContractVisitor extends AbstractNodeVisitor {
                 scan(entry.getKey());
                 scan(entry.getValue());
             }
-            if (map == withMap) {
-                declareWithKeys(map);
-                withMap = null;
-            }
             return;
         }
         if (node instanceof ArrayExpression array) {
@@ -159,20 +172,64 @@ final class ContractVisitor extends AbstractNodeVisitor {
         }
         if (node instanceof PropsNode props) {
             scan.declareProps(props.getProps());
+            for (PropsNode.Prop prop : props.getProps()) {
+                declare(prop.name());
+            }
             return;
         }
         if (node instanceof ForNode forNode) {
-            if (forNode.getKeyVariableName() != null) {
-                scan.declaredVariables.add(forNode.getKeyVariableName());
-            }
-            scan.declaredVariables.add(forNode.getIterationVariable());
-            scan.declaredVariables.add("loop");
+            scanFor(forNode);
             return;
         }
         if (node instanceof WithNode with) {
-            withMap = with.getValuesExpression() instanceof MapExpression map ? map : null;
+            scanWith(with);
             return;
         }
+    }
+
+    private void scanFor(ForNode node) {
+        scan(node.getIterable());
+        consumed.add(node.getIterable());
+
+        scopes.addLast(new ScopeFrame(false));
+        if (node.getKeyVariableName() != null) {
+            declare(node.getKeyVariableName());
+        }
+        declare(node.getIterationVariable());
+        declare("loop");
+        scanBody(node.getBody());
+        scopes.removeLast();
+        consumed.add(node.getBody());
+
+        if (node.getElseBody() != null) {
+            scanBody(node.getElseBody());
+            consumed.add(node.getElseBody());
+        }
+    }
+
+    private void scanWith(WithNode with) {
+        Expression<?> values = with.getValuesExpression();
+        scan(values);
+        if (values != null) {
+            consumed.add(values);
+        }
+
+        scopes.addLast(new ScopeFrame(with.isIsolated()));
+        ScopeFrame frame = scopes.getLast();
+        if (values instanceof MapExpression map) {
+            for (Expression<?> key : map.getEntries().keySet()) {
+                if (key instanceof LiteralStringExpression literal) {
+                    declare(literal.getValue());
+                } else {
+                    frame.complete = false;
+                }
+            }
+        } else if (values != null) {
+            frame.complete = false;
+        }
+        scanBody(with.getBody());
+        scopes.removeLast();
+        consumed.add(with.getBody());
     }
 
     private void recordInclude(IncludeNodeView include) {
@@ -194,38 +251,29 @@ final class ContractVisitor extends AbstractNodeVisitor {
             }
         }
 
-        Set<String> visibleAtCall = Set.copyOf(scan.declaredVariables);
+        Set<String> visibleAtCall = Set.copyOf(currentVisibleNames());
+        boolean scopeIncomplete = !currentComplete();
         Set<String> withKeys = new LinkedHashSet<>();
         boolean dynamicWithKeys = false;
 
-        MapExpression with = include.getWithExpression();
+        Map<Expression<?>, Expression<?>> with = include.getWithArguments();
         if (with != null) {
-            consumed.add(with);
-            for (var entry : with.getEntries().entrySet()) {
+            for (Map.Entry<Expression<?>, Expression<?>> entry : with.entrySet()) {
                 if (entry.getKey() instanceof LiteralStringExpression key) {
                     withKeys.add(key.getValue());
                 } else {
                     dynamicWithKeys = true;
-                    scan(entry.getKey());
                 }
-                scan(entry.getValue());
             }
-        }
-
-        if (target instanceof ContextVariableExpression) {
-            consumed.add(target);
-        } else {
-            scan(target);
-            consumed.add(target);
         }
 
         TemplateScan.IncludeTarget includeTarget = literal == null
                 ? new TemplateScan.DynamicTarget()
                 : new TemplateScan.StaticTarget(resolved);
 
-        scan.includes.add(new TemplateScan.IncludeEdge(includeTarget, literal, resolved,
+        scan.includes.add(new TemplateScan.IncludeEdge(includeTarget, literal,
                 resolutionError, withKeys, dynamicWithKeys, visibleAtCall,
-                include.getLineNumber()));
+                scopeIncomplete, include.getLineNumber()));
     }
 
     private void recordComponent(ComponentNode component) {
@@ -249,11 +297,37 @@ final class ContractVisitor extends AbstractNodeVisitor {
                 staticName == null, dynamicProps, component.getLineNumber()));
     }
 
-    private void declareWithKeys(MapExpression map) {
-        for (Expression<?> key : map.getEntries().keySet()) {
-            if (key instanceof LiteralStringExpression literal) {
-                scan.declaredVariables.add(literal.getValue());
+    private void declare(String name) {
+        scan.declaredVariables.add(name);
+        scopes.getLast().names.add(name);
+    }
+
+    private Set<String> currentVisibleNames() {
+        Set<String> names = new LinkedHashSet<>();
+        for (ScopeFrame frame : scopes) {
+            if (frame.reset) {
+                names.clear();
             }
+            names.addAll(frame.names);
+        }
+        return names;
+    }
+
+    private boolean currentComplete() {
+        boolean complete = true;
+        for (ScopeFrame frame : scopes) {
+            if (frame.reset) {
+                complete = frame.complete;
+            } else if (!frame.complete) {
+                complete = false;
+            }
+        }
+        return complete;
+    }
+
+    private void scanBody(BodyNode body) {
+        if (body != null) {
+            body.accept(this);
         }
     }
 
@@ -276,6 +350,17 @@ final class ContractVisitor extends AbstractNodeVisitor {
     private void scan(Expression<?> expression) {
         if (expression != null) {
             expression.accept(this);
+        }
+    }
+
+    static final class ScopeFrame {
+
+        private final Set<String> names = new LinkedHashSet<>();
+        private final boolean reset;
+        private boolean complete = true;
+
+        ScopeFrame(boolean reset) {
+            this.reset = reset;
         }
     }
 }

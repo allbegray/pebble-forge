@@ -44,9 +44,9 @@ final class TemplateScan {
     record DynamicTarget() implements IncludeTarget {
     }
 
-    record IncludeEdge(IncludeTarget target, String literalTarget, String resolvedTarget,
+    record IncludeEdge(IncludeTarget target, String literalTarget,
                        String resolutionError, Set<String> withKeys, boolean dynamicWithKeys,
-                       Set<String> visibleAtCall, int line) {
+                       Set<String> visibleAtCall, boolean scopeIncomplete, int line) {
         IncludeEdge {
             Objects.requireNonNull(target, "target");
             withKeys = Set.copyOf(withKeys);
@@ -57,7 +57,7 @@ final class TemplateScan {
         }
     }
 
-    record ParentCall(String literalTarget, String resolvedTarget, String resolutionError,
+    record ParentCall(String literalTarget, String resolutionError,
                       boolean dynamicTarget, int line) {
         ParentCall {
             if (line < 0) {
@@ -88,7 +88,6 @@ final class TemplateScan {
     void declareProps(List<PropsNode.Prop> declared) {
         for (var prop : declared) {
             props.put(prop.name(), prop.defaultValue() == null);
-            declaredVariables.add(prop.name());
         }
     }
 }
