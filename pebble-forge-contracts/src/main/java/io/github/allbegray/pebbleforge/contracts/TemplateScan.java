@@ -13,7 +13,17 @@ import java.util.Set;
 final class TemplateScan {
 
     final String templateName;
+    /**
+     * Names definitely visible when the root flow finishes. A declaration
+     * inside a branch or a loop appears here only when every path leaves it
+     * visible.
+     */
     final Set<String> rootDeclarations = new LinkedHashSet<>();
+    /**
+     * Per-block names newly visible when that block's flow finishes. A name is
+     * absent when the block never declares it or declares it on only some
+     * paths. Nested block declarations stay with the nested block.
+     */
     final Map<String, Set<String>> blockDeclarations = new LinkedHashMap<>();
     final List<VariableRead> reads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();

@@ -92,15 +92,22 @@ final class ContractVisitor extends AbstractNodeVisitor {
 
     @Override
     public void visit(BlockNode node) {
-        blocks.addLast(node.getName());
         scan.blockDeclarations.computeIfAbsent(node.getName(),
                 name -> new LinkedHashSet<>());
         FlowFrame outer = flows.getLast();
-        flows.addLast(new FlowFrame(outer.templateLevel, outer.closed, outer.names));
+        Set<String> outerNames = Set.copyOf(outer.names);
+        blocks.addLast(node.getName());
+        FlowFrame frame = new FlowFrame(outer.templateLevel, outer.closed, outer.names);
+        flows.addLast(frame);
         scanBody(node.getBody());
         flows.removeLast();
         blocks.removeLast();
         consumed.add(node.getBody());
+        if (frame.templateLevel) {
+            Set<String> declared = new LinkedHashSet<>(frame.names);
+            declared.removeAll(outerNames);
+            scan.blockDeclarations.get(node.getName()).addAll(declared);
+        }
     }
 
     @Override
@@ -428,17 +435,17 @@ final class ContractVisitor extends AbstractNodeVisitor {
     }
 
     private void declare(String name) {
-        FlowFrame flow = flows.getLast();
-        if (flow.templateLevel) {
-            if (blocks.isEmpty()) {
-                scan.rootDeclarations.add(name);
-            } else {
-                scan.blockDeclarations.computeIfAbsent(blocks.getLast(),
-                        block -> new LinkedHashSet<>()).add(name);
-            }
-        }
-        flow.names.add(name);
+        flows.getLast().names.add(name);
         scopes.getLast().names.add(name);
+    }
+
+    /**
+     * Publishes the final root flow names as this template's cross-template
+     * summary. Called once after the root node is accepted.
+     */
+    void finish() {
+        scan.rootDeclarations.clear();
+        scan.rootDeclarations.addAll(flows.getLast().names);
     }
 
     private String currentBlock() {

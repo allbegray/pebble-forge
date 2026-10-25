@@ -1440,6 +1440,220 @@ class ContractCheckerTest {
     }
 
     @Test
+    void childConditionalRootSetDoesNotFeedParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% if cond %}{% set item = "x" %}{% endif %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void childRootSetInBothBranchesFeedsParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% if cond %}{% set item = "x" %}{% else %}{% set item = "y" %}{% endif %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childSwitchWithDefaultFeedsParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{% set item = "y" %}{% default %}{% set item = "z" %}{% endswitch %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childSwitchWithoutDefaultDoesNotFeedParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{% set item = "y" %}{% endswitch %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void childLoopOnlySetDoesNotFeedParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% for entry in items %}{% set item = "x" %}{% endfor %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void childSetAfterLoopFeedsParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% for entry in items %}{% endfor %}{% set item = "x" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childSetInsideWithDoesNotFeedParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% with {"scope": "x"} %}{% set item = "x" %}{% endwith %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void childSetInsideWithOnlyDoesNotFeedParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% with {"scope": "x"} only %}{% set item = "x" %}{% endwith %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void childBlockConditionalSetDoesNotFeedLaterParentContent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% if cond %}{% set fromChild = "x" %}{% endif %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}{{ fromChild }}
+                                """),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[fromChild]");
+        });
+    }
+
+    @Test
+    void childBlockSetInBothBranchesFeedsLaterParentContent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% if cond %}{% set fromChild = "x" %}{% else %}{% set fromChild = "y" %}{% endif %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}{{ fromChild }}
+                                """),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childBlockSetAfterLoopFeedsLaterParentContent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% for entry in items %}{% endfor %}{% set fromChild = "x" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}{{ fromChild }}
+                                """),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void grandchildConditionalSetDoesNotFeedGrandparent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% if cond %}{% set item = "x" %}{% endif %}{% block body %}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("cond").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void parentReadSeesChildRootSetBeforeIfOrLoop() {
+        ContractResult beforeIf = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% set item = "x" %}{% if cond %}{% endif %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("cond").build());
+        ContractResult beforeLoop = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% set item = "x" %}{% for entry in items %}{% endfor %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "{{ item }}"),
+                ModelSchema.builder().variable("items").build());
+
+        assertThat(beforeIf.isClean()).isTrue();
+        assertThat(beforeLoop.isClean()).isTrue();
+    }
+
+    @Test
     void dynamicExtendsParentWarnsAndKeepsBaseRead() {
         ContractResult result = checker(
                 Map.of(

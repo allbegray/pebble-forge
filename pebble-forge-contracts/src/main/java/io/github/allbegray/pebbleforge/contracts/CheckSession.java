@@ -272,7 +272,9 @@ final class CheckSession {
                         "Template is not a PebbleTemplateImpl");
                 return scan;
             }
-            implementation.getRootNode().accept(new ContractVisitor(scan, implementation));
+            ContractVisitor visitor = new ContractVisitor(scan, implementation);
+            implementation.getRootNode().accept(visitor);
+            visitor.finish();
         } catch (LoaderException error) {
             scan.failure = new TemplateScan.LoadFailure(PebbleErrors.messageOf(error));
         } catch (PebbleException error) {
