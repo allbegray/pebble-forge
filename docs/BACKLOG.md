@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 169개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 16, 진단 7, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 24.
+- 테스트는 170개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 16, 진단 7, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 25.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -191,7 +191,7 @@
 - 결정: 모든 정책의 합집합으로 파싱하고 정책 인식 래퍼로 검사하는 방식을 택했다. include, extends, embed, macro, component가 정책 경계를 넘어도 한 엔진과 한 템플릿 캐시를 유지한다.
 - 현재 구현: exact/최장 prefix 규칙, 파싱 시점 태그 검사, 렌더 시점 필터·함수·테스트 검사, 정책별 메서드 리졸버, include·macro·embed·component의 소유 정책 전환, literal 템플릿의 기본 정책 적용, `escape`/`default`/`defined`의 Pebble 특수 타입 보존. `SandboxPolicyResolver`는 final 클래스라 `policies()`와 `resolve()`가 어긋날 수 없다. `sandbox(...)`와 `policies(...)`, `methodAccessValidator(...)`와 `policies(...)`의 충돌은 빌드 시 실패한다.
 - 완료 기준: 같은 엔진에서 `public/` 템플릿은 `raw`가 차단되고 `admin/` 템플릿은 허용되는 fixture가 통과한다. include, macro, embed가 정책 경계를 넘을 때의 동작도 문서화한다. 충족했다.
-- 테스트: 24개. 정책 해석, 정책별 필터·태그·함수·메서드, 렌더 순서, literal, 템플릿 이름 검증, include, macro, embed, component, output limit, autoescape, global 변수, 경로 검증, 빌더 충돌을 검증한다.
+- 테스트: 25개. 정책 해석, 정책별 필터·태그·함수·메서드, 렌더 순서, literal, 템플릿 이름 검증, include, extends, macro, embed, component, output limit, autoescape, global 변수, 경로 검증, 빌더 충돌을 검증한다.
 - 메모: 프로세스 내부 CPU 제한은 완전하지 않다. 적대적 CPU는 별도 프로세스로 격리한다는 원칙을 유지한다.
 
 ### PF-106 WebFlux 지원

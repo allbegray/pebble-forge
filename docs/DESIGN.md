@@ -326,7 +326,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
 | Template limits | 6 | Resolver matching, loop/include/slot limits by prefix |
-| Per-template policies | 24 | Resolver matching, filter/tag/function/method enforcement, literal templates, name validation, include, macro, embed, and component ownership |
+| Per-template policies | 25 | Resolver matching, filter/tag/function/method enforcement, literal templates, name validation, include, extends, macro, embed, and component ownership |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot auto-config | 11 | Application context, official auto-config ordering, policy override, policy resolver, language switch, dev mode, limits resolver |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |

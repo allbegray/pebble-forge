@@ -169,6 +169,31 @@ class PerTemplatePolicyTest {
     }
 
     @Test
+    void extendsBlocksUseThePolicyOfTheDeclaringTemplate() throws Exception {
+        SandboxPolicy publicPolicy = SandboxPolicy.builder()
+                .allowTags("extends", "block")
+                .build();
+        SandboxPolicy adminPolicy = SandboxPolicy.builder()
+                .allowTags("extends", "block")
+                .allowRawOutput()
+                .build();
+        String page = "{% extends \"admin/layout.peb\" %}"
+                + "{% block content %}{{ value | raw }}{% endblock %}";
+        PebbleEngine engine = engine(
+                Map.of(
+                        "public/page.peb", page,
+                        "admin/page.peb", page,
+                        "admin/layout.peb", "<html>{% block content %}base{% endblock %}</html>"),
+                resolver(publicPolicy, adminPolicy));
+
+        assertThatThrownBy(() -> render(engine, "public/page.peb", Map.of("value", "<b>x</b>")))
+                .isInstanceOf(PebbleException.class)
+                .hasMessageContaining("Filter [raw] is not allowed for template [public/page.peb]");
+        assertThat(render(engine, "admin/page.peb", Map.of("value", "<b>x</b>")))
+                .isEqualTo("<html><b>x</b></html>");
+    }
+
+    @Test
     void includedTemplatesInsideBlocksUseTheirOwnPolicy() throws Exception {
         SandboxPolicy publicPolicy = SandboxPolicy.builder().allowTags("block").build();
         SandboxPolicy adminPolicy = SandboxPolicy.builder().allowRawOutput().build();
