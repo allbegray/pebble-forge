@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-144 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+169 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -237,14 +237,39 @@ pebble.forge.dev-mode=true
 | Include depth | 16 nested includes |
 | Slot capture | 1,000,000 characters per component |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
-| Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
+| Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, whitespace, `{`, `}`, `%`, and empty segments rejected |
 | Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. `allowOnly*` replaces a default set.
 
 The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list. Run hostile templates in a separate process when CPU is hostile. Loop limits are per loop. The total loop budget is shared across the render, except parallel branches get a separate budget. Include depth is limited to 16 by default. `SandboxedLoader` is lexical. Use `SandboxedFileLoader` when symlinks are possible.
 
-### Per-template limits
+### Per-template policies
+
+Allowlists, method access, and path validation can vary by template name.
+
+```java
+SandboxPolicy publicPolicy = SandboxPolicy.strict();
+SandboxPolicy adminPolicy = SandboxPolicy.builder()
+        .allowRawOutput()
+        .build();
+
+SandboxPolicyResolver policies = SandboxPolicyResolver
+        .builder(publicPolicy)
+        .prefix("admin/", adminPolicy)
+        .build();
+
+PebbleEngine engine = PebbleForge.engine()
+        .loader(loader)
+        .policies(policies)
+        .build();
+```
+
+The engine parses the union of all policies. Tags are checked at parse time. Filters, functions, tests, and methods are checked at render time against the policy of the template that owns the node. Includes, macros, embeds, and components use the policy of the template that declares the node. `escape` is required by autoescaping. `default` and `defined` keep Pebble's special handling when a policy denies them.
+
+Exact rules beat prefix rules, and the longest prefix wins. The output limit is the strictest finite limit across policies. Autoescaping is on if any policy forces it. A global variable is exposed only when every policy allows it. See [docs/TEMPLATE-POLICIES.md](docs/TEMPLATE-POLICIES.md).
+
+### Per-template resource limits
 
 Resource limits can vary by template name.
 
@@ -268,7 +293,7 @@ PebbleEngine engine = PebbleForge.engine()
 
 Exact rules beat prefix rules, and the longest prefix wins. Spring Boot picks up a `SandboxLimitsResolver` bean.
 
-Allowlists and method access still apply to the whole engine. Full per-template allowlists are tracked separately. See [docs/TEMPLATE-POLICIES.md](docs/TEMPLATE-POLICIES.md).
+If no limits resolver is supplied, each policy's own limits are used.
 
 ## Spring Boot 4
 
@@ -302,7 +327,7 @@ pebble.forge.dev-mode=false
 
 The language extension is on by default. Set `pebble.forge.language.enabled=false` to parse plain Pebble.
 
-A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxLimitsResolver` bean supplies per-template resource limits. If you define your own `PebbleEngine`, the starter backs off. If you define your own `pebbleLoader` or `springExtension`, the starter uses it.
+A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxPolicyResolver` bean supplies per-template allowlists and replaces the property policy. Define either a `SandboxPolicy` bean or a `SandboxPolicyResolver` bean, not both. A `SandboxLimitsResolver` bean supplies per-template resource limits. If you define your own `PebbleEngine`, the starter backs off. If you define your own `pebbleLoader` or `springExtension`, the starter uses it.
 
 The starter adds the Pebble Spring functions to the property-built sandbox policy. It also allows `extends` and `block` so layouts work. A hand-written policy should call `SpringWebFunctions.allow(builder)` and allow the layout tags it uses.
 

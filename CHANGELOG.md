@@ -17,6 +17,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Source-frame diagnostics with include traces for template errors.
 - Symlink-safe file loader that resolves real paths and rejects escapes.
 - Per-template resource limits for loops, include depth, and slot capture through `SandboxLimitsResolver`.
+- Per-template sandbox allowlists and method access through `SandboxPolicyResolver`, with policy ownership for includes, macros, embeds, and components.
 - Development mode that reloads edited templates through a content-hash cache key.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
@@ -28,7 +29,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 - `switch` has no fall-through.
 - `break` and `continue` are validated lexically.
-- The sandbox does not provide a CPU quota or resolve symlinks.
+- The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
+- Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
 - Spring Security support covers the servlet stack only.
 
 ## [0.1.0] - Unreleased

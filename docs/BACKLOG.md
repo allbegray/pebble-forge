@@ -14,11 +14,11 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 144개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 16, 진단 7, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 10, Boot 웹 1.
+- 테스트는 169개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 16, 진단 7, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 24.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
-- 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
+- 컴포넌트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
-- 라이선스, CI, Maven 배포 설정은 아직 없다.
+- 라이선스, CI, Maven Central 배포 설정은 들어가 있다. 원격 push 뒤 CI 초록색과 Central 배포를 확인해야 한다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
 
 ## 우선순위
@@ -45,7 +45,7 @@
 | PF-103 | P1 | 핫 리로드 | M | Done | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | Done | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | Done | 없음 |
-| PF-108 | P1 | 템플릿별 전체 allowlist 정책 | XL | 설계 필요 | PF-105 |
+| PF-108 | P1 | 템플릿별 전체 allowlist 정책 | XL | Done | PF-105 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
 | PF-107 | P1 | Spring Security 함수 확장 | S | Done | 없음 |
 | PF-201 | P2 | 컨텍스트 인식 이스케이프 | XL | 보류 | 없음 |
@@ -68,6 +68,7 @@
 | PF-005 | `79f8123` CHANGELOG, RELEASING, CONTRIBUTING |
 | PF-006 | `79f8123` SECURITY.md |
 | PF-105 | `4038221`, `ee9c89e`, `705dace`, `f71e5de`, `bbcfda6`, `934694d` 샌드박스 강화 |
+| PF-108 | `c91c3e1` 템플릿별 전체 allowlist |
 
 ## P0. 공개 0.1 릴리스
 
@@ -174,21 +175,23 @@
 ### PF-105 샌드박스 강화
 
 - 크기: L
-- 상태: Done. 루프 반복 제한, 전체 반복 예산, include 깊이, 심볼릭 링크 안전 파일 로더, 슬롯 캡처 예산, 템플릿별 자원 한도를 추가했다. 템플릿별 전체 allowlist는 PF-108로 분리했다.
+- 상태: Done. 루프 반복 제한, 전체 반복 예산, include 깊이, 심볼릭 링크 안전 파일 로더, 슬롯 캡처 예산, 템플릿별 자원 한도를 추가했다. 템플릿별 전체 allowlist는 PF-108에서 완료했다.
 - 문제: 현재 샌드박스는 출력 크기와 경로 문자열은 막지만, 재귀 include와 큰 루프는 CPU를 소모할 수 있다. 파일 로더의 심볼릭 링크도 해결하지 않는다.
 - 범위: include 깊이 제한, 루프 반복 횟수 제한, 심볼릭 링크를 해석하는 파일 로더, 템플릿별 정책, 슬롯 캡처 메모리 제한을 검토한다.
 - 현재 구현: `maxLoopIterations` 기본 100,000회, `maxTotalIterations` 기본 1,000,000회, `maxIncludeDepth` 기본 16회, `maxSlotChars` 기본 1,000,000자, `SandboxedFileLoader` 실제 경로 검증, `SandboxLimitsResolver` 템플릿별 한도를 추가했다. 루프 제한은 루프별이고 전체 예산은 렌더가 공유하며, 파일 로더는 루트 밖 심볼릭 링크를 거부한다. 커밋 `4038221`, `ee9c89e`, `705dace`, `f71e5de`, `bbcfda6`, `934694d`.
 - 완료 기준: 재귀 include와 반복 폭탄 fixture가 제한된 시간 안에 실패한다. 심볼릭 링크가 루트 밖을 가리키면 로더가 거부한다. 충족했다.
-- 남은 것: 템플릿별 전체 allowlist는 PF-108.
+- 남은 것: 없다. 템플릿별 전체 allowlist는 PF-108에서 완료했다.
 
 ### PF-108 템플릿별 전체 allowlist 정책
 
 - 크기: XL
-- 상태: 설계 필요
-- 문제: 현재 allowlist와 메서드 접근 정책은 엔진 하나에 고정되어 있다. 신뢰 수준이 다른 템플릿을 한 엔진에서 처리하면 같은 allowlist를 공유한다.
-- 범위: 템플릿 이름별로 태그, 필터, 함수, 테스트, 메서드 접근을 다르게 적용한다. 파싱 시점 정책 라우팅과 렌더 시점 검사를 함께 설계한다.
-- 후보: 모든 정책의 합집합으로 파싱하고 태그·필터·함수·테스트·메서드 접근을 정책 인식 래퍼로 감싸는 방식, 또는 정책별 엔진을 만들고 애플리케이션 경계에서 라우팅하는 방식.
-- 완료 기준: 같은 엔진에서 `public/` 템플릿은 `raw`가 차단되고 `admin/` 템플릿은 허용되는 fixture가 통과한다. include와 extends가 정책 경계를 넘을 때의 동작도 문서화한다.
+- 상태: Done. `SandboxPolicyResolver`로 템플릿 이름별 정책을 라우팅한다.
+- 문제: 기존 allowlist와 메서드 접근 정책은 엔진 하나에 고정되어 있었다. 신뢰 수준이 다른 템플릿을 한 엔진에서 처리하면 같은 allowlist를 공유했다.
+- 범위: 템플릿 이름별로 태그, 필터, 함수, 테스트, 메서드 접근, 경로 검증을 다르게 적용한다.
+- 결정: 모든 정책의 합집합으로 파싱하고 정책 인식 래퍼로 검사하는 방식을 택했다. include, extends, embed, macro, component가 정책 경계를 넘어도 한 엔진과 한 템플릿 캐시를 유지한다.
+- 현재 구현: exact/최장 prefix 규칙, 파싱 시점 태그 검사, 렌더 시점 필터·함수·테스트 검사, 정책별 메서드 리졸버, include·macro·embed·component의 소유 정책 전환, literal 템플릿의 기본 정책 적용, `escape`/`default`/`defined`의 Pebble 특수 타입 보존. `SandboxPolicyResolver`는 final 클래스라 `policies()`와 `resolve()`가 어긋날 수 없다. `sandbox(...)`와 `policies(...)`, `methodAccessValidator(...)`와 `policies(...)`의 충돌은 빌드 시 실패한다.
+- 완료 기준: 같은 엔진에서 `public/` 템플릿은 `raw`가 차단되고 `admin/` 템플릿은 허용되는 fixture가 통과한다. include, macro, embed가 정책 경계를 넘을 때의 동작도 문서화한다. 충족했다.
+- 테스트: 24개. 정책 해석, 정책별 필터·태그·함수·메서드, 렌더 순서, literal, 템플릿 이름 검증, include, macro, embed, component, output limit, autoescape, global 변수, 경로 검증, 빌더 충돌을 검증한다.
 - 메모: 프로세스 내부 CPU 제한은 완전하지 않다. 적대적 CPU는 별도 프로세스로 격리한다는 원칙을 유지한다.
 
 ### PF-106 WebFlux 지원
@@ -237,13 +240,13 @@
 2. PF-101의 다음 스키마. 지금은 Gradle DSL을 쓴다. JSON과 YAML을 언제 추가할지 정한다.
 3. PF-201과 PF-202의 순서. 보안을 먼저 할지, HTML 작성 경험을 먼저 할지.
 4. PF-106 WebFlux를 0.2에 넣을지 0.3으로 미룰지. 현재 보류.
-5. PF-108 전체 allowlist를 합집합 파서와 정책 인식 래퍼로 만들지, 정책별 엔진으로 만들지.
+5. PF-108의 메서드 컨텍스트를 스레드 로컬 대신 명시적 렌더 컨텍스트로 바꿀지.
 
 ## 릴리스 기준
 
 | 릴리스 | 포함 | 완료 조건 |
 | --- | --- | --- |
 | 0.1.0 | 현재 기능 | P0 완료, Maven Central 배포, CI 초록색, 라이선스와 릴리스 노트 |
-| 0.2.0 | PF-101, PF-102, PF-103, PF-104, PF-105, PF-107 | 계약 검사, 진단, 핫 리로드, 언어 후속, 샌드박스 강화, 보안 함수 확장 |
-| 0.3.0 | PF-106, PF-108, PF-201, PF-202, PF-203 | WebFlux, 템플릿별 전체 allowlist, 컨텍스트 이스케이프, Natural HTML, 컴포넌트 라이브러리 |
+| 0.2.0 | PF-101, PF-102, PF-103, PF-104, PF-105, PF-107, PF-108 | 계약 검사, 진단, 핫 리로드, 언어 후속, 샌드박스 강화, 보안 함수 확장, 템플릿별 전체 allowlist |
+| 0.3.0 | PF-106, PF-201, PF-202, PF-203 | WebFlux, 컨텍스트 이스케이프, Natural HTML, 컴포넌트 라이브러리 |
 | 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |
