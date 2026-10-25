@@ -30,6 +30,10 @@ final class TemplateScan {
      * declarations only when the block starts at or before the read line.
      */
     final Map<String, Integer> blockLines = new LinkedHashMap<>();
+    /**
+     * The earliest template-level line that declares each root summary name.
+     */
+    final Map<String, Integer> rootDeclarationLines = new LinkedHashMap<>();
     final List<VariableRead> reads = new ArrayList<>();
     final List<AttributeRead> attributeReads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();

@@ -63,7 +63,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
     @Override
     public void visit(SetNode node) {
         scan(node.getValue());
-        declare(node.getName());
+        declare(node.getName(), node.getLineNumber());
     }
 
     @Override
@@ -74,7 +74,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
         scopes.addLast(new ScopeFrame(true));
         flows.addLast(new FlowFrame(false, true));
         for (String argument : node.getMacro().getArgumentNames()) {
-            declare(argument);
+            declare(argument, node.getLineNumber());
         }
         scanBody(node.getBody());
         flows.removeLast();
@@ -236,7 +236,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
         if (node instanceof PropsNode props) {
             scan.declareProps(props.getProps());
             for (PropsNode.Prop prop : props.getProps()) {
-                declare(prop.name());
+                declare(prop.name(), props.getLineNumber());
             }
             return;
         }
@@ -258,10 +258,10 @@ final class ContractVisitor extends AbstractNodeVisitor {
         flows.addLast(new FlowFrame(false, outer.closed, outer.names));
         scopes.addLast(new ScopeFrame(false));
         if (node.getKeyVariableName() != null) {
-            declare(node.getKeyVariableName());
+            declare(node.getKeyVariableName(), node.getLineNumber());
         }
-        declare(node.getIterationVariable());
-        declare("loop");
+        declare(node.getIterationVariable(), node.getLineNumber());
+        declare("loop", node.getLineNumber());
         scanBody(node.getBody());
         scopes.removeLast();
         flows.removeLast();
@@ -308,7 +308,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
             scopes.getLast().complete = false;
         }
         for (String key : keys) {
-            declare(key);
+            declare(key, with.getLineNumber());
         }
         scanBody(with.getBody());
         scopes.removeLast();
@@ -465,9 +465,13 @@ final class ContractVisitor extends AbstractNodeVisitor {
                 staticName == null, dynamicProps, component.getLineNumber(), currentBlock()));
     }
 
-    private void declare(String name) {
-        flows.getLast().names.add(name);
+    private void declare(String name, int line) {
+        FlowFrame flow = flows.getLast();
+        flow.names.add(name);
         scopes.getLast().names.add(name);
+        if (flow.templateLevel && currentBlock() == null) {
+            scan.rootDeclarationLines.merge(name, line, Math::min);
+        }
     }
 
     /**
@@ -477,6 +481,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
     void finish() {
         scan.rootDeclarations.clear();
         scan.rootDeclarations.addAll(flows.getLast().names);
+        scan.rootDeclarationLines.keySet().retainAll(scan.rootDeclarations);
     }
 
     private String currentBlock() {
