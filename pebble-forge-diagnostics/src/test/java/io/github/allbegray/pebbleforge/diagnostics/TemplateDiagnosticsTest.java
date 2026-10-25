@@ -94,6 +94,34 @@ class TemplateDiagnosticsTest {
     }
 
     @Test
+    void rendersSourceFrameForASourceMappedError() {
+        Map<String, String> templates = Map.of("page.html", """
+                before
+                <p data-{{ name }}="v">x</p>
+                after
+                """);
+        FakeSourceMappedError error = new FakeSourceMappedError("page.html", 2, 9,
+                "Expressions are not allowed in attribute names");
+
+        DiagnosticReport report = diagnostics(templates).render(error);
+
+        assertThat(report.message()).isEqualTo("Expressions are not allowed in attribute names");
+        assertThat(report.frames()).singleElement().satisfies(frame -> {
+            assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.ERROR);
+            assertThat(frame.template()).isEqualTo("page.html");
+            assertThat(frame.line()).isEqualTo(2);
+            assertThat(frame.caretColumn()).isEqualTo(9);
+            assertThat(frame.label()).isNull();
+            assertThat(frame.target()).isNull();
+            assertThat(frame.sourceLines())
+                    .containsExactly("before", "<p data-{{ name }}=\"v\">x</p>", "after");
+        });
+        assertThat(report.format())
+                .contains("> 2 | <p data-{{ name }}=\"v\">x</p>")
+                .contains("    | " + " ".repeat(8) + "^");
+    }
+
+    @Test
     void handlesMissingSource() {
         Map<String, String> templates = Map.of("page.peb", "{{ missing }}");
         PebbleException error = renderError(templates);
@@ -418,5 +446,36 @@ class TemplateDiagnosticsTest {
                 .loader(new MapLoader(templates))
                 .strictVariables(true)
                 .build();
+    }
+
+    private static final class FakeSourceMappedError extends RuntimeException
+            implements SourceMappedError {
+
+        private final String templateName;
+        private final int lineNumber;
+        private final int columnNumber;
+
+        private FakeSourceMappedError(String templateName, int lineNumber, int columnNumber,
+                String message) {
+            super(message);
+            this.templateName = templateName;
+            this.lineNumber = lineNumber;
+            this.columnNumber = columnNumber;
+        }
+
+        @Override
+        public String getTemplateName() {
+            return templateName;
+        }
+
+        @Override
+        public int getLineNumber() {
+            return lineNumber;
+        }
+
+        @Override
+        public int getColumnNumber() {
+            return columnNumber;
+        }
     }
 }

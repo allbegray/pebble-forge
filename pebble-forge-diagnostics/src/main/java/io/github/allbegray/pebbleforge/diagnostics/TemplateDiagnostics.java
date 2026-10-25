@@ -8,8 +8,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Builds a source-frame report for a Pebble error.
@@ -35,16 +37,22 @@ public final class TemplateDiagnostics {
 
     /**
      * Builds a report for a render failure. The report includes the include and extends frames
-     * attached to the error plus the failing source line.
+     * attached to the error plus the failing source line. An error that implements
+     * {@link SourceMappedError} without being a {@link PebbleException} produces a single error
+     * frame at its original position.
      *
      * @param error the render failure
      * @return the report
      */
     public DiagnosticReport render(Throwable error) {
-        PebbleException pebble = findPebble(error);
+        PebbleException pebble = find(error, PebbleException.class);
         if (pebble == null) {
-            return new DiagnosticReport(error == null ? "Unknown error" : error.toString(),
-                    List.of());
+            SourceMappedError mapped = find(error, SourceMappedError.class);
+            if (mapped == null) {
+                return new DiagnosticReport(error == null ? "Unknown error" : error.toString(),
+                        List.of());
+            }
+            return renderMapped(mapped);
         }
 
         List<DiagnosticFrame> frames = new ArrayList<>();
@@ -68,22 +76,37 @@ public final class TemplateDiagnostics {
         return new DiagnosticReport(message, frames);
     }
 
+    private DiagnosticReport renderMapped(SourceMappedError error) {
+        DiagnosticFrame frame = frameFor(error.getTemplateName(), error.getLineNumber(),
+                error.getColumnNumber(), null, DiagnosticFrame.Kind.ERROR, null);
+        return new DiagnosticReport(error.getMessage(), List.of(frame));
+    }
+
     private DiagnosticFrame frameFor(String template, int line, String label,
             DiagnosticFrame.Kind kind, String target) {
+        return frameFor(template, line, -1, label, kind, target);
+    }
+
+    private DiagnosticFrame frameFor(String template, int line, int caretColumn, String label,
+            DiagnosticFrame.Kind kind, String target) {
         if (template == null || line <= 0) {
-            return new DiagnosticFrame(template, line, label, List.of(), -1, 1, kind, target);
+            return new DiagnosticFrame(template, line, label, List.of(), -1,
+                    Math.max(caretColumn, 1), kind, target);
         }
 
         List<String> lines = readLines(template);
         if (line > lines.size()) {
-            return new DiagnosticFrame(template, line, label, List.of(), -1, 1, kind, target);
+            return new DiagnosticFrame(template, line, label, List.of(), -1,
+                    Math.max(caretColumn, 1), kind, target);
         }
 
         int start = Math.max(1, line - contextLines);
         int end = Math.min(lines.size(), line + contextLines);
         List<String> source = lines.subList(start - 1, end);
         int errorIndex = line - start;
-        int caret = firstNonWhitespace(source.get(errorIndex)) + 1;
+        int caret = caretColumn > 0
+                ? caretColumn
+                : firstNonWhitespace(source.get(errorIndex)) + 1;
         return new DiagnosticFrame(template, line, label, source, errorIndex, caret, kind, target);
     }
 
@@ -111,25 +134,25 @@ public final class TemplateDiagnostics {
         return 0;
     }
 
-    private static PebbleException findPebble(Throwable error) {
-        return findPebble(error, new java.util.HashSet<>());
+    private static <T> T find(Throwable error, Class<T> type) {
+        return find(error, type, new HashSet<>());
     }
 
-    private static PebbleException findPebble(Throwable error, java.util.Set<Throwable> seen) {
+    private static <T> T find(Throwable error, Class<T> type, Set<Throwable> seen) {
         if (error == null || !seen.add(error)) {
             return null;
         }
-        if (error instanceof PebbleException pebble) {
-            return pebble;
+        if (type.isInstance(error)) {
+            return type.cast(error);
         }
         for (Throwable suppressed : error.getSuppressed()) {
-            PebbleException nested = findPebble(suppressed, seen);
+            T nested = find(suppressed, type, seen);
             if (nested != null) {
                 return nested;
             }
         }
         if (error.getCause() != null && error.getCause() != error) {
-            return findPebble(error.getCause(), seen);
+            return find(error.getCause(), type, seen);
         }
         return null;
     }
