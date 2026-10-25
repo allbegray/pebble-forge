@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 class PebbleDiagnosticsErrorAttributesTest {
 
@@ -34,6 +35,10 @@ class PebbleDiagnosticsErrorAttributesTest {
                 .containsEntry("path", "/broken")
                 .containsEntry("error", "Internal Server Error");
         assertThat(attributes.get(PebbleDiagnosticsAttributes.MODEL_REPORT)).isSameAs(report);
+        assertThat(report.frames())
+                .extracting(DiagnosticFrame::kind, DiagnosticFrame::target)
+                .containsExactly(tuple(DiagnosticFrame.Kind.INCLUDE, "components/broken"),
+                        tuple(DiagnosticFrame.Kind.ERROR, null));
         assertThat((String) attributes.get(PebbleDiagnosticsAttributes.MODEL_TEXT))
                 .contains("broken-view:1 includes components/broken")
                 .contains("> 1 | {{ missing }}");
@@ -67,7 +72,8 @@ class PebbleDiagnosticsErrorAttributesTest {
     private static DiagnosticReport report() {
         return new DiagnosticReport("Root attribute [missing] does not exist", List.of(
                 new DiagnosticFrame("broken-view", 1, "includes components/broken",
-                        List.of("{% include \"components/broken\" %}"), 0, 1),
+                        List.of("{% include \"components/broken\" %}"), 0, 1,
+                        DiagnosticFrame.Kind.INCLUDE, "components/broken"),
                 new DiagnosticFrame("components/broken", 1, null,
                         List.of("{{ missing }}"), 0, 1)));
     }
