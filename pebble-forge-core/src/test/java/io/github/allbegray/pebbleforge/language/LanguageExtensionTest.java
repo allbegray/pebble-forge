@@ -142,6 +142,14 @@ class LanguageExtensionTest {
     }
 
     @Test
+    void escapesContextStrategiesExactlyOnceInsideFor() throws Exception {
+        assertThat(render("""
+                {% for item in items %}{{ item | escape("html_attr") }};{% endfor %}\
+                """, Map.of("items", List.of("\" onmouseover=\"x", "<b>"))))
+                .isEqualTo("&quot;&#32;onmouseover&#61;&quot;x;&lt;b&gt;;");
+    }
+
+    @Test
     void forStillProvidesLoopVariables() throws Exception {
         assertThat(render("""
                 {% for n in numbers %}{{ loop.index }}:{{ loop.first }}:{{ loop.last }}:{{ n }};{% endfor %}

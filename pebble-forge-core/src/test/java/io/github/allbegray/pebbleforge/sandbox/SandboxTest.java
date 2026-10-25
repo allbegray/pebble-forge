@@ -99,6 +99,24 @@ class SandboxTest {
     }
 
     @Test
+    void appliesContextEscapingStrategiesUnderAStrictSandbox() throws java.io.IOException {
+        String output = render(
+                Map.of("page.peb", """
+                        <a href="{{ link | escape('url') }}" title="{{ title | escape('html_attr') }}">{{ text }}</a>\
+                        """),
+                "page.peb",
+                Map.of(
+                        "link", "javascript:alert(1)",
+                        "title", "\" onmouseover=\"alert(1)",
+                        "text", "<b>x</b>"),
+                SandboxPolicy.strict());
+
+        assertThat(output).isEqualTo(
+                "<a href=\"#\" title=\"&quot;&#32;onmouseover&#61;&quot;alert(1)\">"
+                        + "&lt;b&gt;x&lt;/b&gt;</a>");
+    }
+
+    @Test
     void blocksClassAccess() {
         PebbleEngine engine = engine(
                 Map.of("page.peb", "{{ bean.class }}"),

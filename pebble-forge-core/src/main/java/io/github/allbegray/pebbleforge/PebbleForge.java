@@ -2,6 +2,7 @@ package io.github.allbegray.pebbleforge;
 
 import io.github.allbegray.pebbleforge.component.Components;
 import io.github.allbegray.pebbleforge.component.ComponentsExtension;
+import io.github.allbegray.pebbleforge.escape.ContextEscaping;
 import io.github.allbegray.pebbleforge.include.IncludeExtension;
 import io.github.allbegray.pebbleforge.inheritance.ExtendsExtension;
 import io.github.allbegray.pebbleforge.language.LanguageExtension;
@@ -241,6 +242,8 @@ public final class PebbleForge {
                         ? extension
                         : new SandboxedExtension(extension, effectivePolicies));
             }
+
+            ContextEscaping.register(delegate);
 
             return delegate.build();
         }
