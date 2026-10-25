@@ -4,6 +4,8 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
 
+import java.util.Set;
+
 /**
  * Registers the checkPebbleTemplates task.
  */
@@ -23,6 +25,8 @@ public final class PebbleForgeContractsPlugin implements Plugin<Project> {
         extension.getTemplateSuffix().convention(".peb");
         extension.getComponentRoot().convention("components");
         extension.getAllowAnyVariable().convention(false);
+        extension.getRootTemplates().convention(Set.of());
+        extension.getPartialTemplates().convention(Set.of());
 
         TaskProvider<CheckPebbleTemplatesTask> task = project.getTasks()
                 .register(TASK_NAME, CheckPebbleTemplatesTask.class, check -> {
@@ -33,6 +37,8 @@ public final class PebbleForgeContractsPlugin implements Plugin<Project> {
                     check.getComponentRoot().set(extension.getComponentRoot());
                     check.getVariables().set(extension.getVariables());
                     check.getAllowAnyVariable().set(extension.getAllowAnyVariable());
+                    check.getRootTemplates().set(extension.getRootTemplates());
+                    check.getPartialTemplates().set(extension.getPartialTemplates());
                 });
 
         project.getTasks().named("check").configure(check -> check.dependsOn(task));

@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
@@ -47,6 +47,12 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
     @Input
     public abstract Property<Boolean> getAllowAnyVariable();
 
+    @Input
+    public abstract SetProperty<String> getRootTemplates();
+
+    @Input
+    public abstract SetProperty<String> getPartialTemplates();
+
     @TaskAction
     public void checkTemplates() {
         File root = getTemplatesDirectory().get().getAsFile();
@@ -69,32 +75,35 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
                         .variables(getVariables().get().toArray(String[]::new))
                         .build();
 
+        Set<String> templateNames = templateNames(root.toPath(), suffix);
+        Set<String> rootTemplates = configuredTemplates(
+                "rootTemplates", getRootTemplates().get(), templateNames);
+        Set<String> partialTemplates = configuredTemplates(
+                "partialTemplates", getPartialTemplates().get(), templateNames);
+
+        String componentPrefix = components.root().isEmpty()
+                ? null
+                : components.root() + "/";
+        for (String name : partialTemplates) {
+            if (componentPrefix != null && name.startsWith(componentPrefix)) {
+                getLogger().warn("Template [{}] is listed in partialTemplates but belongs "
+                                + "to the component root [{}]; it is checked as a component.",
+                        name, components.root());
+            }
+        }
+
         ContractChecker checker = ContractChecker.builder()
                 .loader(loader)
                 .components(components)
                 .model(schema)
+                .rootTemplates(rootTemplates)
+                .partialTemplates(partialTemplates)
                 .build();
 
-        Set<ContractDiagnostic> diagnostics = new LinkedHashSet<>();
-        try (Stream<Path> paths = Files.walk(root.toPath())) {
-            paths.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(suffix))
-                    .forEach(path -> {
-                        String relative = root.toPath().relativize(path).toString()
-                                .replace(File.separatorChar, '/');
-                        String templateName = relative.substring(0,
-                                relative.length() - suffix.length());
-                        ContractResult result = checker.check(templateName);
-                        diagnostics.addAll(result.diagnostics());
-                    });
-        } catch (IOException e) {
-            throw new GradleException("Could not read templates from " + root, e);
-        } catch (UncheckedIOException e) {
-            throw new GradleException("Could not read a template under " + root, e);
-        }
+        ContractResult result = checker.checkAll(templateNames);
 
         boolean failed = false;
-        for (ContractDiagnostic diagnostic : diagnostics) {
+        for (ContractDiagnostic diagnostic : result.diagnostics()) {
             if (diagnostic.severity() == ContractDiagnostic.Severity.ERROR) {
                 getLogger().error(diagnostic.toString());
                 failed = true;
@@ -107,5 +116,43 @@ public abstract class CheckPebbleTemplatesTask extends DefaultTask {
             throw new GradleException("Pebble template contract check failed");
         }
         getLogger().info("Checked Pebble templates under {}", root);
+    }
+
+    private static Set<String> templateNames(Path root, String suffix) {
+        Set<String> names = new TreeSet<>();
+        try (Stream<Path> paths = Files.walk(root)) {
+            paths.filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        String relative = root.relativize(path).toString()
+                                .replace(File.separatorChar, '/');
+                        if (relative.endsWith(suffix)) {
+                            names.add(relative.substring(0,
+                                    relative.length() - suffix.length()));
+                        }
+                    });
+        } catch (IOException e) {
+            throw new GradleException("Could not read templates from " + root, e);
+        } catch (UncheckedIOException e) {
+            throw new GradleException("Could not read a template under " + root, e);
+        }
+        return names;
+    }
+
+    private static Set<String> configuredTemplates(
+            String label, Set<String> configured, Set<String> known) {
+        Set<String> names = new TreeSet<>();
+        for (String value : configured) {
+            String name = value.trim();
+            if (name.isEmpty()) {
+                throw new GradleException(label + " must not contain an empty template name");
+            }
+            if (!known.contains(name)) {
+                throw new GradleException("Unknown template [" + name + "] in " + label
+                        + ". Configure names relative to the template root with the "
+                        + "template suffix removed.");
+            }
+            names.add(name);
+        }
+        return names;
     }
 }

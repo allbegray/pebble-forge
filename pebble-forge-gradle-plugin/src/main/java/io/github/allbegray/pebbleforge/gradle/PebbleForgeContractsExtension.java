@@ -18,4 +18,8 @@ public abstract class PebbleForgeContractsExtension {
     public abstract SetProperty<String> getVariables();
 
     public abstract Property<Boolean> getAllowAnyVariable();
+
+    public abstract SetProperty<String> getRootTemplates();
+
+    public abstract SetProperty<String> getPartialTemplates();
 }
