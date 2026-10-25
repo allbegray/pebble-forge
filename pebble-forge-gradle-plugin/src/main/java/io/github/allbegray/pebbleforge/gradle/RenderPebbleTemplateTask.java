@@ -20,6 +20,7 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +32,7 @@ import java.util.Map;
 /**
  * Renders one Pebble template with a model and prints source frames on failure.
  */
+@DisableCachingByDefault(because = "Renders a template and logs the result")
 public abstract class RenderPebbleTemplateTask extends DefaultTask {
 
     /**
