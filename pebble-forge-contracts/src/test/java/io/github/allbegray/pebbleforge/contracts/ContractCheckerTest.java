@@ -1387,6 +1387,17 @@ class ContractCheckerTest {
     }
 
     @Test
+    void topLevelReadSeesOwnBlockSet() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% block body %}{% set item = "x" %}{% endblock %}{{ item }}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
     void childBlockLocalFeedsLaterParentContent() {
         ContractResult result = checker(
                 Map.of(
