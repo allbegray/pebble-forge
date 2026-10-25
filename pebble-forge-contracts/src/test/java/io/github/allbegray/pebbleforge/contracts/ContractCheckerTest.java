@@ -1797,6 +1797,282 @@ class ContractCheckerTest {
     }
 
     @Test
+    void childRootReadDoesNotSeeAParentRootSet() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{{ title }}{% block content %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[title]");
+        });
+    }
+
+    @Test
+    void childBlockReadsAParentRootSetBeforeTheParentBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ title }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childBlockDoesNotReadAParentRootSetAfterTheParentBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ title }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                {% set title = "Hello" %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[title]");
+        });
+    }
+
+    @Test
+    void childBlockReadsAnEarlierParentBlockLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ fromSidebar }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block sidebar %}{% set fromSidebar = "Hello" %}{% endblock %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childBlockDoesNotReadALaterParentBlockLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ fromSidebar }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                {% block sidebar %}{% set fromSidebar = "Hello" %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[fromSidebar]");
+        });
+    }
+
+    @Test
+    void childBlockReadsAnEarlierIntermediateBlockLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ fromMiddleSidebar }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}{% block sidebar %}{% set fromMiddleSidebar = "Hello" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block sidebar %}{% endblock %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childBlockDoesNotReadALaterIntermediateBlockLocal() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ fromMiddleSidebar }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}{% block sidebar %}{% set fromMiddleSidebar = "Hello" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                {% block sidebar %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[fromMiddleSidebar]");
+        });
+    }
+
+    @Test
+    void childBlockDoesNotSeeABlockNoAncestorDeclares() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ parentLocal }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set parentLocal = "Hello" %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[parentLocal]");
+        });
+    }
+
+    @Test
+    void grandchildBlockReadsAGrandparentRootBeforeTheBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ title }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void grandchildBlockDoesNotReadAGrandparentRootAfterTheBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ title }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                {% set title = "Hello" %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[title]");
+        });
+    }
+
+    @Test
+    void grandchildBlockReadsAnIntermediateParentRoot() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ fromMiddle }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}{% set fromMiddle = "Hello" %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void grandchildBlockDoesNotReadPastTheRenderingParent() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "middle.peb" %}{% block content %}{{ title }}{% endblock %}
+                                """,
+                        "middle.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                {% block content %}{% endblock %}
+                                """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[title]");
+        });
+    }
+
+    @Test
+    void childBlockIncludeSeesAParentRootBeforeTheBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% include "partial.peb" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                {% block content %}{% endblock %}
+                                """,
+                        "partial.peb", "{{ title }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void childBlockIncludeDoesNotSeeAParentRootAfterTheBlock() {
+        ContractResult result = check(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% include "partial.peb" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}
+                                {% set title = "Hello" %}
+                                """,
+                        "partial.peb", "{{ title }}"),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Included template [partial.peb:1]")
+                    .contains("[title]");
+        });
+    }
+
+    @Test
     void childrenWithSameBlockNameDoNotDedupe() {
         Map<String, String> templates = Map.of(
                 "a.peb", """
