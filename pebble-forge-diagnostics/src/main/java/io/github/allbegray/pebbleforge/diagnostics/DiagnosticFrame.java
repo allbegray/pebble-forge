@@ -11,17 +11,56 @@ import java.util.List;
  * @param sourceLines the source lines to show
  * @param errorLineIndex the index of the error line in {@code sourceLines}, or -1
  * @param caretColumn the 1-based column for the caret
+ * @param kind the frame kind
+ * @param target the included or extended template, or {@code null} for an error frame
  */
 public record DiagnosticFrame(String template, int line, String label, List<String> sourceLines,
-                              int errorLineIndex, int caretColumn) {
+                              int errorLineIndex, int caretColumn, Kind kind, String target) {
 
     /**
-     * Creates an immutable frame.
+     * The kind of template frame.
+     */
+    public enum Kind {
+
+        /**
+         * An include frame.
+         */
+        INCLUDE,
+
+        /**
+         * An inheritance frame.
+         */
+        EXTENDS,
+
+        /**
+         * The failing frame.
+         */
+        ERROR
+    }
+
+    /**
+     * Creates an immutable frame. A null {@code kind} becomes {@link Kind#ERROR}.
      *
      * @throws NullPointerException if {@code sourceLines} is null
      */
     public DiagnosticFrame {
         sourceLines = List.copyOf(sourceLines);
+        kind = kind == null ? Kind.ERROR : kind;
+    }
+
+    /**
+     * Creates an error frame with no target.
+     *
+     * @param template the template name
+     * @param line the line of the call or error
+     * @param label a short description of the frame, or {@code null}
+     * @param sourceLines the source lines to show
+     * @param errorLineIndex the index of the error line in {@code sourceLines}, or -1
+     * @param caretColumn the 1-based column for the caret
+     */
+    public DiagnosticFrame(String template, int line, String label, List<String> sourceLines,
+                           int errorLineIndex, int caretColumn) {
+        this(template, line, label, sourceLines, errorLineIndex, caretColumn, Kind.ERROR, null);
     }
 
     /**

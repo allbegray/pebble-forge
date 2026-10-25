@@ -49,14 +49,17 @@ public final class TemplateDiagnostics {
 
         List<DiagnosticFrame> frames = new ArrayList<>();
         for (TemplateTrace.Frame frame : TemplateTrace.frames(error)) {
-            String label = frame.kind() == TemplateTrace.Kind.EXTENDS
-                    ? "extends " + frame.target()
-                    : "includes " + frame.target();
-            frames.add(frameFor(frame.template(), frame.line(), label));
+            boolean extendsFrame = frame.kind() == TemplateTrace.Kind.EXTENDS;
+            String label = (extendsFrame ? "extends " : "includes ") + frame.target();
+            DiagnosticFrame.Kind kind = extendsFrame
+                    ? DiagnosticFrame.Kind.EXTENDS
+                    : DiagnosticFrame.Kind.INCLUDE;
+            frames.add(frameFor(frame.template(), frame.line(), label, kind, frame.target()));
         }
         int errorLine = pebble.getLineNumber() == null ? 0 : pebble.getLineNumber();
         if (frames.isEmpty() || !sameLocation(frames.getLast(), pebble.getFileName(), errorLine)) {
-            frames.add(frameFor(pebble.getFileName(), errorLine, null));
+            frames.add(frameFor(pebble.getFileName(), errorLine, null,
+                    DiagnosticFrame.Kind.ERROR, null));
         }
 
         String message = pebble.getPebbleMessage() != null
@@ -65,14 +68,15 @@ public final class TemplateDiagnostics {
         return new DiagnosticReport(message, frames);
     }
 
-    private DiagnosticFrame frameFor(String template, int line, String label) {
+    private DiagnosticFrame frameFor(String template, int line, String label,
+            DiagnosticFrame.Kind kind, String target) {
         if (template == null || line <= 0) {
-            return new DiagnosticFrame(template, line, label, List.of(), -1, 1);
+            return new DiagnosticFrame(template, line, label, List.of(), -1, 1, kind, target);
         }
 
         List<String> lines = readLines(template);
         if (line > lines.size()) {
-            return new DiagnosticFrame(template, line, label, List.of(), -1, 1);
+            return new DiagnosticFrame(template, line, label, List.of(), -1, 1, kind, target);
         }
 
         int start = Math.max(1, line - contextLines);
@@ -80,7 +84,7 @@ public final class TemplateDiagnostics {
         List<String> source = lines.subList(start - 1, end);
         int errorIndex = line - start;
         int caret = firstNonWhitespace(source.get(errorIndex)) + 1;
-        return new DiagnosticFrame(template, line, label, source, errorIndex, caret);
+        return new DiagnosticFrame(template, line, label, source, errorIndex, caret, kind, target);
     }
 
     private static boolean sameLocation(DiagnosticFrame frame, String template, int line) {

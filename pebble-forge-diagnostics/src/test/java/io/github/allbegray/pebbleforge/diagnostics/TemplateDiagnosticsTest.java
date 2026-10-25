@@ -8,6 +8,7 @@ import io.pebbletemplates.pebble.error.PebbleException;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -125,6 +126,90 @@ class TemplateDiagnosticsTest {
                 .contains("> 4 | {{ missing }}")
                 .doesNotContain("three")
                 .doesNotContain("five");
+    }
+
+    @Test
+    void exposesIncludeKindAndTarget() {
+        Map<String, String> templates = Map.of(
+                "page.peb", "{% include \"components/card.peb\" %}",
+                "components/card.peb", "{{ missing }}");
+        PebbleException error = renderError(templates);
+
+        DiagnosticFrame frame = diagnostics(templates).render(error).frames().getFirst();
+
+        assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.INCLUDE);
+        assertThat(frame.target()).isEqualTo("components/card.peb");
+        assertThat(frame.label()).isEqualTo("includes components/card.peb");
+    }
+
+    @Test
+    void exposesExtendsKindAndTarget() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% extends "layout.peb" %}
+                        {% block body %}child{% endblock %}
+                        """,
+                "layout.peb", "layout\n{{ missing }}");
+        PebbleException error = renderErrorTraced(templates);
+
+        DiagnosticFrame frame = diagnostics(templates).render(error).frames().getFirst();
+
+        assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.EXTENDS);
+        assertThat(frame.target()).isEqualTo("layout.peb");
+        assertThat(frame.label()).isEqualTo("extends layout.peb");
+    }
+
+    @Test
+    void exposesErrorKindWithoutTargetForTheFailingFrame() {
+        Map<String, String> templates = Map.of(
+                "page.peb", "{% include \"card.peb\" %}",
+                "card.peb", "{{ missing }}");
+        PebbleException error = renderError(templates);
+
+        DiagnosticFrame frame = diagnostics(templates).render(error).frames().getLast();
+
+        assertThat(frame.template()).isEqualTo("card.peb");
+        assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.ERROR);
+        assertThat(frame.target()).isNull();
+        assertThat(frame.label()).isNull();
+    }
+
+    @Test
+    void defaultsLegacyConstructorFramesToErrorKind() {
+        DiagnosticFrame frame = new DiagnosticFrame("page.peb", 3, null,
+                List.of("{{ missing }}"), 0, 1);
+
+        assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.ERROR);
+        assertThat(frame.target()).isNull();
+    }
+
+    @Test
+    void treatsNullKindAsError() {
+        DiagnosticFrame frame = new DiagnosticFrame("page.peb", 3, null,
+                List.of("{{ missing }}"), 0, 1, null, null);
+
+        assertThat(frame.kind()).isEqualTo(DiagnosticFrame.Kind.ERROR);
+    }
+
+    @Test
+    void formatsFramesTheSameForEveryKind() {
+        List<String> source = List.of("{{ missing }}");
+        DiagnosticFrame legacy = new DiagnosticFrame("page.peb", 3, "includes card.peb",
+                source, 0, 1);
+        DiagnosticFrame include = new DiagnosticFrame("page.peb", 3, "includes card.peb",
+                source, 0, 1, DiagnosticFrame.Kind.INCLUDE, "card.peb");
+        DiagnosticFrame extendsFrame = new DiagnosticFrame("page.peb", 3, "includes card.peb",
+                source, 0, 1, DiagnosticFrame.Kind.EXTENDS, "layout.peb");
+        DiagnosticFrame error = new DiagnosticFrame("page.peb", 3, "includes card.peb",
+                source, 0, 1, DiagnosticFrame.Kind.ERROR, null);
+
+        assertThat(include.format()).isEqualTo(legacy.format());
+        assertThat(extendsFrame.format()).isEqualTo(legacy.format());
+        assertThat(error.format()).isEqualTo(legacy.format());
+        assertThat(legacy.format()).isEqualTo(
+                "page.peb:3 includes card.peb" + System.lineSeparator()
+                        + "> 3 | {{ missing }}" + System.lineSeparator()
+                        + "    | ^" + System.lineSeparator());
     }
 
     @Test
