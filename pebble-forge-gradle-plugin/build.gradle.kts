@@ -12,6 +12,7 @@ java {
 dependencies {
     implementation(project(":pebble-forge-contracts"))
     implementation(project(":pebble-forge-core"))
+    implementation(project(":pebble-forge-diagnostics"))
 
     testImplementation(gradleTestKit())
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
@@ -24,6 +25,10 @@ gradlePlugin {
         create("pebbleForgeContracts") {
             id = "io.github.allbegray.pebbleforge.contracts"
             implementationClass = "io.github.allbegray.pebbleforge.gradle.PebbleForgeContractsPlugin"
+        }
+        create("pebbleForgeDiagnostics") {
+            id = "io.github.allbegray.pebbleforge.diagnostics"
+            implementationClass = "io.github.allbegray.pebbleforge.gradle.PebbleForgeDiagnosticsPlugin"
         }
     }
 }
