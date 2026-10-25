@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-121 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+128 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -233,12 +233,14 @@ pebble.forge.dev-mode=true
 | Tests | `empty`, `null`, `iterable`, `even`, `odd`, `map` |
 | Raw output | Denied |
 | Output limit | 1,000,000 characters |
+| Loop limit | 100,000 iterations per loop |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
 | Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
+| Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. `allowOnly*` replaces a default set.
 
-The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list or a recursive include. Run hostile templates in a separate process when CPU is hostile. The path jail is lexical. A symlink inside a file loader root can still point outside the root.
+The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list or a recursive include. Run hostile templates in a separate process when CPU is hostile. Loop limits are per loop, not a global render budget. Recursive include depth is not limited yet. `SandboxedLoader` is lexical. Use `SandboxedFileLoader` when symlinks are possible.
 
 ## Spring Boot 4
 

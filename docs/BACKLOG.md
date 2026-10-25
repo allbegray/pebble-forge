@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 121개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 9, Boot 웹 1.
+- 테스트는 128개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 21, 파일 로더 6, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 9, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -44,7 +44,7 @@
 | PF-102 | P1 | 소스 프레임 진단 | L | 진행 중 | 없음 |
 | PF-103 | P1 | 핫 리로드 | M | Done | 없음 |
 | PF-104 | P1 | 언어 확장 후속 | M | Done | PF-004 |
-| PF-105 | P1 | 샌드박스 강화 | L | 설계 필요 | 없음 |
+| PF-105 | P1 | 샌드박스 강화 | L | 진행 중 | 없음 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
 | PF-107 | P1 | Spring Security 함수 확장 | S | Done | 없음 |
 | PF-201 | P2 | 컨텍스트 인식 이스케이프 | XL | 보류 | 없음 |
@@ -172,10 +172,12 @@
 ### PF-105 샌드박스 강화
 
 - 크기: L
-- 상태: 설계 필요
+- 상태: 진행 중. 루프 반복 제한과 심볼릭 링크 안전 파일 로더를 추가했다.
 - 문제: 현재 샌드박스는 출력 크기와 경로 문자열은 막지만, 재귀 include와 큰 루프는 CPU를 소모할 수 있다. 파일 로더의 심볼릭 링크도 해결하지 않는다.
 - 범위: include 깊이 제한, 루프 반복 횟수 제한, 심볼릭 링크를 해석하는 파일 로더, 템플릿별 정책, 슬롯 캡처 메모리 제한을 검토한다.
-- 완료 기준: 재귀 include와 반복 폭탄 fixture가 제한된 시간 안에 실패한다. 심볼릭 링크가 루트 밖을 가리키면 로더가 거부한다.
+- 현재 구현: `maxLoopIterations` 기본 100,000회와 `SandboxedFileLoader` 실제 경로 검증을 추가했다. 루프 제한은 루프별이고, 파일 로더는 루트 밖 심볼릭 링크를 거부한다. 커밋 `4038221`, `ee9c89e`.
+- 남은 것: include 깊이 제한, 템플릿별 정책, 슬롯 캡처 메모리 예산, 전체 렌더 반복 예산.
+- 완료 기준: 재귀 include와 반복 폭탄 fixture가 제한된 시간 안에 실패한다. 심볼릭 링크가 루트 밖을 가리키면 로더가 거부한다. 심볼릭 링크 부분은 충족했다.
 - 메모: 프로세스 내부 CPU 제한은 완전하지 않다. 적대적 CPU는 별도 프로세스로 격리한다는 원칙을 유지한다.
 
 ### PF-106 WebFlux 지원

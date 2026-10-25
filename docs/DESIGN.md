@@ -65,6 +65,7 @@ pebble-forge-core
     ├── SandboxPolicy        allowlists, limits, path rules
     ├── SandboxedExtension   filters a user extension
     ├── SandboxedLoader      rejects absolute paths and parent traversal
+    ├── SandboxedFileLoader  resolves real paths and rejects symlink escapes
     └── SandboxMethodAccessValidator  blocks dangerous classes, methods, and return types
 
 pebble-forge-contracts
@@ -193,16 +194,18 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 | Tests | `empty`, `null`, `iterable`, `even`, `odd`, `map` |
 | Raw output | Denied |
 | Output limit | 1,000,000 characters |
+| Loop limit | 100,000 iterations per loop |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
 | Template paths | Absolute paths, `..`, `.` segments, backslashes, NUL, colon, and empty segments rejected |
+| Symlinks | `SandboxedLoader` is lexical. `SandboxedFileLoader` resolves real paths and rejects escapes. |
 
 `range` is not in the default function set. The `..` operator delegates to `range` at render time, so strict mode blocks `..` as well.
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. The `allowOnly*` methods replace a default set.
 
-The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list, a recursive include, or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile.
+The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list, a recursive include, or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile. Loop limits are per loop, not a global render budget. Recursive include depth is not limited yet.
 
-The path jail is lexical. It rejects traversal in template names. It does not resolve symlinks. Use a loader root with no symlinks, or a custom loader that enforces canonical paths.
+The path jail is lexical in `SandboxedLoader`. It rejects traversal in template names but does not resolve symlinks. `SandboxedFileLoader` resolves real paths and rejects symlinks that leave the root.
 
 ## Spring Boot 4
 
@@ -298,7 +301,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
 | Diagnostics | 8 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
-| Sandbox | 20 | Real templates, real engine, whole-render assertions |
+| Sandbox | 21 | Real templates, real engine, whole-render assertions, loop limit |
+| File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot auto-config | 9 | Application context, official auto-config ordering, policy override, language switch, dev mode |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |

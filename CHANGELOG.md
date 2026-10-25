@@ -7,7 +7,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Added
 
 - Template-defined components with props, defaults, named slots, a default slot, and a depth limit.
-- Capability sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, and an output limit.
+- Capability sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, an output limit, and a per-loop iteration limit.
 - `switch`, `break`, `continue`, and `with` template tags.
 - Multi-value switch cases, `for key, value` destructuring, and `with ... only` scope isolation.
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
@@ -15,6 +15,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
 - Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include traces for template errors.
+- Symlink-safe file loader that resolves real paths and rejects escapes.
 - Development mode that reloads edited templates through a content-hash cache key.
 - Runnable demo with components, sandbox rejection, and language extensions.
 
