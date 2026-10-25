@@ -14,6 +14,12 @@ import io.pebbletemplates.pebble.tokenParser.TokenParser;
  */
 final class ForTokenParser implements TokenParser {
 
+    private final int maxLoopIterations;
+
+    ForTokenParser(int maxLoopIterations) {
+        this.maxLoopIterations = maxLoopIterations;
+    }
+
     @Override
     public String getTag() {
         return "for";
@@ -66,6 +72,7 @@ final class ForTokenParser implements TokenParser {
 
         stream.next();
         stream.expect(Token.Type.EXECUTE_END);
-        return new ForNode(lineNumber, keyVariable, valueVariable, iterable, body, elseBody);
+        return new ForNode(lineNumber, keyVariable, valueVariable, iterable, body, elseBody,
+                maxLoopIterations);
     }
 }

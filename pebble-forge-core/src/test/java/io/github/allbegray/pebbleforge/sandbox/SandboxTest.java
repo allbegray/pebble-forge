@@ -256,6 +256,19 @@ class SandboxTest {
     }
 
     @Test
+    void enforcesTheLoopIterationLimit() {
+        SandboxPolicy policy = SandboxPolicy.builder().maxLoopIterations(2).build();
+        PebbleEngine engine = engine(
+                Map.of("page.peb", "{% for n in numbers %}{{ n }}{% endfor %}"),
+                policy);
+
+        assertThatThrownBy(() -> engine.getTemplate("page.peb").evaluate(new StringWriter(),
+                Map.of("numbers", List.of(1, 2, 3))))
+                .isInstanceOf(PebbleException.class)
+                .hasMessageContaining("Loop iteration limit of 2");
+    }
+
+    @Test
     void appliesTemplateNameRules() {
         SandboxPolicy policy = SandboxPolicy.builder()
                 .templateNameValidator(name -> name.startsWith("public/"))

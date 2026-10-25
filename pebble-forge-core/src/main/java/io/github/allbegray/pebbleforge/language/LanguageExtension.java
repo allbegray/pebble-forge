@@ -11,10 +11,23 @@ import java.util.List;
  */
 public final class LanguageExtension extends AbstractExtension {
 
+    private final int maxLoopIterations;
+
+    public LanguageExtension() {
+        this(-1);
+    }
+
+    public LanguageExtension(int maxLoopIterations) {
+        if (maxLoopIterations < -1) {
+            throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
+        }
+        this.maxLoopIterations = maxLoopIterations;
+    }
+
     @Override
     public List<TokenParser> getTokenParsers() {
         return List.of(
-                new ForTokenParser(),
+                new ForTokenParser(maxLoopIterations),
                 new SwitchTokenParser(),
                 new BreakTokenParser(),
                 new ContinueTokenParser(),

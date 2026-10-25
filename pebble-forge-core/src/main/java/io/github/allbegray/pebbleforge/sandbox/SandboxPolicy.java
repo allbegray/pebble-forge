@@ -47,6 +47,7 @@ public final class SandboxPolicy {
     private final boolean allGlobalVariables;
 
     private final int maxRenderedChars;
+    private final int maxLoopIterations;
     private final MethodAccessValidator methodAccessValidator;
     private final Predicate<String> templateNameValidator;
     private final boolean denyPublicFields;
@@ -68,6 +69,7 @@ public final class SandboxPolicy {
         this.allowedGlobalVariables = Set.copyOf(builder.allowedGlobalVariables);
         this.allGlobalVariables = builder.allGlobalVariables;
         this.maxRenderedChars = builder.maxRenderedChars;
+        this.maxLoopIterations = builder.maxLoopIterations;
         this.methodAccessValidator = builder.methodAccessValidator;
         this.templateNameValidator = builder.templateNameValidator;
         this.denyPublicFields = builder.denyPublicFields;
@@ -105,6 +107,10 @@ public final class SandboxPolicy {
 
     public int maxRenderedChars() {
         return maxRenderedChars;
+    }
+
+    public int maxLoopIterations() {
+        return maxLoopIterations;
     }
 
     public MethodAccessValidator methodAccessValidator() {
@@ -145,6 +151,7 @@ public final class SandboxPolicy {
         private boolean allGlobalVariables;
 
         private int maxRenderedChars = 1_000_000;
+        private int maxLoopIterations = 100_000;
         private MethodAccessValidator methodAccessValidator = new SandboxMethodAccessValidator();
         private Predicate<String> templateNameValidator = name -> true;
         private boolean denyPublicFields = true;
@@ -287,6 +294,14 @@ public final class SandboxPolicy {
                 throw new IllegalArgumentException("maxRenderedChars must not be negative");
             }
             this.maxRenderedChars = maxRenderedChars;
+            return this;
+        }
+
+        public Builder maxLoopIterations(int maxLoopIterations) {
+            if (maxLoopIterations < -1) {
+                throw new IllegalArgumentException("maxLoopIterations must be -1 or greater");
+            }
+            this.maxLoopIterations = maxLoopIterations;
             return this;
         }
 

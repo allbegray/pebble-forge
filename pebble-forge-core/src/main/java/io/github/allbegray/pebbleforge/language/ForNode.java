@@ -28,15 +28,18 @@ public final class ForNode extends AbstractRenderableNode {
     private final Expression<?> iterableExpression;
     private final BodyNode body;
     private final BodyNode elseBody;
+    private final int maxLoopIterations;
 
     ForNode(int lineNumber, String keyVariableName, String valueVariableName,
-            Expression<?> iterableExpression, BodyNode body, BodyNode elseBody) {
+            Expression<?> iterableExpression, BodyNode body, BodyNode elseBody,
+            int maxLoopIterations) {
         super(lineNumber);
         this.keyVariableName = keyVariableName;
         this.valueVariableName = valueVariableName;
         this.iterableExpression = iterableExpression;
         this.body = body;
         this.elseBody = elseBody;
+        this.maxLoopIterations = maxLoopIterations;
     }
 
     @Override
@@ -71,8 +74,18 @@ public final class ForNode extends AbstractRenderableNode {
             boolean parallel = context.getExecutorService() != null;
             LoopVariables loop = null;
             int index = 0;
+            int iterations = 0;
 
             while (iterator.hasNext()) {
+                if (maxLoopIterations >= 0 && iterations >= maxLoopIterations) {
+                    throw new PebbleException(
+                            null,
+                            "Loop iteration limit of " + maxLoopIterations + " reached",
+                            getLineNumber(),
+                            self.getName());
+                }
+                iterations++;
+
                 if (index == 0 || parallel) {
                     loop = new LoopVariables();
                     loop.first = index == 0;
