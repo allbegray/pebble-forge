@@ -87,6 +87,24 @@ pebbleForgeDiagnostics {
 
 The task is not part of `check`. On success it logs the rendered text. On a render failure it logs the source-frame report and fails the build. A missing top-level template is a configuration error; a missing include or extends target is a render diagnostic. Model values are supplied through the Gradle extension, so no JSON dependency is needed.
 
+## CLI
+
+The standalone `pebble-forge-cli` module renders one template with an inline JSON model or a JSON/YAML model file.
+
+```shell
+./gradlew :pebble-forge-cli:run \
+  --args="--templates src/main/resources/templates --template page --model-file model.yaml"
+```
+
+```shell
+./gradlew :pebble-forge-cli:installDist
+pebble-forge-cli/build/install/pebble-forge-cli/bin/pebble-forge-cli \
+  --templates src/main/resources/templates --template page \
+  --model '{"page":{"title":"Store"}}'
+```
+
+Options are `--templates`, `--suffix`, `--template`, `--model`, `--model-file`, `--component-root`, `--context-lines`, `--strict`, `--lenient`, and `--output`. Exit codes are 0 for success, 1 for a render failure, and 2 for a usage or model error. The CLI has no sandbox and is intended for trusted templates. A top-level template name is jailed to the template root, but `FileLoader` includes and extends are not jailed; see the module README.
+
 ## Spring Boot 4
 
 The starter defines `TemplateDiagnostics` from the raw `pebbleLoader` bean and wraps the official Pebble view. A render failure becomes a real servlet 500 error dispatch, and the application error page can read:
@@ -116,7 +134,6 @@ pebble.forge.diagnostics.expose-in-error-attributes=false
 
 ## Next
 
-- Add a CLI for rendering a template with diagnostics.
 
 Natural HTML analysis errors are `NaturalHtmlException`, not `PebbleException`, so they carry `template:line:column` in the message but do not produce a `TemplateDiagnostics` source frame. The Natural HTML source map can locate generated offsets in the original file. See [NATURAL-HTML.md](NATURAL-HTML.md).
 - Add source maps for generated templates.

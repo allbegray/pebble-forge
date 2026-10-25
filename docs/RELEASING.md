@@ -1,6 +1,6 @@
 # Releasing Pebble Forge
 
-This document is the release checklist. It covers the six published modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-gradle-plugin`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
+This document is the release checklist. It covers the six published modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-gradle-plugin`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
 
 ## Prerequisites
 

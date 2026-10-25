@@ -98,6 +98,12 @@ pebble-forge-diagnostics
 ├── TemplateDiagnostics        builds source frames from a PebbleException and TemplateTrace
 └── DiagnosticReport           structured frames and terminal formatting
 
+pebble-forge-cli
+├── PebbleForgeCli          standalone render entry point and exit codes
+├── CliArguments            option parser
+├── CliOptions              typed CLI input
+└── ModelLoader             inline JSON and JSON/YAML file models
+
 pebble-forge-natural-html
 ├── NaturalHtml                loader entry point and analyze()
 ├── NaturalHtmlLoader          reads, rewrites, and delegates to Pebble
@@ -381,12 +387,13 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Diagnostics | 16 | Source frames, include and extends stacks, parse errors, cycle and stale-frame handling |
 | Natural HTML | 129 | Rewrite, rejection matrix, source map, XSS fixtures, jsoup preview, sandbox |
 | Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
+| CLI | 14 | Render output, JSON/YAML models, source frames, path and usage errors, exit codes |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot starter | 39 | Auto-configuration, web resolution, diagnostics, component roots |
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **602** | |
+| **Total** | **616** | |
 
 ## Non-goals
 
@@ -422,6 +429,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Diagnostics | Unified include/extends trace plus a source-frame formatter | Captures the runtime chain without replacing the renderer |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
 | Gradle diagnostics | Separate `renderPebbleTemplate` task | Renders a model without a JSON dependency and prints source frames on failure |
+| CLI | Standalone render command with Jackson 3 models | Gives terminal users the same source-frame diagnostics without Gradle or a JSON-to-DSL bridge |
 | Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
 | Language follow-ups | Comma-separated case values, key/value destructuring, local-only with | Fits the existing tags without a new expression language |
 | Template limits | Resolver by exact name and longest prefix | Different trust levels can share one engine with different resource budgets |
@@ -465,6 +473,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Benchmark numbers are local to one machine and JDK. They are a local review gate, not a CI timing gate.
 - The fuzz suite found no product failure in the committed trials. Its corpus is a minimized regression set, not a set of reproduced product bugs.
 - Javadoc deployment needs GitHub Pages enabled. The workflow has not run from the local checkout.
+- The CLI is a development tool with no sandbox. Its top-level template name is jailed to the template root, but `FileLoader` includes and extends are not jailed. It also does not cap model size, nesting, or rendered output.
 - Spotless checks whitespace and final newlines only. A full Java reformat was deliberately not applied.
 
 ## Open questions

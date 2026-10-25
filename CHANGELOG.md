@@ -17,6 +17,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Source-frame diagnostics with include and extends traces for template errors.
 - Spring Boot render-error diagnostics through a view decorator, optional error attributes, and a real 500 error dispatch.
 - A `renderPebbleTemplate` Gradle task for rendering one template with a model and printing source-frame diagnostics.
+- A standalone `pebble-forge-cli` for rendering one template with inline JSON or JSON/YAML model files and the same source-frame diagnostics.
+- Jackson 3 for JSON/YAML contract schemas and CLI models.
 - Symlink-safe file loader that resolves real paths and rejects escapes.
 - Per-template resource limits for loops, include depth, and slot capture through `SandboxLimitsResolver`.
 - Per-template sandbox allowlists and method access through `SandboxPolicyResolver`, with policy ownership for includes, macros, embeds, and components.
@@ -44,6 +46,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Contract checks use source-order flow for direct reads and lexical scope snapshots for includes and extends parents. Cross-template summaries remain presence-based. Dynamic includes and exact block ordering are not followed. JSON/YAML schemas are flat variable-name lists with one permissive flag.
 - Diagnostics for errors inside an extended parent need `TemplateTrace.run` around the whole template evaluation. The Boot starter applies this wrapper.
 - Spring Security support covers the servlet stack only.
+- The CLI is a trusted-template development tool. It has no sandbox; top-level template names are jailed, but includes and extends are not.
 - Context escaping is explicit. It does not infer the HTML context; Natural HTML does that for expressions.
 - `SafeString` from `slot()` or `raw` bypasses context escaping. The URL strategy validates schemes, not hosts or open redirects.
 - Natural HTML supports expressions only. Control flow, includes, extends, components, macros, JavaScript, and CSS interpolation are rejected in the first slice.

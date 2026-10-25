@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 602개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
+테스트는 616개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
 ## 모듈
 
@@ -30,6 +30,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 | `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
 | `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include/extends 추적 |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates`와 `renderPebbleTemplate` Gradle 태스크 |
+| `pebble-forge-cli` | 템플릿 렌더와 소스 프레임 진단을 실행하는 독립 CLI |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
 | `pebble-forge-demo` | 컴포넌트와 샌드박스를 실행하는 데모 |
@@ -278,6 +279,14 @@ pebbleForgeDiagnostics {
 ```shell
 ./gradlew renderPebbleTemplate --template=page
 ```
+
+독립 CLI는 같은 소스 프레임 보고서를 출력하고 JSON 또는 YAML 모델을 받습니다.
+
+```shell
+./gradlew :pebble-forge-cli:run --args="--templates src/main/resources/templates --template page --model-file model.yaml"
+```
+
+옵션과 종료 코드는 [pebble-forge-cli/README.md](pebble-forge-cli/README.md)를 참고하세요.
 
 ### 개발 모드
 

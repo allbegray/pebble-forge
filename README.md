@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-602 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+616 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
@@ -30,6 +30,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
 | `pebble-forge-diagnostics` | Source frames and include/extends traces for template errors |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` and `renderPebbleTemplate` Gradle tasks |
+| `pebble-forge-cli` | Standalone template render and source-frame diagnostics CLI |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
@@ -280,6 +281,14 @@ pebbleForgeDiagnostics {
 ```shell
 ./gradlew renderPebbleTemplate --template=page
 ```
+
+The standalone CLI uses the same source-frame report and accepts a JSON or YAML model.
+
+```shell
+./gradlew :pebble-forge-cli:run --args="--templates src/main/resources/templates --template page --model-file model.yaml"
+```
+
+See [pebble-forge-cli/README.md](pebble-forge-cli/README.md) for options and exit codes.
 
 ### Development mode
 
