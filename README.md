@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-624 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
+637 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
 ## Modules
 
@@ -176,7 +176,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### Contract checks
 
-The contracts module parses templates at build time and checks model variable reads and component props. Direct reads are flow-sensitive inside a template. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, and block ownership.
+The contracts module parses templates at build time and checks model variable reads and component props. Direct reads are flow-sensitive inside a template. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, block ownership, and definite end-of-flow declarations across templates.
 
 ```kotlin
 plugins {

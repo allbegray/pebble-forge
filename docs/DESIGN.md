@@ -237,7 +237,7 @@ Pebble Forge adds these language features that Pebble does not ship.
 
 The contracts module parses each template once into context-free facts. A node visitor records root and block reads, local declarations, component calls, and include and extends edges. An include edge carries the literal and resolved target, resolution errors, literal `with` keys, dynamic flags, the include line, and a lexical snapshot of the caller's declared names. An extends edge carries the resolved parent and the owning line.
 
-A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads with a source-order flow snapshot, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and follows static extends parents with the child's visible declarations. `if` and `switch` branches join by intersection. A component is evaluated closed over props and the model. Block ownership excludes declarations from a parent block that a child overrides, while root declarations flow both ways. Evaluation is memoized by template, scope, and overridden block set. Cross-template propagation remains presence-based.
+A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads with a source-order flow snapshot, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and follows static extends parents with the child's visible declarations. `if` and `switch` branches join by intersection. A component is evaluated closed over props and the model. Block ownership excludes declarations from a parent block that a child overrides, while root declarations flow both ways. Extends summaries publish only names definitely visible at the end of the root or block flow; include propagation is a call-site snapshot. Evaluation is memoized by template, scope, and overridden block set.
 
 A template with no incoming static include or extends edge is a root. Direct component entry points and static component call targets are roots. A nested template under the component root that is only included is a partial. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. A non-component, non-partial template that no root reaches is checked as a fallback root. Include, extends, and component cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete.
 
@@ -383,7 +383,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Module | Tests | What it proves |
 | --- | --- | --- |
 | Core | 215 | Components, roots, language extensions, sandbox, escaping, include/extends traces, dev mode |
-| Contracts | 113 | Model variables, source-order flow, lexical include and extends scopes, block ownership, component props |
+| Contracts | 126 | Model variables, source-order flow, definite cross-template summaries, lexical include and extends scopes, block ownership, component props |
 | Diagnostics | 23 | Source frames, structured INCLUDE/EXTENDS/ERROR frames, source-mapped errors, include and extends stacks, parse errors, cycle and stale-frame handling |
 | Natural HTML | 130 | Rewrite, rejection matrix, source map, diagnostics integration, XSS fixtures, jsoup preview, sandbox |
 | Gradle plugin | 32 | Contracts policy, JSON/YAML schemas, render diagnostics, model values, frames, direct task registration |
@@ -393,7 +393,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Benchmarks | 5 | Smoke renders for every measured template |
 | Demo app | 8 | MVC pages, admin redirect, authenticated admin, CSRF login |
 | Fuzz | 35 | 600 jqwik trials, path jail, allowlists, minimizer, corpus |
-| **Total** | **624** | |
+| **Total** | **637** | |
 
 ## Non-goals
 
@@ -421,7 +421,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
-| Contracts | Build-time checks with source-order flow, include/extends scope propagation, and JSON/YAML variable schemas | Catches common errors without a full Java type checker. Direct reads are flow-sensitive inside a template; cross-template propagation is presence-based; components stay closed. The schema file is a flat name list. |
+| Contracts | Build-time checks with source-order flow, definite cross-template summaries, and JSON/YAML variable schemas | Catches common errors without a full Java type checker. Direct reads and extends summaries are flow-sensitive; include propagation is a call-site snapshot; components stay closed. The schema file is a flat name list. |
 | Escaping | Explicit context strategies plus pinned Pebble built-ins | Keeps the template author in control and lets Natural HTML choose the sink without replacing Pebble's parser |
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
 | Component roots | Namespace-keyed root map | One validated model for multiple roots, jar resources, and conflict detection |
@@ -451,7 +451,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
-- Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template include/extends propagation remains presence-based, and a root read can see a non-overridden block declaration regardless of position.
+- Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. Include propagation is a call-site snapshot. A root read can still see a non-overridden block declaration regardless of position.
 - The JSON/YAML contract schema is a flat variable list with one `allowAnyVariable` flag. It has no types, required fields, nullability, or nested model shapes. `$schema` is accepted and ignored.
 - A non-component, non-partial template that is not reachable from a root is checked as a fallback root. A nested template under the component root that is only included is treated as a partial.
 - Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.

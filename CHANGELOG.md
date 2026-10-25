@@ -13,7 +13,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
-- Build-time contract checks for model variables and component props, with source-order flow, static include and extends scope propagation, block ownership, `checkAll`, root/partial overrides, JSON/YAML schema files, and a `checkPebbleTemplates` Gradle task.
+- Build-time contract checks for model variables and component props, with source-order flow, definite cross-template extends summaries, static include scope propagation, block ownership, `checkAll`, root/partial overrides, JSON/YAML schema files, and a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include and extends traces, structured `INCLUDE`, `EXTENDS`, and `ERROR` frame kinds, and `SourceMappedError` frames for Natural HTML analysis errors.
 - Spring Boot render-error diagnostics through a view decorator, optional error attributes, and a real 500 error dispatch.
 - A `renderPebbleTemplate` Gradle task for rendering one template with a model and printing source-frame diagnostics.
@@ -43,7 +43,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `break` and `continue` are validated lexically.
 - The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
 - Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
-- Contract checks use source-order flow for direct reads and lexical scope snapshots for includes and extends parents. Cross-template summaries remain presence-based. Dynamic includes and exact block ordering are not followed. JSON/YAML schemas are flat variable-name lists with one permissive flag.
+- Contract checks use source-order flow for direct reads and definite end-of-flow summaries for extends parents. Includes use lexical scope snapshots. Dynamic includes and exact block ordering are not followed. JSON/YAML schemas are flat variable-name lists with one permissive flag.
 - Diagnostics for errors inside an extended parent need `TemplateTrace.run` around the whole template evaluation. The Boot starter applies this wrapper.
 - Spring Security support covers the servlet stack only.
 - The CLI is a trusted-template development tool. It has no sandbox; top-level template names are jailed, but includes and extends are not.

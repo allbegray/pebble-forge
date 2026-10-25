@@ -133,7 +133,7 @@ ContractResult templateSet = checker.checkAll(List.of("page", "partial", "compon
 6. The evaluate pass checks direct reads with a source-order flow snapshot. `if` and `switch` branches join by intersection. It follows a static include with `caller scope + lexical visible names at the call + literal with keys`, and a static extends parent with the child's visible declarations. A component is evaluated closed over its props and the model. A call that repeats a template already being rendered is reported as a cycle.
 7. Include, extends, and component cycles are errors. A dynamic include target is checked for its target-variable read but is not followed. A dynamic `with` map or dynamic `with` key makes the affected child scope incomplete, so missing-variable errors are suppressed for that call site and a warning explains why.
 8. Local declarations include root and block `set` names, `for` variables, `loop`, `with` map keys, macro arguments, and component props. A read must be definitely visible at its source point. Loop, with, and macro locals do not escape after their construct. Reads owned by an overridden block are skipped.
-9. A parent block that a child overrides never executes. Its declarations are excluded from the child's visible names. A parent root declaration is visible to a child block, and a child root declaration is visible to the parent. Cross-template extends propagation remains presence-based.
+9. A parent block that a child overrides never executes. Its declarations are excluded from the child's visible names. A parent root declaration is visible to a child block, and a child root declaration is visible to the parent. Cross-template extends summaries use the names definitely visible at the end of the root or block flow.
 
 Parsed templates are cached per run. Diagnostic order is deterministic.
 
@@ -163,10 +163,10 @@ Components stay closed over props and the model. The renderer shares the caller 
 - A loop body is conservatively treated as running zero or more times, so a body-only set is not visible after the loop.
 - A root read can see a declaration from a non-overridden block of the same template regardless of source position.
 - Include visibility uses a lexical snapshot at the include point. It is not propagated through branch joins.
-- Cross-template extends summaries publish branch and loop declarations that are not definitely visible. A child conditional set can satisfy a parent read.
+- Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. A child conditional set does not satisfy a parent read unless every branch leaves it visible.
 - Extends parent reads are reported at the parent template and line. Load and parse failures at the extends edge include an extends path. Parent-body read errors do not repeat the whole chain.
 - A dynamic or missing parent suppresses scope-dependent missing reads owned by blocks because the parent declarations are unknown. Model reads inside the child block are still checked.
-- Cross-template block ownership is presence-based. A block declaration can satisfy a later parent content read. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
+- Cross-template block ownership is presence-based, but block summaries are definite end-of-flow names. An unconditional block declaration can satisfy a later parent content read. A conditional or loop-only block declaration cannot. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
 - Dynamic include targets and dynamic `with` keys are warnings. A dynamic target whose base expression is a model read still checks that base.
 - A partial reached only through a dynamic include is inferred as a root unless it is listed in `partialTemplates`.
 - Components do not see caller locals at check time, even though runtime `includeTemplate` shares the scope chain.
@@ -184,8 +184,7 @@ Components stay closed over props and the model. The renderer shares the caller 
 
 ## Next slices
 
-- Flow-sensitive cross-template include and extends summaries.
 - Typed JSON or YAML schema for component props and model variables.
-- Exact block ordering and switch exhaustiveness.
+- Exact block ordering and switch exhaustiveness across extends.
 - Publish the Gradle plugin to the Plugin Portal.
 - Inline suppression comments for intentional dynamic templates.

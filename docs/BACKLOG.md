@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 624개다. core 215, contracts 113, diagnostics 23, natural-html 130, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
+- 테스트는 637개다. core 215, contracts 126, diagnostics 23, natural-html 130, Gradle 플러그인 32, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - 컴포넌트, 네임스페이스 루트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 컨텍스트 인식 이스케이프, Natural HTML 표현식, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수, JMH 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질 검사, Spring Boot 데모 앱, JSON/YAML 진단 CLI가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -143,9 +143,9 @@
 - 상태: 진행 중. `pebble-forge-contracts`와 `checkPebbleTemplates` Gradle 태스크에 소스 순서 기반 직접 읽기, include와 extends 스코프 전파, 블록 소유권, root/partial/fallback 정책을 추가했다.
 - 문제: Pebble은 동적이라서 모델 변수와 컴포넌트 props 오류가 렌더 시점에야 드러난다. JTE, Qute, Rocker의 장점과 가장 큰 격차다.
 - 범위: `pebble-forge-contracts` 모듈을 새로 만든다. 모델 스키마와 컴포넌트 props 계약을 입력으로 받고, 템플릿을 파싱해서 변수 읽기, 컴포넌트 호출, include와 extends를 검사한다. Gradle 태스크 `checkPebbleTemplates`를 제공한다.
-- 현재 구현: 소스 순서 기반 직접 읽기와 if/switch 분기 교집합, 정적 include와 extends 스코프 전파, 어휘 스코프 스냅샷, 블록 소유권과 overridden-block 스킵, `checkAll`과 root/partial/fallback 루트 추론, include·extends·컴포넌트 순환 오류, 동적 대상 경고, 빈 컴포넌트와 루트의 NPE 없는 진단, `checkPebbleTemplates`의 단일 순회와 설정 이름 검증. 계약 검사 113개와 Gradle TestKit 32개. JSON/YAML 스키마 파일 로딩을 추가했다. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
-- 커밋: `f177277` AST 접근자, `1d53d5d` contracts 모듈과 Gradle 플러그인, `ab0bb97` include 노드 뷰, `ae62924` 누락 대상 진단, `b698b1d` include 스코프와 `checkAll`, `732001d` Gradle root/partial 정책, `3000f4b` extends 스코프와 블록 소유권, `3fc71e1` extends 경로 라벨, `c59f106` 자체 블록 선언 가시성, `7bc62a2` 회귀 테스트, `6065a5a` 소스 순서 직접 읽기, `c13c995` JSON/YAML 스키마 파일.
-- 남은 것: flow-sensitive include/extends 요약, 정확한 블록 순서와 switch exhaustiveness, 타입이 있는 스키마, Plugin Portal 배포.
+- 현재 구현: 소스 순서 기반 직접 읽기와 if/switch 분기 교집합, 정적 include와 extends 스코프 전파, 어휘 스코프 스냅샷, 블록 소유권과 overridden-block 스킵, `checkAll`과 root/partial/fallback 루트 추론, include·extends·컴포넌트 순환 오류, 동적 대상 경고, 빈 컴포넌트와 루트의 NPE 없는 진단, `checkPebbleTemplates`의 단일 순회와 설정 이름 검증. 계약 검사 126개와 Gradle TestKit 32개. extends 요약은 분기·루프가 끝난 시점에 확정된 이름만 게시한다. JSON/YAML 스키마 파일 로딩을 추가했다. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
+- 커밋: `f177277` AST 접근자, `1d53d5d` contracts 모듈과 Gradle 플러그인, `ab0bb97` include 노드 뷰, `ae62924` 누락 대상 진단, `b698b1d` include 스코프와 `checkAll`, `732001d` Gradle root/partial 정책, `3000f4b` extends 스코프와 블록 소유권, `3fc71e1` extends 경로 라벨, `c59f106` 자체 블록 선언 가시성, `7bc62a2` 회귀 테스트, `6065a5a` 소스 순서 직접 읽기, `c13c995` JSON/YAML 스키마 파일, `0918996` 확정 흐름 extends 요약.
+- 남은 것: 정확한 블록 순서와 switch exhaustiveness, 타입이 있는 스키마, Plugin Portal 배포.
 - 완료 기준: 좋은 fixture는 통과하고, 없는 변수나 잘못된 props를 쓰는 fixture는 파일과 줄 번호를 담아 빌드를 실패시킨다. 지원 문법 밖의 표현식은 오탐 대신 경고로 처리한다.
 - 의존: PF-004.
 - 결정: 첫 범위는 전체 Java 타입 시스템이 아니라 변수 존재와 컴포넌트 props 검사로 제한한다. 직접 읽기는 소스 순서와 분기 교집합으로 검사한다. 정적 include는 호출자 스코프로, 정적 extends는 자식/부모 스코프와 블록 소유권으로 전파한다. 동적 대상은 경고로 남긴다. 컴포넌트는 props와 모델에 닫힌 채로 검사한다.
