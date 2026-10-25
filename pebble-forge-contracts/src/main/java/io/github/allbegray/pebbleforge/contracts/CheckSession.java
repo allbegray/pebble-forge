@@ -498,7 +498,7 @@ final class CheckSession {
                 // overridden block, so the read cannot be decided statically.
                 continue;
             }
-            if (isLocallyDeclared(scan, read, ancestorNames)
+            if (isLocallyDeclared(scan, read, ancestorNames, overriddenBlocks)
                     || model.allows(read.name())
                     || scope.names().contains(read.name())) {
                 continue;
@@ -517,12 +517,13 @@ final class CheckSession {
     }
 
     private boolean isLocallyDeclared(TemplateScan scan, TemplateScan.VariableRead read,
-            Set<String> ancestorNames) {
+            Set<String> ancestorNames, Set<String> overriddenBlocks) {
+        if (read.block() == null) {
+            return visibleDeclarations(scan, overriddenBlocks).contains(read.name())
+                    || ancestorNames.contains(read.name());
+        }
         if (scan.rootDeclarations.contains(read.name())) {
             return true;
-        }
-        if (read.block() == null) {
-            return false;
         }
         if (scan.blockDeclarations.getOrDefault(read.block(), Set.of()).contains(read.name())) {
             return true;
