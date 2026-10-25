@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 134개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 137개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -233,6 +233,7 @@ pebble.forge.dev-mode=true
 | 원본 출력 | 금지 |
 | 출력 제한 | 1,000,000자 |
 | 루프 제한 | 루프당 100,000회 |
+| 전체 루프 제한 | 렌더당 1,000,000회 |
 | include 깊이 | 중첩 include 16회 |
 | 슬롯 캡처 | 컴포넌트당 1,000,000자 |
 | 메서드 접근 | 위험한 클래스, 메서드, 반환 타입을 차단합니다. public 필드도 차단합니다. |
@@ -243,7 +244,7 @@ pebble.forge.dev-mode=true
 
 기능을 더하려면 `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, `allowRawOutput`을 사용하세요. `allowOnly*` 메서드는 기본 목록을 교체합니다.
 
-샌드박스는 프로세스 내부의 권한 보호 장치이지 CPU 할당량이 아닙니다. 권한 악용과 출력 폭탄은 막지만, 큰 사용자 목록이 CPU를 오래 쓰는 것은 막지 못합니다. 루프 제한은 루프별이며 전체 렌더 예산이 아닙니다. include 깊이는 기본 16회로 제한합니다. `SandboxedLoader`는 문자열 기준입니다. 심볼릭 링크가 가능한 환경에서는 `SandboxedFileLoader`를 사용하세요.
+샌드박스는 프로세스 내부의 권한 보호 장치이지 CPU 할당량이 아닙니다. 권한 악용과 출력 폭탄은 막지만, 큰 사용자 목록이 CPU를 오래 쓰는 것은 막지 못합니다. 루프 제한은 루프별이고, 전체 루프 예산은 렌더 전체가 공유합니다. 단 parallel 분기는 별도 예산을 받습니다. include 깊이는 기본 16회로 제한합니다. `SandboxedLoader`는 문자열 기준입니다. 심볼릭 링크가 가능한 환경에서는 `SandboxedFileLoader`를 사용하세요.
 
 경로 제한은 문자열 기준입니다. 템플릿 이름의 상위 경로 이동은 막지만 심볼릭 링크는 해석하지 않습니다. 파일 로더 루트에 심볼릭 링크가 없도록 하거나, 실제 경로를 검사하는 로더를 사용하세요.
 
@@ -266,6 +267,7 @@ pebble.forge.components.max-depth=16
 pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
+pebble.forge.sandbox.max-total-iterations=1000000
 pebble.forge.sandbox.max-include-depth=16
 pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false

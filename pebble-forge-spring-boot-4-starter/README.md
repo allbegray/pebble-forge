@@ -32,6 +32,7 @@ pebble.forge.components.max-depth=16
 pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
+pebble.forge.sandbox.max-total-iterations=1000000
 pebble.forge.sandbox.max-include-depth=16
 pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false

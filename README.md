@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-134 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+137 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -233,6 +233,7 @@ pebble.forge.dev-mode=true
 | Raw output | Denied |
 | Output limit | 1,000,000 characters |
 | Loop limit | 100,000 iterations per loop |
+| Total loop limit | 1,000,000 iterations per render |
 | Include depth | 16 nested includes |
 | Slot capture | 1,000,000 characters per component |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
@@ -241,7 +242,7 @@ pebble.forge.dev-mode=true
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. `allowOnly*` replaces a default set.
 
-The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list. Run hostile templates in a separate process when CPU is hostile. Loop limits are per loop, not a global render budget. Include depth is limited to 16 by default. `SandboxedLoader` is lexical. Use `SandboxedFileLoader` when symlinks are possible.
+The sandbox is an in-process capability guard, not a CPU quota. A template can still burn CPU with a large user-supplied list. Run hostile templates in a separate process when CPU is hostile. Loop limits are per loop. The total loop budget is shared across the render, except parallel branches get a separate budget. Include depth is limited to 16 by default. `SandboxedLoader` is lexical. Use `SandboxedFileLoader` when symlinks are possible.
 
 ## Spring Boot 4
 
@@ -262,6 +263,7 @@ pebble.forge.components.max-depth=16
 pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
+pebble.forge.sandbox.max-total-iterations=1000000
 pebble.forge.sandbox.max-include-depth=16
 pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false

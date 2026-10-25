@@ -198,6 +198,7 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 | Raw output | Denied |
 | Output limit | 1,000,000 characters |
 | Loop limit | 100,000 iterations per loop |
+| Total loop limit | 1,000,000 iterations per render |
 | Include depth | 16 nested includes |
 | Slot capture | 1,000,000 characters per component |
 | Method access | Dangerous classes, methods, and return types blocked. Public fields blocked. |
@@ -208,7 +209,7 @@ The sandbox is allowlist based. `SandboxPolicy.strict()` uses these defaults.
 
 Add capabilities with `allowTags`, `allowFilters`, `allowFunctions`, `allowTests`, `allowGlobalVariables`, `allowComponents`, and `allowRawOutput`. The `allowOnly*` methods replace a default set.
 
-The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile. Loop limits are per loop, not a global render budget. Include depth is limited to 16 by default.
+The sandbox is an in-process capability guard, not a CPU quota. It stops capability abuse and output bombs. It does not stop a template from burning CPU with a large user-supplied list or many large slot captures. Run hostile templates in a separate process when CPU and memory are also hostile. Loop limits are per loop. The total loop budget is shared across a render, except parallel branches get a separate budget. Include depth is limited to 16 by default.
 
 The path jail is lexical in `SandboxedLoader`. It rejects traversal in template names but does not resolve symlinks. `SandboxedFileLoader` resolves real paths and rejects symlinks that leave the root.
 
@@ -233,6 +234,7 @@ pebble.forge.components.max-depth=16
 pebble.forge.sandbox.enabled=false
 pebble.forge.sandbox.max-rendered-chars=1000000
 pebble.forge.sandbox.max-loop-iterations=100000
+pebble.forge.sandbox.max-total-iterations=1000000
 pebble.forge.sandbox.max-include-depth=16
 pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
@@ -304,6 +306,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | --- | --- | --- |
 | Components | 15 | Real templates, real engine, exact output, slot isolation |
 | Language | 28 | Switch, break, continue, with, destructuring, multi-value cases, sandbox on and off |
+| Iteration budget | 3 | Sequential loops, nested loops, per-render reset |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
 | Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
@@ -362,6 +365,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Dev mode reads and hashes each template on lookup and leaves old cache keys behind. It is for development, not long-running production processes. Classpath resources inside a jar cannot change.
+- The total loop budget is keyed by the render scope chain. Parallel branches deep-copy that scope chain and get a separate budget.
 - `with only` hides model and extension globals. Internal slot state, locale, and template are preserved. `_context` becomes empty in the isolated scope.
 - `for key, value` uses the map key for entries and a zero-based index for other iterables.
 

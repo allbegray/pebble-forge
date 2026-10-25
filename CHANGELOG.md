@@ -7,7 +7,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Added
 
 - Template-defined components with props, defaults, named slots, a default slot, and a depth limit.
-- Capability sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, an output limit, a per-loop iteration limit, an include depth limit, and a per-component slot capture budget.
+- Capability sandbox with tag, filter, function, and test allowlists, a method access validator, a path-jailed loader, an output limit, a per-loop and per-render iteration limit, an include depth limit, and a per-component slot capture budget.
 - `switch`, `break`, `continue`, and `with` template tags.
 - Multi-value switch cases, `for key, value` destructuring, and `with ... only` scope isolation.
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
