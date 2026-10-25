@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ title }}{% endblock %} · Pebble Forge</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="/">Pebble Forge</a>
+  <nav class="nav" aria-label="Primary">
+    <a href="/">Home</a>
+    <a href="/components">Components</a>
+    <a href="/language">Language</a>
+    {% if isAuthenticated() and hasRole("ADMIN") %}
+      <a href="/admin">Admin</a>
+    {% endif %}
+  </nav>
+  <div class="session">
+    {% if isAuthenticated() %}
+      <span class="session-user">{{ username() }}</span>
+      <form class="inline-form" method="post" action="/logout">
+        <input type="hidden" name="{{ csrfParameterName() }}" value="{{ csrfToken() }}">
+        <button class="button button--ghost" type="submit">Log out</button>
+      </form>
+    {% else %}
+      <a class="button button--ghost" href="/login">Log in</a>
+    {% endif %}
+  </div>
+</header>
+<main class="page">
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <p>Spring Boot 4 · Spring Security 7 · Pebble 4 with Pebble Forge</p>
+</footer>
+</body>
+</html>

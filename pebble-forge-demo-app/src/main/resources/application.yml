@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: pebble-forge-demo-app
+
+pebble:
+  prefix: templates/
+  suffix: .peb
+  forge:
+    components:
+      enabled: true
+      root: components
+      suffix: ""
+      max-depth: 16
+    language:
+      enabled: true
+    security:
+      enabled: true
+    sandbox:
+      enabled: true
+      force-auto-escaping: true
+      allow-raw-output: false
+    diagnostics:
+      enabled: true

@@ -1,0 +1,5 @@
+{% props label, tone = "neutral" %}
+{% set detail = slot("body") %}
+<span class="badge badge--{{ tone }}">
+  {{ label }}{% if detail | length > 0 %}<span class="badge-detail">{{ detail }}</span>{% endif %}
+</span>

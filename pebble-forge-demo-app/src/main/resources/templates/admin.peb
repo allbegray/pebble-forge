@@ -1,0 +1,31 @@
+{% extends "layout" %}
+
+{% block content %}
+<section class="hero hero--compact">
+  <p class="eyebrow">ROLE_ADMIN required</p>
+  <h1>Admin</h1>
+  <p class="lede">
+    This page is protected by Spring Security. The template reads the
+    authenticated identity through Pebble Forge functions.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Authenticated principal</h2>
+  <dl class="detail-list">
+    <dt>Username</dt>
+    <dd>{{ username() }}</dd>
+    <dt>Fully authenticated</dt>
+    <dd>{% if isFullyAuthenticated() %}yes{% else %}no{% endif %}</dd>
+  </dl>
+</section>
+
+<section class="panel">
+  <h2>Authorities</h2>
+  <ul class="authority-list">
+    {% for authority in authorities() %}
+      <li><code>{{ authority }}</code></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "layout" %}
+
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Spring Boot 4 demo</p>
+  <h1>Pebble Forge Demo</h1>
+  <p class="lede">
+    A runnable MVC application that renders Pebble templates through the
+    Pebble Forge Spring Boot starter. Every page runs inside the sandbox with
+    autoescaping enabled.
+  </p>
+  <div class="button-row">
+    <a class="button" href="/components">Explore components</a>
+    <a class="button button--ghost" href="/language">See language extensions</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>What this demo shows</h2>
+  <ul class="feature-list">
+    {% for feature in features %}
+      <li>{{ feature }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="panel security-state">
+  <h2>Current security state</h2>
+  {% if isAuthenticated() %}
+    <p>Signed in as <strong>{{ username() }}</strong>.</p>
+    <ul class="authority-list">
+      {% for authority in authorities() %}
+        <li><code>{{ authority }}</code></li>
+      {% endfor %}
+    </ul>
+    {% if hasRole("ADMIN") %}
+      <p><a href="/admin">Open the admin page</a> to see role-protected content.</p>
+    {% else %}
+      <p>This account is not an administrator, so the admin page will reject it.</p>
+    {% endif %}
+  {% else %}
+    <p>
+      You are browsing as a guest. <a href="/login">Sign in</a> with
+      <code>user</code> or <code>admin</code> to see the security functions
+      in action.
+    </p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Sandbox policy</h2>
+  <p>
+    Autoescaping is on. Components, extends and blocks, the language tags, and
+    the Spring Security functions are explicitly allowed. Raw output is not.
+  </p>
+</section>
+{% endblock %}

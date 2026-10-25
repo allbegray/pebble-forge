@@ -32,6 +32,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
+| `pebble-forge-demo-app` | Runnable Spring Boot 4 MVC demo with components, language extensions, and Spring Security |
 
 ## Core
 

@@ -1,0 +1,44 @@
+{% extends "layout" %}
+
+{% block content %}
+<section class="hero hero--compact">
+  <p class="eyebrow">Language extensions</p>
+  <h1>Language</h1>
+  <p class="lede">
+    Pebble Forge adds the control flow that Pebble leaves out. These tags run
+    inside the same sandbox policy as the rest of the page.
+  </p>
+</section>
+
+<div class="panel-grid">
+  <section class="panel">
+    <h2><code>switch</code></h2>
+    <p>Role <code>{{ role }}</code> resolves to:</p>
+    <p class="result">
+      {% switch role %}{% case "admin" %}Admin control panel{% case "editor" %}Editor workspace{% default %}Guest view{% endswitch %}
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2><code>for</code>, <code>continue</code>, <code>break</code></h2>
+    <p>Values 1 to 6, skipping 2 and stopping before 5:</p>
+    <ul class="result-list">
+      {% for number in numbers %}
+        {% if number == 2 %}{% continue %}{% endif %}
+        {% if number == 5 %}{% break %}{% endif %}
+        <li class="loop-value">{{ number }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2><code>with</code></h2>
+    {% with {"environment": "demo", "product": "Pebble Forge", "version": "0.1"} %}
+      <p class="result">
+        Running <strong>{{ product }}</strong> {{ version }} in the
+        {{ environment }} environment.
+      </p>
+    {% endwith %}
+  </section>
+</div>
+{% endblock %}

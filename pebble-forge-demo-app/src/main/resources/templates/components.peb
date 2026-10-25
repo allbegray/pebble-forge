@@ -1,0 +1,44 @@
+{% extends "layout" %}
+
+{% block content %}
+<section class="hero hero--compact">
+  <p class="eyebrow">Template-defined UI</p>
+  <h1>Components</h1>
+  <p class="lede">
+    Two calls to the same card component with different props, named slots,
+    and a nested badge that receives a default slot.
+  </p>
+</section>
+
+<div class="card-grid">
+  {% component "card" with {"title": "Sandboxed slot content", "subtitle": "Named slots keep layout inside the component", "tone": "info"} %}
+    {% slot "body" %}
+      <p>
+        This card is rendered by <code>components/card.peb</code>. The body and
+        footer arrive as named slots.
+      </p>
+      {% component "badge" with {"label": "escaped", "tone": "success"} %}
+        Slot payload: <strong>{{ suspicious }}</strong>
+      {% endcomponent %}
+    {% endslot %}
+    {% slot "footer" %}
+      <span class="meta">Props: title, subtitle, tone</span>
+    {% endslot %}
+  {% endcomponent %}
+
+  {% component "card" with {"title": "Different props", "subtitle": "Same component, new values", "tone": "warning"} %}
+    {% slot "body" %}
+      <p>
+        This second card proves the component receives its own props instead of
+        sharing the first card's state.
+      </p>
+      {% component "badge" with {"label": "second card", "tone": "neutral"} %}
+        Default slot text for the badge.
+      {% endcomponent %}
+    {% endslot %}
+    {% slot "footer" %}
+      <span class="meta">Nested component, default slot</span>
+    {% endslot %}
+  {% endcomponent %}
+</div>
+{% endblock %}

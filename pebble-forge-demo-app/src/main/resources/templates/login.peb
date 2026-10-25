@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Pebble Forge</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="login-page">
+<main class="login-card">
+  <p class="eyebrow">Pebble Forge demo</p>
+  <h1>Sign in</h1>
+  <p class="lede">
+    Use <code>user</code> / <code>password</code> for the user role, or
+    <code>admin</code> / <code>password</code> for the admin role.
+  </p>
+
+  {% if param.error %}
+    <p class="alert alert--error" role="alert">Invalid username or password.</p>
+  {% endif %}
+
+  <form class="login-form" method="post" action="/login">
+    <input type="hidden" name="{{ csrfParameterName() }}" value="{{ csrfToken() }}">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="button" type="submit">Sign in</button>
+  </form>
+
+  <p class="login-back"><a href="/">Back to home</a></p>
+</main>
+</body>
+</html>

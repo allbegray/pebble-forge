@@ -1,0 +1,12 @@
+{% props title, subtitle = "", tone = "neutral" %}
+<article class="card card--{{ tone }}">
+  <header class="card-header">
+    <h2>{{ title }}</h2>
+    {% if subtitle %}<p class="card-subtitle">{{ subtitle }}</p>{% endif %}
+  </header>
+  <div class="card-body">{{ slot("body") }}</div>
+  {% set footer = slot("footer") %}
+  {% if footer | length > 0 %}
+    <footer class="card-footer">{{ footer }}</footer>
+  {% endif %}
+</article>
