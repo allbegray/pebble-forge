@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-170 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+221 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### Contract checks
 
-The contracts module parses templates at build time and checks model variable reads and component props.
+The contracts module parses templates at build time and checks model variable reads and component props. Static includes are followed with the caller's visible names and literal `with` keys, so a partial that reads a caller local passes.
 
 ```kotlin
 plugins {
@@ -143,6 +143,9 @@ pebbleForgeContracts {
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
+
+    rootTemplates.add("pages/account")     // force root status
+    partialTemplates.add("fragments/row")  // exclude from root inference
 }
 ```
 
@@ -150,17 +153,19 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-A missing model variable or required component prop fails the build. An unknown prop or a dynamic component name is a warning.
+A template with no incoming static include edge is a root. Components are always roots. A partial is checked through the includes that reach it. `rootTemplates` forces a dual-role template. `partialTemplates` covers a fragment reached only through a dynamic include. Names are relative to the template root with the suffix removed.
+
+A missing model variable or required component prop fails the build. Dynamic include targets, dynamic `with` keys, unknown props, and dynamic component names are warnings. Include cycles are errors.
 
 ```text
-page.peb:4: ERROR: Variable [page] is not declared in the model schema
-page.peb:8: ERROR: Component [card] requires prop [title]
-page.peb:8: WARNING: Component [card] does not declare prop [footer]
+page:4: ERROR: Variable [page] is not declared in the model schema
+page:8: ERROR: Component [card] requires prop [title]
+page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
 The default template root is `src/main/resources/templates`. The default suffix is `.peb`. Set `allowAnyVariable` to `true` to check only components.
 
-The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
+The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
 ### Diagnostics
 

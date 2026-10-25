@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 170개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 221개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### 계약 검사
 
-`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다.
+`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 정적 include는 호출자의 가시 이름과 리터럴 `with` 키를 따라가므로, 호출자 지역 변수를 읽는 partial도 통과합니다.
 
 ```kotlin
 plugins {
@@ -143,6 +143,9 @@ pebbleForgeContracts {
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
+
+    rootTemplates.add("pages/account")     // 루트로 강제
+    partialTemplates.add("fragments/row")  // 루트 추론에서 제외
 }
 ```
 
@@ -150,17 +153,19 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 알 수 없는 prop이나 동적 컴포넌트 이름은 경고로 남습니다.
+정적 include가 들어오지 않는 템플릿은 루트입니다. 컴포넌트는 항상 루트입니다. partial은 자신을 include하는 경로를 통해서만 검사합니다. `rootTemplates`는 루트이면서 partial인 템플릿을 강제로 검사합니다. `partialTemplates`는 동적 include로만 도달하는 조각을 루트 추론에서 뺍니다. 이름은 템플릿 루트 기준 상대 경로에서 접미사를 뺀 값입니다.
+
+없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 동적 include 대상, 동적 `with` 키, 알 수 없는 prop, 동적 컴포넌트 이름은 경고입니다. include 순환은 오류입니다.
 
 ```text
-page.peb:4: ERROR: Variable [page] is not declared in the model schema
-page.peb:8: ERROR: Component [card] requires prop [title]
-page.peb:8: WARNING: Component [card] does not declare prop [footer]
+page:4: ERROR: Variable [page] is not declared in the model schema
+page:8: ERROR: Component [card] requires prop [title]
+page:8: WARNING: Component [card] does not declare prop [footer]
 ```
 
 기본 템플릿 루트는 `src/main/resources/templates`이고 기본 접미사는 `.peb`입니다. `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
 
-Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
+Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 
 ### 진단
 

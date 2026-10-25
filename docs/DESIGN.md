@@ -57,6 +57,7 @@ pebble-forge-core
 ├── include
 │   ├── IncludeExtension     depth-limited include tag
 │   ├── ForgeIncludeNode     include rendering and trace capture
+│   ├── IncludeNodeView      read-only include target, with map, and line
 │   └── IncludeTrace         include stack and frames
 ├── language
 │   ├── LanguageExtension    switch, break, continue, with, and a break-aware for
@@ -78,7 +79,11 @@ pebble-forge-core
 
 pebble-forge-contracts
 ├── ModelSchema              allowed model variables
-├── ContractChecker          parses templates and validates reads and component calls
+├── ContractChecker          single-root and whole-set contract entry points
+├── CheckSession             parse, analyze, root inference, and scoped evaluation
+├── Scope                    visible names plus a completeness flag
+├── ContractVisitor          reads, locals, component calls, include edges
+├── TemplateScan             context-free facts and typed failures
 └── ContractDiagnostic       errors and warnings with template and line
 
 pebble-forge-diagnostics
@@ -86,7 +91,7 @@ pebble-forge-diagnostics
 └── DiagnosticReport           structured frames and terminal formatting
 
 pebble-forge-gradle-plugin
-└── CheckPebbleTemplatesTask checks every template under the configured root
+└── CheckPebbleTemplatesTask walks once, applies root/partial policy, and calls checkAll
 
 pebble-forge-spring
 ├── SpringWebFunctions       sandbox allowlist for Pebble's Spring functions
@@ -188,6 +193,14 @@ Pebble Forge adds these language features that Pebble does not ship.
 `break` and `continue` are lexical. The parser tracks loop and switch nesting while it parses. A tag outside a loop or switch fails at parse time. A macro that contains `break` and is called outside a loop is outside this guarantee.
 
 `PebbleForge.engine().languageExtensions(false)` disables the language extension. The Boot starter exposes the same switch as `pebble.forge.language.enabled`.
+
+## Contract checks
+
+The contracts module parses each template once into context-free facts. A node visitor records root reads, local declarations, component calls, and include edges. An include edge carries the literal and resolved target, resolution errors, literal `with` keys, dynamic flags, the include line, and a snapshot of the caller's declared names at that point.
+
+A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads, follows static includes with `caller scope + visible names at the call + literal with keys`, and evaluates components closed over props and the model. Evaluation is memoized by template and scope. The current policy is presence-based, not flow-sensitive.
+
+A template with no incoming static include edge is a root. Components are always roots. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. Static include cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete. Extends records a parent edge but is not followed in this slice.
 
 ## Sandbox
 
@@ -319,13 +332,14 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Iteration budget | 3 | Sequential loops, nested loops, per-render reset |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
-| Contracts | 16 | Model variables, component props, dynamic names, parse errors, schema bypass |
+| Contracts | 57 | Model variables, include scopes, root policy, component props, dynamic names, cycles, missing targets, schema bypass |
 | Diagnostics | 7 | Source frames, include stacks, nested includes, parse errors, missing source |
-| Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
+| Gradle plugin | 12 | TestKit projects cover partials, true roots, components, dynamic includes, root/partial overrides, and unknown names |
 | Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
 | Template limits | 6 | Resolver matching, loop/include/slot limits by prefix |
+| Include node view | 1 | Read-only target, with map, and line for static analysis |
 | Per-template policies | 25 | Resolver matching, filter/tag/function/method enforcement, literal templates, name validation, include, extends, macro, embed, and component ownership |
 | Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot auto-config | 11 | Application context, official auto-config ordering, policy override, policy resolver, language switch, dev mode, limits resolver |
@@ -357,7 +371,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
-| Contracts | Build-time presence checks for model variables and component props | Catches common errors without a full Java type checker |
+| Contracts | Build-time presence checks with include scope propagation | Catches common errors without a full Java type checker. Static includes use caller scopes; components stay closed. |
 | Diagnostics | Custom include parser plus a source-frame formatter | Captures the include path without replacing the renderer |
 | Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
 | Language follow-ups | Comma-separated case values, key/value destructuring, local-only with | Fits the existing tags without a new expression language |
@@ -380,7 +394,9 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
-- Contract checks are presence-based and do not follow includes or extends recursively. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
+- Contract checks follow static includes with a flat snapshot of the caller scope. They do not follow extends, dynamic includes, or flow-sensitive block scopes. See [CONTRACTS.md](CONTRACTS.md) for the full list of limits.
+- Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.
+- A partial reached only through a dynamic include has no static incoming edge and is inferred as a root unless it is listed in `partialTemplates`.
 - Diagnostics trace includes but not extends. The caret points at the first non-whitespace character because Pebble does not expose a column. See [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Dev mode reads and hashes each template on lookup and leaves old cache keys behind. It is for development, not long-running production processes. Classpath resources inside a jar cannot change.
 - The total loop budget is keyed by the render scope chain. Parallel branches deep-copy that scope chain and get a separate budget.
@@ -391,6 +407,8 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 
 - Should a component allow unknown props? Current answer is yes. A warning mode is a later addition.
 - Should the contract schema move from the Gradle DSL to JSON or YAML?
+- Should contract components see caller locals, matching runtime `includeTemplate`, or stay closed over props?
+- How should extends own parent and block scope when that slice lands?
 - Should the Gradle plugin be published to the Plugin Portal?
 - Should the output limit and global variables become per-template? Current answer is no. The engine-wide values are conservative.
 - Should method access use an explicit render-scoped value instead of a thread-local template name?

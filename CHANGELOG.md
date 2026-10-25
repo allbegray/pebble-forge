@@ -13,7 +13,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
-- Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
+- Build-time contract checks for model variables and component props, with static include scope propagation, `checkAll`, root/partial overrides, and a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include traces for template errors.
 - Symlink-safe file loader that resolves real paths and rejects escapes.
 - Per-template resource limits for loops, include depth, and slot capture through `SandboxLimitsResolver`.
@@ -24,6 +24,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Fixed
 
 - Slot content cannot be forged through a `with` block. The slot function only emits captured `SafeString` values.
+- Missing component and root template checks report diagnostics instead of throwing a `NullPointerException`.
 
 ### Known limits
 
@@ -31,6 +32,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `break` and `continue` are validated lexically.
 - The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
 - Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
+- Contract checks follow static includes with a presence-based scope snapshot. Extends, dynamic includes, and flow-sensitive block scopes are not followed.
 - Spring Security support covers the servlet stack only.
 
 ## [0.1.0] - Unreleased

@@ -11,6 +11,9 @@ pebbleForgeContracts {
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
+
+    rootTemplates.add("pages/account")
+    partialTemplates.add("fragments/row")
 }
 ```
 
@@ -18,7 +21,9 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-The task checks every `.peb` file under `src/main/resources/templates` by default. Missing model variables and required component props fail the build. Unknown props and dynamic names produce warnings.
+The task walks every `.peb` file under `src/main/resources/templates` once. A template with no incoming static include edge is a root. Components are always roots. Partials are checked through the includes that reach them. `rootTemplates` forces root status; `partialTemplates` excludes a fragment from root inference. Names are relative to the template root with the suffix removed.
+
+Missing model variables, missing include targets, include cycles, and required component props fail the build. Unknown props, dynamic names, and dynamic include targets produce warnings.
 
 The plugin is not on the Gradle Plugin Portal yet. Use the included build or publish it locally.
 
