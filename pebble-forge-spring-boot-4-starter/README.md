@@ -17,9 +17,10 @@ implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-start
 - Runs before Pebble's `PebbleAutoConfiguration`.
 - Replaces the `pebbleEngine` bean with one built by `PebbleForge`.
 - Reuses `PebbleProperties`, the `pebbleLoader` bean, `SpringExtension`, every `Extension` bean, and the official view resolvers.
-- Binds `pebble.forge.*` properties for components, sandbox, Spring Security, language extensions, and dev mode.
+- Binds `pebble.forge.*` properties for components, sandbox, Spring Security, language extensions, diagnostics, and dev mode.
 - Registers `SpringSecurityExtension` when the servlet and Spring Security classes are present.
 - Normalizes `pebble.prefix` when the effective loader is a `ClasspathLoader`, because sandboxing wraps the loader and the official view resolver no longer sees the raw type.
+- Wraps the official Pebble view so a render failure becomes a real 500 error dispatch. An application error page can read `pebbleDiagnostics` and `pebbleDiagnosticsText` when exposure is enabled.
 
 ## Properties
 
@@ -38,6 +39,10 @@ pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
+pebble.forge.diagnostics.enabled=true
+pebble.forge.diagnostics.context-lines=2
+pebble.forge.diagnostics.expose-in-error-attributes=false
+
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
 pebble.forge.dev-mode=false
@@ -47,6 +52,6 @@ A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxLimi
 
 ## Verification
 
-The module has eight context tests and one MockMvc test. The MockMvc test renders a layout, a component, and the security state through the official `PebbleViewResolver`.
+The module has tests for the engine context, the official view resolver, render-error 500 dispatch, diagnostic error attributes, error pages, a full-container request, disabled diagnostics, and direct task registration. The full container test renders a broken template and checks the error page.
 
 See the [root README](../README.md) and [design document](../docs/DESIGN.md).

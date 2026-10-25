@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 238개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 308개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -26,7 +26,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 | --- | --- |
 | `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, `PebbleForge.engine()` 빌더 |
 | `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
-| `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include 추적 |
+| `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include/extends 추적 |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle 태스크 |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### 계약 검사
 
-`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 정적 include는 호출자의 가시 이름과 리터럴 `with` 키를 따라가므로, 호출자 지역 변수를 읽는 partial도 통과합니다.
+`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 정적 include와 extends 부모를 호출자 또는 자식 스코프, 리터럴 `with` 키, 블록 소유권으로 따라갑니다.
 
 ```kotlin
 plugins {
@@ -153,9 +153,9 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-정적 include가 들어오지 않는 템플릿은 루트입니다. 직접 컴포넌트와 정적 컴포넌트 호출 대상은 루트입니다. 컴포넌트 루트 아래에서 include로만 쓰이는 중첩 템플릿은 partial입니다. partial은 자신을 include하는 경로를 통해서만 검사합니다. 어떤 루트에서도 도달하지 않는 non-partial 템플릿은 fallback 루트로 검사합니다. `rootTemplates`는 루트이면서 partial인 템플릿을 강제로 검사합니다. `partialTemplates`는 동적 include로만 도달하는 조각을 루트 추론에서 뺍니다. 이름은 템플릿 루트 기준 상대 경로에서 접미사를 뺀 값입니다.
+정적 include나 extends가 들어오지 않는 템플릿은 루트입니다. 직접 컴포넌트와 정적 컴포넌트 호출 대상은 루트입니다. 컴포넌트 루트 아래에서 include로만 쓰이는 중첩 템플릿은 partial입니다. partial은 자신을 호출하는 경로를 통해서만 검사합니다. extends로만 도달하는 부모는 루트가 아닙니다. 어떤 루트에서도 도달하지 않는 non-partial 템플릿은 fallback 루트로 검사합니다. `rootTemplates`는 루트이면서 partial인 템플릿을 강제로 검사합니다. `partialTemplates`는 동적 include로만 도달하는 조각을 루트 추론에서 뺍니다. 이름은 템플릿 루트 기준 상대 경로에서 접미사를 뺀 값입니다.
 
-없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 동적 include 대상, 동적 `with` 키, 알 수 없는 prop, 동적 컴포넌트 이름은 경고입니다. include 순환은 오류입니다.
+없는 모델 변수나 필수 컴포넌트 prop이 있으면 빌드가 실패합니다. 동적 include 대상, 동적 `with` 키, 알 수 없는 prop, 동적 컴포넌트 이름은 경고입니다. include, extends, 컴포넌트 순환은 오류입니다.
 
 ```text
 page:4: ERROR: Variable [page] is not declared in the model schema
@@ -169,7 +169,7 @@ Gradle 플러그인은 아직 Plugin Portal에 없습니다. `pebble-forge-contr
 
 ### 진단
 
-`pebble-forge-diagnostics`는 Pebble 오류를 소스 프레임과 include 경로로 바꿉니다.
+`pebble-forge-diagnostics`는 Pebble 오류를 소스 프레임과 include/extends 경로로 바꿉니다.
 
 ```java
 PebbleEngine engine = PebbleForge.engine()
@@ -177,7 +177,7 @@ PebbleEngine engine = PebbleForge.engine()
         .build();
 
 try {
-    engine.getTemplate("page").evaluate(writer, model);
+    TemplateTrace.run(() -> engine.getTemplate("page").evaluate(writer, model));
 } catch (PebbleException error) {
     System.err.println(TemplateDiagnostics.builder()
             .loader(loader)
@@ -188,18 +188,17 @@ try {
 ```
 
 ```text
-Root attribute [missing] does not exist (components/card.peb:2)
-page.peb:3 includes components/card.peb
-  2 | second
-> 3 | {% include "components/card.peb" %}
+Root attribute [missing] does not exist (layout.peb:2)
+page.peb:1 extends layout.peb
+  1 | {% extends "layout.peb" %}
     | ^
-components/card.peb:2
-  1 | card
+layout.peb:2
+  1 | layout
 > 2 | {{ missing }}
     | ^
 ```
 
-Pebble Forge의 include 노드가 기본으로 include 스택을 기록합니다. extends 체인은 아직 캡처하지 않습니다. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
+Pebble Forge의 include와 extends 노드가 기본으로 체인을 기록합니다. 부모 본문에서 난 오류까지 extends 프레임을 얻으려면 `evaluate` 전체를 `TemplateTrace.run`으로 감싸세요. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
 
 ### 개발 모드
 
@@ -329,6 +328,10 @@ pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
+pebble.forge.diagnostics.enabled=true
+pebble.forge.diagnostics.context-lines=2
+pebble.forge.diagnostics.expose-in-error-attributes=false
+
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
 pebble.forge.dev-mode=false
@@ -339,6 +342,8 @@ pebble.forge.dev-mode=false
 `SandboxPolicy` 빈을 직접 정의하면 프로퍼티로 만든 정책을 대체합니다. `SandboxPolicyResolver` 빈은 템플릿별 허용 목록을 제공하고 프로퍼티 정책을 대체합니다. `SandboxPolicy` 빈과 `SandboxPolicyResolver` 빈 중 하나만 정의하세요. `SandboxLimitsResolver` 빈은 템플릿별 자원 한도를 제공합니다. `PebbleEngine` 빈을 직접 정의하면 스타터는 적용되지 않습니다. `pebbleLoader`나 `springExtension` 빈을 직접 정의하면 그 빈을 사용합니다.
 
 스타터가 만든 샌드박스 정책에는 Pebble Spring 함수와 `extends`, `block` 태그가 자동으로 추가됩니다. 정책을 직접 만들 때는 `SpringWebFunctions.allow(builder)`를 호출하고, 레이아웃에 필요한 태그를 허용하세요.
+
+진단이 켜져 있으면 스타터가 공식 Pebble 뷰를 감쌉니다. 렌더 실패는 실제 500 오류 디스패치가 되고, 애플리케이션 오류 페이지는 `pebbleDiagnostics` 또는 `pebbleDiagnosticsText`를 읽을 수 있습니다. 스타터는 오류 페이지를 소유하지 않습니다. Boot 오류 속성에 값을 노출하려면 `pebble.forge.diagnostics.expose-in-error-attributes=true`를 설정하세요. 기본값은 꺼짐입니다.
 
 ## Spring Security
 

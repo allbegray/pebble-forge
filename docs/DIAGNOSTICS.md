@@ -1,6 +1,6 @@
 # Template diagnostics
 
-Pebble errors carry a template name and line number. They do not show the source line, the caret, or the include path. The diagnostics module adds those.
+Pebble errors carry a template name and line number. They do not show the source line, the caret, or the include and extends path. The diagnostics module adds those.
 
 ## Setup
 
@@ -19,25 +19,23 @@ TemplateDiagnostics diagnostics = TemplateDiagnostics.builder()
         .build();
 
 try {
-    engine.getTemplate("page").evaluate(writer, model);
+    TemplateTrace.run(() -> engine.getTemplate("page").evaluate(writer, model));
 } catch (PebbleException error) {
     System.err.println(diagnostics.render(error).format());
 }
 ```
 
-The Pebble Forge include node records the include path by default. The diagnostics module reads that trace, so no extra extension is required.
+The Pebble Forge include and extends nodes record their paths by default. Wrap the entire `evaluate` call in `TemplateTrace.run` so an error in an extended parent body carries the extends frame. Pebble evaluates the parent after the child root node returns, so a node-local catch cannot see that failure.
 
 ## Example
 
 ```text
-Root attribute [missing] does not exist (components/card.peb:2)
-page.peb:3 includes components/card.peb
-  1 | first
-  2 | second
-> 3 | {% include "components/card.peb" %}
+Root attribute [missing] does not exist (layout.peb:2)
+page.peb:1 extends layout.peb
+  1 | {% extends "layout.peb" %}
     | ^
-components/card.peb:2
-  1 | card
+layout.peb:2
+  1 | layout
 > 2 | {{ missing }}
     | ^
 ```
@@ -46,26 +44,46 @@ components/card.peb:2
 
 ## How it works
 
-1. The Pebble Forge include node pushes the caller template, include line, and target template onto a thread-local stack.
-2. When a nested render fails, the node attaches a copy of the stack to the exception as a suppressed marker.
-3. `TemplateDiagnostics` finds the marker, reads the source through the loader, and builds a frame for each include.
-4. The failing template and line come from the `PebbleException`.
-5. Each frame shows nearby lines, the error line, and a caret at the first non-whitespace character.
+1. The include node pushes an `INCLUDE` frame. The extends node pushes an `EXTENDS` frame.
+2. A single core `TemplateTrace` keeps include and extends frames in chronological order on a thread-local stack.
+3. When a render fails, the outermost `TemplateTrace.run` attaches a copy of the stack to the exception as a suppressed marker. Include nodes also attach on a nested failure, and the marker is never duplicated.
+4. `TemplateDiagnostics` finds the marker, reads the source through the loader, and builds one frame per include or extends step.
+5. The failing template and line come from the `PebbleException`.
+6. Each frame shows nearby lines, the error line, and a caret at the first non-whitespace character.
 
-The trace is attached once. Outer include nodes do not duplicate it.
+`TemplateTrace.run` resets the stack at a new top-level render and truncates it in `finally`, so frames do not leak between renders. Include boundaries truncate nested frames after a successful include. Include depth counts only `INCLUDE` frames.
+
+`IncludeTrace` remains available as a compatibility façade that returns only include frames.
+
+## Spring Boot 4
+
+The starter defines `TemplateDiagnostics` from the raw `pebbleLoader` bean and wraps the official Pebble view. A render failure becomes a real servlet 500 error dispatch, and the application error page can read:
+
+- `pebbleDiagnostics`: a structured `DiagnosticReport`
+- `pebbleDiagnosticsText`: the formatted report
+
+The starter does not own the error page. It does not replace the official view resolver. It only adds a view decorator and an optional `ErrorAttributes` adapter.
+
+```properties
+pebble.forge.diagnostics.enabled=true
+pebble.forge.diagnostics.context-lines=2
+pebble.forge.diagnostics.expose-in-error-attributes=false
+```
+
+`expose-in-error-attributes` is off by default so source text does not leak into production API responses. When enabled and no application `ErrorAttributes` bean exists, the starter adds the two attributes. An application can also read the request attribute directly from a custom error controller.
 
 ## Limits
 
-- The extends chain is not captured yet. Only includes are traced.
+- Parent-body errors need `TemplateTrace.run` around the whole evaluation. A direct `evaluate` call without the wrapper may show only the failing template.
 - The caret points at the first non-whitespace character. Pebble does not expose a column number.
 - The loader must be able to read the template by name after the failure.
 - `embed` and cache nodes are not traced.
-- Spring Boot error handling is not wired yet. Use the formatter in an exception handler.
+- Parallel render branches use different threads and do not share the thread-local trace.
+- A committed response cannot be replaced by an error page. The view decorator records and logs the report but does not call `sendError`.
 - Source mapping for a future Natural HTML dialect is out of scope.
 
 ## Next
 
-- Capture the extends hierarchy at render time.
-- Add a Spring Boot error controller integration.
-- Add source maps for generated templates.
 - Add a CLI and Gradle task for rendering a template with diagnostics.
+- Add source maps for generated templates.
+- Add structured frame kinds instead of English labels.

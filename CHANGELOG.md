@@ -13,8 +13,9 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
 - Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
-- Build-time contract checks for model variables and component props, with static include scope propagation, `checkAll`, root/partial overrides, and a `checkPebbleTemplates` Gradle task.
-- Source-frame diagnostics with include traces for template errors.
+- Build-time contract checks for model variables and component props, with static include and extends scope propagation, block ownership, `checkAll`, root/partial overrides, and a `checkPebbleTemplates` Gradle task.
+- Source-frame diagnostics with include and extends traces for template errors.
+- Spring Boot render-error diagnostics through a view decorator, optional error attributes, and a real 500 error dispatch.
 - Symlink-safe file loader that resolves real paths and rejects escapes.
 - Per-template resource limits for loops, include depth, and slot capture through `SandboxLimitsResolver`.
 - Per-template sandbox allowlists and method access through `SandboxPolicyResolver`, with policy ownership for includes, macros, embeds, and components.
@@ -32,7 +33,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `break` and `continue` are validated lexically.
 - The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
 - Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
-- Contract checks follow static includes with a lexical scope snapshot. Direct reads remain presence-based. Extends, dynamic includes, and full flow-sensitive block scopes are not followed.
+- Contract checks follow static includes and extends parents with lexical scope snapshots and block ownership. Direct reads remain presence-based. Dynamic includes and full flow-sensitive block ordering are not followed.
+- Diagnostics for errors inside an extended parent need `TemplateTrace.run` around the whole template evaluation. The Boot starter applies this wrapper.
 - Spring Security support covers the servlet stack only.
 
 ## [0.1.0] - Unreleased

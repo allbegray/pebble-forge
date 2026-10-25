@@ -1,6 +1,6 @@
 # pebble-forge-diagnostics
 
-Source-frame diagnostics and include traces for Pebble Forge.
+Source-frame diagnostics with include and extends traces for Pebble Forge.
 
 ```java
 PebbleEngine engine = PebbleForge.engine()
@@ -13,12 +13,12 @@ TemplateDiagnostics diagnostics = TemplateDiagnostics.builder()
         .build();
 
 try {
-    engine.getTemplate("page").evaluate(writer, model);
+    TemplateTrace.run(() -> engine.getTemplate("page").evaluate(writer, model));
 } catch (PebbleException error) {
     System.err.println(diagnostics.render(error).format());
 }
 ```
 
-The Pebble Forge include node records the include path by default. `TemplateDiagnostics` renders the failing template source with a caret and the include chain.
+The Pebble Forge include and extends nodes record their paths by default. `TemplateDiagnostics` renders the failing template source with a caret and the include or extends chain.
 
-The extends chain is not captured yet. See [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md) for the full behavior and limits.
+Wrap the whole `evaluate` call in `TemplateTrace.run` so an error in an extended parent body carries the extends frame. The Spring Boot starter does this for its official view resolver. See [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md) for the full behavior and limits.

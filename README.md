@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-238 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+308 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -26,7 +26,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | --- | --- |
 | `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
-| `pebble-forge-diagnostics` | Source frames and include traces for template errors |
+| `pebble-forge-diagnostics` | Source frames and include/extends traces for template errors |
 | `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### Contract checks
 
-The contracts module parses templates at build time and checks model variable reads and component props. Static includes are followed with the caller's visible names and literal `with` keys, so a partial that reads a caller local passes.
+The contracts module parses templates at build time and checks model variable reads and component props. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, and block ownership.
 
 ```kotlin
 plugins {
@@ -153,9 +153,9 @@ pebbleForgeContracts {
 ./gradlew checkPebbleTemplates
 ```
 
-A template with no incoming static include edge is a root. Direct components and statically called component templates are roots. A nested template under the component root that is only included is a partial. A partial is checked through the includes that reach it. A non-partial template that no root reaches is checked as a fallback root. `rootTemplates` forces a dual-role template. `partialTemplates` covers a fragment reached only through a dynamic include. Names are relative to the template root with the suffix removed.
+A template with no incoming static include or extends edge is a root. Direct components and statically called component templates are roots. A nested template under the component root that is only included is a partial. A partial is checked through the calls that reach it. A parent reached only through extends is not a root. A non-partial template that no root reaches is checked as a fallback root. `rootTemplates` forces a dual-role template. `partialTemplates` covers a fragment reached only through a dynamic include. Names are relative to the template root with the suffix removed.
 
-A missing model variable or required component prop fails the build. Dynamic include targets, dynamic `with` keys, unknown props, and dynamic component names are warnings. Include cycles are errors.
+A missing model variable or required component prop fails the build. Dynamic include targets, dynamic `with` keys, unknown props, and dynamic component names are warnings. Include, extends, and component cycles are errors.
 
 ```text
 page:4: ERROR: Variable [page] is not declared in the model schema
@@ -169,7 +169,7 @@ The Gradle plugin is not on the Plugin Portal yet. The `pebble-forge-contracts` 
 
 ### Diagnostics
 
-The diagnostics module turns a Pebble error into source frames and an include path.
+The diagnostics module turns a Pebble error into source frames and an include or extends path.
 
 ```java
 PebbleEngine engine = PebbleForge.engine()
@@ -177,7 +177,7 @@ PebbleEngine engine = PebbleForge.engine()
         .build();
 
 try {
-    engine.getTemplate("page").evaluate(writer, model);
+    TemplateTrace.run(() -> engine.getTemplate("page").evaluate(writer, model));
 } catch (PebbleException error) {
     System.err.println(TemplateDiagnostics.builder()
             .loader(loader)
@@ -188,18 +188,17 @@ try {
 ```
 
 ```text
-Root attribute [missing] does not exist (components/card.peb:2)
-page.peb:3 includes components/card.peb
-  2 | second
-> 3 | {% include "components/card.peb" %}
+Root attribute [missing] does not exist (layout.peb:2)
+page.peb:1 extends layout.peb
+  1 | {% extends "layout.peb" %}
     | ^
-components/card.peb:2
-  1 | card
+layout.peb:2
+  1 | layout
 > 2 | {{ missing }}
     | ^
 ```
 
-The Pebble Forge include node records the include stack by default. The extends chain is not captured yet. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+The Pebble Forge include and extends nodes record the chain by default. Wrap the entire `evaluate` call in `TemplateTrace.run` so an error in a parent body carries the extends frame. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 
 ### Development mode
 
@@ -325,6 +324,10 @@ pebble.forge.sandbox.max-slot-chars=1000000
 pebble.forge.sandbox.allow-raw-output=false
 pebble.forge.sandbox.force-auto-escaping=true
 
+pebble.forge.diagnostics.enabled=true
+pebble.forge.diagnostics.context-lines=2
+pebble.forge.diagnostics.expose-in-error-attributes=false
+
 pebble.forge.security.enabled=true
 pebble.forge.language.enabled=true
 pebble.forge.dev-mode=false
@@ -335,6 +338,8 @@ The language extension is on by default. Set `pebble.forge.language.enabled=fals
 A `SandboxPolicy` bean replaces the policy built from properties. A `SandboxPolicyResolver` bean supplies per-template allowlists and replaces the property policy. Define either a `SandboxPolicy` bean or a `SandboxPolicyResolver` bean, not both. A `SandboxLimitsResolver` bean supplies per-template resource limits. If you define your own `PebbleEngine`, the starter backs off. If you define your own `pebbleLoader` or `springExtension`, the starter uses it.
 
 The starter adds the Pebble Spring functions to the property-built sandbox policy. It also allows `extends` and `block` so layouts work. A hand-written policy should call `SpringWebFunctions.allow(builder)` and allow the layout tags it uses.
+
+When diagnostics are enabled, the starter wraps the official Pebble view. A render failure becomes a real 500 error dispatch, and the application error page can read `pebbleDiagnostics` or `pebbleDiagnosticsText`. The starter does not own the error page. Set `pebble.forge.diagnostics.expose-in-error-attributes=true` to add those values to Boot's error attributes. They are off by default.
 
 ## Spring Security
 
