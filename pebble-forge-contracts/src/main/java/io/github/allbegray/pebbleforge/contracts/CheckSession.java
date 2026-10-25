@@ -456,10 +456,8 @@ final class CheckSession {
 
         Scope effective = scope.retain(
                 relevantNames.getOrDefault(scan.templateName, scope.names()));
-        Set<String> ancestorNames = ancestorVisibleDeclarations(scan, overriddenBlocks);
-        checkReads(scan, effective, site, overriddenBlocks, ancestorNames, inheritedBlocks);
-        checkAttributeReads(scan, effective, site, overriddenBlocks, ancestorNames,
-                inheritedBlocks);
+        checkReads(scan, effective, site, overriddenBlocks, inheritedBlocks);
+        checkAttributeReads(scan, effective, site, overriddenBlocks, inheritedBlocks);
         Set<String> overrides = Set.copyOf(overriddenBlocks);
         if (!evaluated.add(new ContextKey(scan.templateName, effective.names(),
                 effective.complete(), overrides, inheritedBlocks))) {
@@ -474,7 +472,6 @@ final class CheckSession {
         }
         evaluatedTemplates.add(scan.templateName);
 
-        Scope blockScope = effective.plus(ancestorNames);
         includeStack.addLast(scan.templateName);
         try {
             analyze(scan, site);
@@ -482,7 +479,10 @@ final class CheckSession {
                 if (edge.block() != null && overrides.contains(edge.block())) {
                     continue;
                 }
-                Scope callerScope = edge.block() == null ? effective : blockScope;
+                Scope callerScope = edge.block() == null
+                        ? effective
+                        : effective.plus(ancestorVisibleDeclarations(scan, edge.block(),
+                                overrides));
                 evaluateInclude(scan, edge,
                         scopeAt(scan, callerScope, inheritedBlocks, edge.line()), site);
             }
@@ -499,8 +499,7 @@ final class CheckSession {
     }
 
     private void checkReads(TemplateScan scan, Scope scope, Site site,
-            Set<String> overriddenBlocks, Set<String> ancestorNames,
-            Map<String, Set<String>> inheritedBlocks) {
+            Set<String> overriddenBlocks, Map<String, Set<String>> inheritedBlocks) {
         if (model.allowsAny() || !scope.complete()) {
             return;
         }
@@ -523,7 +522,9 @@ final class CheckSession {
                     // overridden block, so the read cannot be decided statically.
                     continue;
                 }
-                satisfied = isLocallyDeclared(scan, read, ancestorNames, overriddenBlocks)
+                satisfied = isLocallyDeclared(scan, read,
+                        ancestorVisibleDeclarations(scan, read.block(), overriddenBlocks),
+                        overriddenBlocks)
                         || model.allows(read.name())
                         || visible.names().contains(read.name());
             }
@@ -577,8 +578,7 @@ final class CheckSession {
     }
 
     private void checkAttributeReads(TemplateScan scan, Scope scope, Site site,
-            Set<String> overriddenBlocks, Set<String> ancestorNames,
-            Map<String, Set<String>> inheritedBlocks) {
+            Set<String> overriddenBlocks, Map<String, Set<String>> inheritedBlocks) {
         if (model.allowsAny() || !scope.complete()) {
             return;
         }
@@ -599,7 +599,9 @@ final class CheckSession {
             Scope visible = scopeAt(scan, scope, inheritedBlocks, read.line());
             if (!read.closed() && (visible.names().contains(read.variable())
                     || isLocallyDeclared(scan, read.variable(), read.line(), read.block(),
-                            read.visible(), read.closed(), ancestorNames, overriddenBlocks))) {
+                            read.visible(), read.closed(),
+                            ancestorVisibleDeclarations(scan, read.block(), overriddenBlocks),
+                            overriddenBlocks))) {
                 continue;
             }
             ModelType type = model.typeOf(read.variable());
@@ -785,30 +787,79 @@ final class CheckSession {
         return base.plus(visible);
     }
 
-    private Set<String> ancestorVisibleDeclarations(TemplateScan scan,
+    /**
+     * Declarations an ancestor publishes before the read's block starts. A root
+     * read sees none because every ancestor renders after the child root. A
+     * block read renders at the block tag in the nearest ancestor that declares
+     * the block, so only declarations before that tag are visible.
+     */
+    private Set<String> ancestorVisibleDeclarations(TemplateScan scan, String blockName,
             Set<String> overriddenBlocks) {
-        Set<String> names = new LinkedHashSet<>();
+        if (blockName == null) {
+            return Set.of();
+        }
+        List<TemplateScan> ancestors = staticAncestors(scan);
+        TemplateScan renderer = null;
+        int blockLine = 0;
+        for (TemplateScan ancestor : ancestors) {
+            Integer line = ancestor.blockLines.get(blockName);
+            if (line != null) {
+                renderer = ancestor;
+                blockLine = line;
+                break;
+            }
+        }
+        if (renderer == null) {
+            return Set.of();
+        }
+
         Set<String> overridden = new LinkedHashSet<>(overriddenBlocks);
         overridden.addAll(scan.blockDeclarations.keySet());
+        Set<String> names = new LinkedHashSet<>();
+        for (TemplateScan ancestor : ancestors) {
+            if (ancestor == renderer) {
+                break;
+            }
+            names.addAll(ancestor.rootDeclarations);
+            addVisibleBlockDeclarations(names, ancestor, renderer, blockLine, overridden);
+            overridden.addAll(ancestor.blockDeclarations.keySet());
+        }
+        for (String name : renderer.rootDeclarations) {
+            Integer line = renderer.rootDeclarationLines.get(name);
+            if (line != null && line <= blockLine) {
+                names.add(name);
+            }
+        }
+        addVisibleBlockDeclarations(names, renderer, renderer, blockLine, overridden);
+        return names;
+    }
+
+    private static void addVisibleBlockDeclarations(Set<String> names, TemplateScan owner,
+            TemplateScan renderer, int blockLine, Set<String> overridden) {
+        for (Map.Entry<String, Set<String>> block : owner.blockDeclarations.entrySet()) {
+            Integer line = renderer.blockLines.get(block.getKey());
+            if (overridden.contains(block.getKey()) || line == null || line > blockLine) {
+                continue;
+            }
+            names.addAll(block.getValue());
+        }
+    }
+
+    private List<TemplateScan> staticAncestors(TemplateScan scan) {
+        List<TemplateScan> ancestors = new ArrayList<>();
         Set<String> visited = new HashSet<>();
         visited.add(scan.templateName);
         TemplateScan current = scan;
         while (true) {
             String target = staticParent(current);
             if (target == null || !visited.add(target)) {
-                return names;
+                return ancestors;
             }
             TemplateScan parent = scan(target);
             if (parent.failure != null) {
-                return names;
+                return ancestors;
             }
-            names.addAll(parent.rootDeclarations);
-            for (Map.Entry<String, Set<String>> block : parent.blockDeclarations.entrySet()) {
-                if (!overridden.contains(block.getKey())) {
-                    names.addAll(block.getValue());
-                }
-            }
-            overridden.addAll(parent.blockDeclarations.keySet());
+            ancestors.add(parent);
             current = parent;
         }
     }

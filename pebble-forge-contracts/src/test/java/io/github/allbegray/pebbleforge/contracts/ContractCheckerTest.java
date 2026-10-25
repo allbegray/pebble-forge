@@ -1327,6 +1327,7 @@ class ContractCheckerTest {
                                 """,
                         "layout.peb", """
                                 {% set title = "Hello" %}
+                                {% block body %}{% endblock %}
                                 """),
                 ModelSchema.builder().build())
                 .check("page.peb");
@@ -1359,6 +1360,7 @@ class ContractCheckerTest {
                                 """,
                         "pages/layout.peb", """
                                 {% set title = "Hello" %}
+                                {% block body %}{% endblock %}
                                 """),
                 ModelSchema.builder().build())
                 .check("pages/page.peb");
