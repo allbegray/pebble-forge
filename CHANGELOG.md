@@ -12,7 +12,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - Multi-value switch cases, `for key, value` destructuring, and `with ... only` scope isolation.
 - Break and continue aware `for` loop that preserves Pebble loop variables and `else`.
 - Spring Boot 4 starter that replaces the official engine bean and reuses Pebble properties, extensions, and view resolvers.
-- Spring Security functions for authentication, roles, authorities, username, and CSRF.
+- Spring Security functions for authentication, anonymous and remember-me state, any-role and any-authority checks, username, and CSRF.
 - Build-time contract checks for model variables and component props, with a `checkPebbleTemplates` Gradle task.
 - Source-frame diagnostics with include traces for template errors.
 - Development mode that reloads edited templates through a content-hash cache key.

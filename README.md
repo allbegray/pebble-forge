@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-116 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+121 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -278,17 +278,22 @@ The security extension exposes safe functions. It never hands an `Authentication
 
 | Function | Result |
 | --- | --- |
-| `isAuthenticated()` | True for a logged-in user. Anonymous authentication returns false. |
+| `isAuthenticated()` | True for a logged-in user. Anonymous authentication returns false. Remember-me authentication returns true. |
+| `isAnonymous()` | True when authentication is anonymous or absent. |
+| `isFullyAuthenticated()` | True for a non-anonymous, non-remember-me user. |
+| `isRememberMe()` | True for remember-me authentication. |
 | `username()` | Authentication name, or an empty string for anonymous users. |
 | `hasRole("ADMIN")` | Checks `ROLE_ADMIN`. A role that already starts with `ROLE_` is used as written. |
+| `hasAnyRole("ADMIN", "OWNER")` | True when any listed role matches. |
 | `hasAuthority("order:read")` | Exact authority match. |
+| `hasAnyAuthority("order:read", "order:write")` | True when any listed authority matches. |
 | `authorities()` | List of authority strings. Empty for anonymous users. |
 | `csrfToken()` | Current CSRF token value, or an empty string outside a request. |
 | `csrfParameterName()` | CSRF parameter name, or `_csrf` when no token is present. |
 | `csrfHeaderName()` | CSRF header name, or `X-CSRF-TOKEN` when no token is present. |
 
 ```twig
-{% if hasRole("ADMIN") %}
+{% if hasAnyRole("ADMIN", "OWNER") %}
   <a href="/admin">Admin</a>
 {% endif %}
 

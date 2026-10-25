@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 116개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 121개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -282,17 +282,22 @@ pebble.forge.dev-mode=false
 
 | 함수 | 결과 |
 | --- | --- |
-| `isAuthenticated()` | 로그인한 사용자면 true입니다. 익명 인증은 false입니다. |
+| `isAuthenticated()` | 로그인한 사용자면 true입니다. 익명 인증은 false입니다. remember-me 인증은 true입니다. |
+| `isAnonymous()` | 익명이거나 인증이 없으면 true입니다. |
+| `isFullyAuthenticated()` | 익명도 remember-me도 아닌 사용자면 true입니다. |
+| `isRememberMe()` | remember-me 인증이면 true입니다. |
 | `username()` | 인증 이름입니다. 익명 사용자면 빈 문자열입니다. |
 | `hasRole("ADMIN")` | `ROLE_ADMIN`을 확인합니다. 이미 `ROLE_`로 시작하는 역할은 그대로 사용합니다. |
+| `hasAnyRole("ADMIN", "OWNER")` | 나열한 역할 중 하나라도 일치하면 true입니다. |
 | `hasAuthority("order:read")` | 권한을 정확히 비교합니다. |
+| `hasAnyAuthority("order:read", "order:write")` | 나열한 권한 중 하나라도 일치하면 true입니다. |
 | `authorities()` | 권한 문자열 목록입니다. 익명 사용자면 빈 목록입니다. |
 | `csrfToken()` | 현재 CSRF 토큰 값입니다. 요청이 없으면 빈 문자열입니다. |
 | `csrfParameterName()` | CSRF 파라미터 이름입니다. 토큰이 없으면 `_csrf`입니다. |
 | `csrfHeaderName()` | CSRF 헤더 이름입니다. 토큰이 없으면 `X-CSRF-TOKEN`입니다. |
 
 ```twig
-{% if hasRole("ADMIN") %}
+{% if hasAnyRole("ADMIN", "OWNER") %}
   <a href="/admin">Admin</a>
 {% endif %}
 

@@ -244,17 +244,22 @@ The security extension exposes safe functions. It never hands an `Authentication
 
 | Function | Result |
 | --- | --- |
-| `isAuthenticated()` | True for a logged-in user. Anonymous authentication returns false. |
+| `isAuthenticated()` | True for a logged-in user. Anonymous returns false. Remember-me returns true. |
+| `isAnonymous()` | True when authentication is anonymous or absent. |
+| `isFullyAuthenticated()` | True for a non-anonymous, non-remember-me user. |
+| `isRememberMe()` | True for remember-me authentication. |
 | `username()` | Authentication name, or an empty string for anonymous users. |
 | `hasRole("ADMIN")` | Checks `ROLE_ADMIN`. A role that already starts with `ROLE_` is used as written. |
+| `hasAnyRole("ADMIN", "OWNER")` | True when any listed role matches. |
 | `hasAuthority("order:read")` | Exact authority match. |
+| `hasAnyAuthority("order:read", "order:write")` | True when any listed authority matches. |
 | `authorities()` | List of authority strings. Empty for anonymous users. |
 | `csrfToken()` | Current CSRF token value, or an empty string outside a request. |
 | `csrfParameterName()` | CSRF parameter name, or `_csrf` when no token is present. |
 | `csrfHeaderName()` | CSRF header name, or `X-CSRF-TOKEN` when no token is present. |
 
 ```twig
-{% if hasRole("ADMIN") %}
+{% if hasAnyRole("ADMIN", "OWNER") %}
   <a href="/admin">Admin</a>
 {% endif %}
 
@@ -294,7 +299,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Diagnostics | 8 | Source frames, include stacks, nested includes, parse errors, missing source |
 | Gradle plugin | 3 | TestKit projects pass and fail through `checkPebbleTemplates` |
 | Sandbox | 20 | Real templates, real engine, whole-render assertions |
-| Spring Security | 5 | Real security context, CSRF request, sandbox on and off |
+| Spring Security | 10 | Roles, authorities, anonymous, remember-me, CSRF, sandbox on and off |
 | Boot auto-config | 9 | Application context, official auto-config ordering, policy override, language switch, dev mode |
 | Boot web | 1 | MockMvc request through the official Pebble view resolver |
 

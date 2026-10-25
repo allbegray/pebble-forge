@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 116개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 5, Boot 컨텍스트 9, Boot 웹 1.
+- 테스트는 121개다. 컴포넌트 13, 언어 확장 28, for 호환성 9, 샌드박스 20, 계약 검사 16, 진단 8, 개발 모드 4, Gradle 플러그인 3, Spring Security 10, Boot 컨텍스트 9, Boot 웹 1.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -46,7 +46,7 @@
 | PF-104 | P1 | 언어 확장 후속 | M | Done | PF-004 |
 | PF-105 | P1 | 샌드박스 강화 | L | 설계 필요 | 없음 |
 | PF-106 | P1 | WebFlux 지원 | M | 대기 | 없음 |
-| PF-107 | P1 | Spring Security 함수 확장 | S | 대기 | 없음 |
+| PF-107 | P1 | Spring Security 함수 확장 | S | Done | 없음 |
 | PF-201 | P2 | 컨텍스트 인식 이스케이프 | XL | 보류 | 없음 |
 | PF-202 | P2 | Natural HTML | XL | 보류 | PF-201 |
 | PF-203 | P2 | 컴포넌트 라이브러리 | M | 보류 | 없음 |
@@ -190,10 +190,11 @@
 ### PF-107 Spring Security 함수 확장
 
 - 크기: S
-- 상태: 대기
+- 상태: Done. `hasAnyRole`, `hasAnyAuthority`, `isAnonymous`, `isFullyAuthenticated`, `isRememberMe`와 샌드박스 허용 목록을 추가했다.
 - 문제: 현재는 `hasRole`과 `hasAuthority`만 있다. 여러 역할을 한 번에 검사하는 함수가 없다.
 - 범위: `hasAnyRole`, `hasAnyAuthority`, `isAnonymous`, 필요하면 `isFullyAuthenticated`를 추가한다. 샌드박스 허용 목록도 함께 갱신한다.
-- 완료 기준: 각 함수의 단위 테스트와 샌드박스 허용 테스트가 있다. README 함수 표가 갱신된다.
+- 현재 구현: `hasAnyRole`, `hasAnyAuthority`, `isAnonymous`, `isFullyAuthenticated`, `isRememberMe`를 추가했다. 가변 인자는 `hasAnyRole("ADMIN", "OWNER")`처럼 전달한다. 커밋 `f861709`.
+- 완료 기준: 각 함수의 단위 테스트와 샌드박스 허용 테스트가 있다. README 함수 표가 갱신된다. 모두 충족했다.
 
 ## P2. 0.3 출력과 통합
 
