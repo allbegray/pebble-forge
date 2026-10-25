@@ -2,6 +2,8 @@
 
 This document is the release checklist. It covers the six published Maven Central modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. The Gradle plugins publish separately to the Gradle Plugin Portal. `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
 
+For a GitHub-only release, complete the version, build, tag, and GitHub release steps. The Central and Portal steps can follow later without retagging.
+
 ## Prerequisites
 
 - JDK 21.
