@@ -25,6 +25,11 @@ final class TemplateScan {
      * paths. Nested block declarations stay with the nested block.
      */
     final Map<String, Set<String>> blockDeclarations = new LinkedHashMap<>();
+    /**
+     * The source line where each block starts. Root reads may see a block's
+     * declarations only when the block starts at or before the read line.
+     */
+    final Map<String, Integer> blockLines = new LinkedHashMap<>();
     final List<VariableRead> reads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();
     final List<IncludeEdge> includes = new ArrayList<>();

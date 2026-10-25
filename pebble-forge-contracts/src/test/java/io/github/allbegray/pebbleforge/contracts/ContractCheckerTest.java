@@ -1424,6 +1424,34 @@ class ContractCheckerTest {
     }
 
     @Test
+    void rootReadBeforeALaterBlockSetIsAnError() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {{ item }}
+                        {% block body %}{% set item = "x" %}{% endblock %}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void rootReadAfterAnEarlierBlockSetIsClean() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% block body %}{% set item = "x" %}{% endblock %}
+                        {{ item }}
+                        """),
+                ModelSchema.builder().build());
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
     void childBlockLocalFeedsLaterParentContent() {
         ContractResult result = checker(
                 Map.of(

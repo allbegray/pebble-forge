@@ -94,6 +94,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
     public void visit(BlockNode node) {
         scan.blockDeclarations.computeIfAbsent(node.getName(),
                 name -> new LinkedHashSet<>());
+        scan.blockLines.put(node.getName(), node.getLineNumber());
         FlowFrame outer = flows.getLast();
         Set<String> outerNames = Set.copyOf(outer.names);
         blocks.addLast(node.getName());

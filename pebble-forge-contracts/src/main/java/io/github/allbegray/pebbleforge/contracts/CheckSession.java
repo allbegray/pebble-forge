@@ -548,11 +548,12 @@ final class CheckSession {
             return true;
         }
         if (read.block() == null) {
-            // A root read sees declarations made by any non-overridden block of
-            // its own template, which is what keeps topLevelReadSeesOwnBlockSet.
             for (Map.Entry<String, Set<String>> block : scan.blockDeclarations.entrySet()) {
-                if (!overriddenBlocks.contains(block.getKey())
-                        && block.getValue().contains(read.name())) {
+                if (overriddenBlocks.contains(block.getKey())
+                        || !block.getValue().contains(read.name())) {
+                    continue;
+                }
+                if (scan.blockLines.get(block.getKey()) <= read.line()) {
                     return true;
                 }
             }
