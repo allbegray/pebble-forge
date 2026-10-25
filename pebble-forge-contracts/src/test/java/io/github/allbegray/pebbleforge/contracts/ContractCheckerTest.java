@@ -1875,6 +1875,48 @@ class ContractCheckerTest {
     }
 
     @Test
+    void switchAllCasesSetWithoutDefaultStillReportsMissingAfterSwitch() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{% set item = "y" %}{% endswitch %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void switchOneCaseAndDefaultSetStillReportsMissingAfterSwitch() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{% set item = "x" %}{% case 2 %}{% default %}{% set item = "z" %}{% endswitch %}{{ item }}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void switchCaseReadBeforeItsOwnSetIsAnError() {
+        ContractResult result = check(
+                Map.of("page.peb", """
+                        {% switch value %}{% case 1 %}{{ item }}{% set item = "x" %}{% default %}{% set item = "z" %}{% endswitch %}
+                        """),
+                ModelSchema.builder().variable("value").build());
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
     void switchCaseReadsItsOwnSet() {
         ContractResult result = check(
                 Map.of("page.peb", """
