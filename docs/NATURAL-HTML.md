@@ -7,7 +7,7 @@ The first slice is **PF-202.1**: expressions only. Control flow, includes, exten
 ## Dependency
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-natural-html:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-natural-html:0.3.0")
 ```
 
 ## Usage

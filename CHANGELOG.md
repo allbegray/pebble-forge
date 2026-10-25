@@ -2,7 +2,7 @@
 
 All notable changes are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-25
 
 ### Added
 
@@ -56,7 +56,3 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - The fuzz suite found no product failure in the committed trials. The checked-in corpus is a minimized regression set, not a set of reproduced product bugs.
 - Javadoc deployment needs GitHub Pages enabled. The workflow is present but has not run from this local checkout.
 - Spotless checks whitespace and final newlines only. A full Java reformat was deliberately not applied.
-
-## [0.1.0] - Unreleased
-
-First public release. The feature set above is the release candidate.

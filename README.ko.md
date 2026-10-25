@@ -14,7 +14,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- 버전 0.1.0-SNAPSHOT, 아직 배포하지 않음
+- 버전 0.3.0, 아직 배포하지 않음
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
@@ -40,7 +40,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 ## 코어
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.3.0")
 ```
 
 ```java
@@ -408,7 +408,7 @@ PebbleEngine engine = PebbleForge.engine()
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.3.0")
 ```
 
 이 스타터는 Spring Boot 4.0.6을 대상으로 합니다. 모듈 디렉터리와 아티팩트 이름에 `boot-4`를 넣어 메이저 버전 경계를 분명히 했습니다. Spring Boot 3 연동이 필요하면 별도 모듈로 만들어야 합니다.

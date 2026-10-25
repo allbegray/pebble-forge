@@ -14,7 +14,7 @@
 
 ## 현재 상태
 
-- 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
+- 버전은 `0.3.0` 릴리스 후보이고 아직 배포하지 않았다.
 - 테스트는 675개다. core 215, contracts 151, diagnostics 23, natural-html 130, Gradle 플러그인 45, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-cli`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - P0, P1, P2는 완료했다. WebFlux는 지원하지 않으며 WebMVC만 지원한다.
@@ -103,7 +103,6 @@
 
 | 릴리스 | 포함 | 완료 조건 |
 | --- | --- | --- |
-| 0.1.0 | P0 | Maven Central 배포, CI 초록색, 라이선스와 릴리스 노트 |
-| 0.2.0 | PF-101, PF-102, PF-103, PF-104, PF-105, PF-107, PF-108 | 계약 검사, 진단, 핫 리로드, 언어 후속, 샌드박스 강화, 보안 함수 확장 |
-| 0.3.0 | PF-201부터 PF-208까지 | 컨텍스트 이스케이프, Natural HTML PF-202.1, 컴포넌트 루트, 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질, Spring Boot 데모 앱 |
+| 0.3.0 | P0, P1, P2 | Maven Central 6개 모듈, Gradle Plugin Portal 2개 플러그인, CI 초록색, Javadoc Pages, 라이선스와 릴리스 노트 |
+| 0.4.0 | 완료 항목의 후속 | 교차 템플릿 블록 순서, 표현식 타입, Natural HTML 확장, inline suppression |
 | 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |

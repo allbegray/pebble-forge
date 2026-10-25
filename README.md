@@ -14,7 +14,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- Version 0.1.0-SNAPSHOT, not published
+- Version 0.3.0, not published
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
@@ -40,7 +40,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 ## Core
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.3.0")
 ```
 
 ```java
@@ -406,7 +406,7 @@ If no limits resolver is supplied, each policy's own limits are used.
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.3.0")
 ```
 
 The starter targets Spring Boot 4.0.6. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.

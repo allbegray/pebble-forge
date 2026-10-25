@@ -17,7 +17,7 @@ Set the release version in the root `build.gradle.kts`.
 ```kotlin
 allprojects {
     group = "io.github.allbegray.pebbleforge"
-    version = "0.1.0"
+    version = "0.3.0"
 }
 ```
 
@@ -77,8 +77,8 @@ A new plugin ID needs manual approval in the Portal the first time. The root bui
 ## 6. Tag and publish the GitHub release
 
 ```shell
-git tag -a v0.1.0 -m "Pebble Forge 0.1.0"
-git push origin v0.1.0
+git tag -a v0.3.0 -m "Pebble Forge 0.3.0"
+git push origin v0.3.0
 ```
 
 Create a GitHub release from the tag. Use the matching `CHANGELOG.md` section as the release notes.
@@ -88,12 +88,12 @@ Create a GitHub release from the tag. Use the matching `CHANGELOG.md` section as
 Wait for Maven Central to index the release, then check the coordinates.
 
 ```text
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-core/0.1.0/
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-natural-html/0.1.0/
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-contracts/0.1.0/
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-diagnostics/0.1.0/
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring/0.1.0/
-https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring-boot-4-starter/0.1.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-core/0.3.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-natural-html/0.3.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-contracts/0.3.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-diagnostics/0.3.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring/0.3.0/
+https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spring-boot-4-starter/0.3.0/
 ```
 
 Resolve the published artifacts in a fresh sample project. Do not rely on the local Maven repository for this check.
@@ -107,10 +107,10 @@ https://plugins.gradle.org/plugin/io.github.allbegray.pebbleforge.diagnostics
 
 ## 8. Start the next development version
 
-Set the root version to the next snapshot, for example `0.2.0-SNAPSHOT`, and commit it.
+Set the root version to the next snapshot, for example `0.4.0-SNAPSHOT`, and commit it.
 
 ```kotlin
-version = "0.2.0-SNAPSHOT"
+version = "0.4.0-SNAPSHOT"
 ```
 
 Add a new `Unreleased` section to `CHANGELOG.md`.
