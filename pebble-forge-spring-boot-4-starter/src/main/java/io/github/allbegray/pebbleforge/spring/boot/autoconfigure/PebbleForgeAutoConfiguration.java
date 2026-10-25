@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.StaticMessageSource;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Replaces Pebble's engine bean with one built by Pebble Forge.
@@ -106,11 +107,16 @@ public class PebbleForgeAutoConfiguration {
 
         PebbleForgeProperties.Components components = forgeProperties.getComponents();
         if (components.isEnabled()) {
-            builder.components(Components.builder()
-                    .root(components.getRoot())
+            Components.Builder componentsBuilder = Components.builder()
                     .suffix(components.getSuffix())
-                    .maxDepth(components.getMaxDepth())
-                    .build());
+                    .maxDepth(components.getMaxDepth());
+            if (components.getRoot() != null) {
+                componentsBuilder.root(components.getRoot());
+            }
+            for (Map.Entry<String, String> entry : components.getRoots().entrySet()) {
+                componentsBuilder.root(entry.getKey(), entry.getValue());
+            }
+            builder.components(componentsBuilder.build());
         }
 
         if (resolver == null) {

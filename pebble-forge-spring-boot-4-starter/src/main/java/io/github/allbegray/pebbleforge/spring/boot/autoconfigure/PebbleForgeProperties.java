@@ -2,6 +2,9 @@ package io.github.allbegray.pebbleforge.spring.boot.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Configuration for Pebble Forge features inside a Spring Boot application.
  */
@@ -49,6 +52,7 @@ public class PebbleForgeProperties {
         private String root = "components";
         private String suffix = "";
         private int maxDepth = 16;
+        private final Map<String, String> roots = new LinkedHashMap<>();
 
         public boolean isEnabled() {
             return enabled;
@@ -80,6 +84,10 @@ public class PebbleForgeProperties {
 
         public void setMaxDepth(int maxDepth) {
             this.maxDepth = maxDepth;
+        }
+
+        public Map<String, String> getRoots() {
+            return roots;
         }
     }
 

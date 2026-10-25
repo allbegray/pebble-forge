@@ -45,6 +45,20 @@ class PebbleForgeAutoConfigurationTest {
     }
 
     @Test
+    void rendersComponentsFromNamespacedRoots() {
+        runner.withPropertyValues(
+                        "pebble.forge.components.roots.ui=ui",
+                        "pebble.forge.components.roots.admin=admin")
+                .run(context -> {
+                    PebbleEngine engine = context.getBean(PebbleEngine.class);
+                    assertThat(render(engine, "namespaced", Map.of()).strip())
+                            .isEqualTo("<p>UI Ada</p>\n<p>Admin Grace</p>");
+                    assertThat(render(engine, "page", Map.of()).strip())
+                            .isEqualTo("<p>Hello Ada</p>");
+                });
+    }
+
+    @Test
     void replacesTheOfficialPebbleEngine() {
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(

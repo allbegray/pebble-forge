@@ -1,0 +1,1 @@
+{% component "ui:card" with {"name": "Ada"} %}{% endcomponent %}{% component "admin:card" with {"name": "Grace"} %}{% endcomponent %}
