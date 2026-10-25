@@ -14,7 +14,7 @@
 ## 현재 상태
 
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
-- 테스트는 308개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 89, 진단 16, 개발 모드 4, Gradle 플러그인 14, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 25, include 노드 뷰 1, 템플릿 추적 18, Boot 진단 26.
+- 테스트는 337개다. 컴포넌트 15, 언어 확장 28, 반복 예산 3, for 호환성 9, 샌드박스 22, include 깊이 4, 파일 로더 6, 템플릿 한도 6, 계약 검사 112, 진단 16, 개발 모드 4, Gradle 플러그인 20, Spring Security 10, Boot 컨텍스트 11, Boot 웹 1, 템플릿별 정책 25, include 노드 뷰 1, 템플릿 추적 18, Boot 진단 26.
 - 모듈은 `pebble-forge-core`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`다.
 - 컴포넌트, 이름 있는 슬롯, 샌드박스, 템플릿별 전체 allowlist, `switch`, `break`, `continue`, `with`, 계약 검사, 소스 프레임 진단, 개발 모드, Spring Boot 4, Spring Security 함수가 들어가 있다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
@@ -131,15 +131,15 @@
 ### PF-101 타입 계약 검사 모듈
 
 - 크기: XL
-- 상태: 진행 중. `pebble-forge-contracts`와 `checkPebbleTemplates` Gradle 태스크에 include와 extends 스코프 전파, 블록 소유권, root/partial/fallback 정책을 추가했다.
+- 상태: 진행 중. `pebble-forge-contracts`와 `checkPebbleTemplates` Gradle 태스크에 소스 순서 기반 직접 읽기, include와 extends 스코프 전파, 블록 소유권, root/partial/fallback 정책을 추가했다.
 - 문제: Pebble은 동적이라서 모델 변수와 컴포넌트 props 오류가 렌더 시점에야 드러난다. JTE, Qute, Rocker의 장점과 가장 큰 격차다.
 - 범위: `pebble-forge-contracts` 모듈을 새로 만든다. 모델 스키마와 컴포넌트 props 계약을 입력으로 받고, 템플릿을 파싱해서 변수 읽기, 컴포넌트 호출, include와 extends를 검사한다. Gradle 태스크 `checkPebbleTemplates`를 제공한다.
-- 현재 구현: 정적 include와 extends 스코프 전파, 어휘 스코프 스냅샷, 블록 소유권과 overridden-block 스킵, `checkAll`과 root/partial/fallback 루트 추론, include·extends·컴포넌트 순환 오류, 동적 대상 경고, 빈 컴포넌트와 루트의 NPE 없는 진단, `checkPebbleTemplates`의 단일 순회와 설정 이름 검증. 계약 검사 89개와 Gradle TestKit 14개. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
-- 커밋: `f177277` AST 접근자, `1d53d5d` contracts 모듈과 Gradle 플러그인, `ab0bb97` include 노드 뷰, `ae62924` 누락 대상 진단, `b698b1d` include 스코프와 `checkAll`, `732001d` Gradle root/partial 정책, `3000f4b` extends 스코프와 블록 소유권, `3fc71e1` extends 경로 라벨, `c59f106` 자체 블록 선언 가시성, `7bc62a2` 회귀 테스트.
-- 남은 것: JSON/YAML 스키마, 흐름 기반 지역 변수 분석, 타입 검사, Plugin Portal 배포.
+- 현재 구현: 소스 순서 기반 직접 읽기와 if/switch 분기 교집합, 정적 include와 extends 스코프 전파, 어휘 스코프 스냅샷, 블록 소유권과 overridden-block 스킵, `checkAll`과 root/partial/fallback 루트 추론, include·extends·컴포넌트 순환 오류, 동적 대상 경고, 빈 컴포넌트와 루트의 NPE 없는 진단, `checkPebbleTemplates`의 단일 순회와 설정 이름 검증. 계약 검사 112개와 Gradle TestKit 20개. 자세한 내용은 [CONTRACTS.md](CONTRACTS.md)에 있다.
+- 커밋: `f177277` AST 접근자, `1d53d5d` contracts 모듈과 Gradle 플러그인, `ab0bb97` include 노드 뷰, `ae62924` 누락 대상 진단, `b698b1d` include 스코프와 `checkAll`, `732001d` Gradle root/partial 정책, `3000f4b` extends 스코프와 블록 소유권, `3fc71e1` extends 경로 라벨, `c59f106` 자체 블록 선언 가시성, `7bc62a2` 회귀 테스트, `6065a5a` 소스 순서 직접 읽기.
+- 남은 것: JSON/YAML 스키마, flow-sensitive include/extends 요약, 정확한 블록 순서와 switch exhaustiveness, 타입 검사, Plugin Portal 배포.
 - 완료 기준: 좋은 fixture는 통과하고, 없는 변수나 잘못된 props를 쓰는 fixture는 파일과 줄 번호를 담아 빌드를 실패시킨다. 지원 문법 밖의 표현식은 오탐 대신 경고로 처리한다.
 - 의존: PF-004.
-- 결정: 첫 범위는 전체 Java 타입 시스템이 아니라 변수 존재와 컴포넌트 props 검사로 제한한다. 정적 include는 호출자 스코프로, 정적 extends는 자식/부모 스코프와 블록 소유권으로 전파한다. 동적 대상은 경고로 남긴다. 컴포넌트는 props와 모델에 닫힌 채로 검사한다.
+- 결정: 첫 범위는 전체 Java 타입 시스템이 아니라 변수 존재와 컴포넌트 props 검사로 제한한다. 직접 읽기는 소스 순서와 분기 교집합으로 검사한다. 정적 include는 호출자 스코프로, 정적 extends는 자식/부모 스코프와 블록 소유권으로 전파한다. 동적 대상은 경고로 남긴다. 컴포넌트는 props와 모델에 닫힌 채로 검사한다.
 
 ### PF-102 소스 프레임 진단
 
@@ -147,8 +147,8 @@
 - 상태: 진행 중. 소스 프레임, include와 extends 체인, 중첩 체인, 파싱 오류, 소스 없음, Spring Boot 오류 디스패치를 구현했다.
 - 문제: Pebble 오류는 줄 번호와 파일 이름은 있지만 소스 일부와 include 경로를 보여주지 않는다.
 - 범위: 템플릿 소스를 읽어서 오류 줄과 캐럿을 출력한다. include와 extends 체인을 쌓아서 보여준다. Spring Boot 오류 처리와 연결할 수 있는 진단 객체를 제공한다.
-- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터. 진단 16개, Boot 진단 26개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`.
-- 남은 것: CLI와 Gradle 진단 태스크, 구조화된 프레임 종류, 소스 맵.
+- 현재 구현: 코어 `TemplateTrace`와 `ForgeExtendsNode`, `TemplateDiagnostics` 소스 프레임, `DiagnosticReport` 구조화 출력, Boot view decorator와 선택적 `ErrorAttributes` 어댑터, `renderPebbleTemplate` Gradle 태스크. 진단 16개, Boot 진단 26개, Gradle 렌더 태스크 6개. 자세한 내용은 [DIAGNOSTICS.md](DIAGNOSTICS.md)에 있다. 커밋 `d61932d`, `705dace`, `306db05`, `ec2a13b`, `08adbeb`, `b8d423f`.
+- 남은 것: CLI, 구조화된 프레임 종류, 소스 맵.
 - 1차 구현 커밋: `d61932d` diagnostics 모듈, include 추적, 데모.
 - 완료 기준: 중첩 include와 extends 안의 오류가 바깥 템플릿부터 안쪽 템플릿까지의 프레임을 보여준다. 테스트는 실제 템플릿 소스로 검증한다.
 - 메모: 렌더 시점 예외를 감싸는 방식과 파싱 시점 예외를 그대로 두는 방식을 비교한다.

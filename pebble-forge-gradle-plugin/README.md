@@ -1,6 +1,6 @@
 # pebble-forge-gradle-plugin
 
-Gradle plugin that registers the `checkPebbleTemplates` task.
+Gradle plugins for contract checks and render diagnostics.
 
 ```kotlin
 plugins {
@@ -25,6 +25,25 @@ The task walks every `.peb` file under `src/main/resources/templates` once. A te
 
 Missing model variables, missing include targets, include cycles, and required component props fail the build. Unknown props, dynamic names, and dynamic include targets produce warnings.
 
-The plugin is not on the Gradle Plugin Portal yet. Use the included build or publish it locally.
+## Render diagnostics
 
-See [docs/CONTRACTS.md](../docs/CONTRACTS.md).
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.diagnostics")
+}
+
+pebbleForgeDiagnostics {
+    templateName.set("page")
+    model.put("page", mapOf("title" to "Account"))
+}
+```
+
+```shell
+./gradlew renderPebbleTemplate --template=page
+```
+
+The task renders one template and logs the result. On failure it logs the include/extends source-frame report and fails the build. Model values are JSON-like Gradle values. The task is not part of `check`.
+
+The plugins are not on the Gradle Plugin Portal yet. Use the included build or publish them locally.
+
+See [docs/CONTRACTS.md](../docs/CONTRACTS.md) and [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md).

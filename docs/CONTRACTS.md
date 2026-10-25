@@ -104,10 +104,10 @@ ContractResult templateSet = checker.checkAll(List.of("page", "partial", "compon
 3. Include and extends edges carry the literal and resolved target, resolution errors, line, and the owning block. Include edges also carry literal `with` keys, dynamic flags, and a snapshot of the caller's declared names at the include point. Extends parent edges are followed.
 4. The analyze pass checks every parsed template for parse failures, missing include or extends targets, invalid targets, dynamic targets, dynamic `with` keys, component calls, and prop mismatches. Unreachable partials still get these structural checks.
 5. Root inference uses the static include and extends graph plus the explicit root and partial sets.
-6. The evaluate pass checks reads. It follows a static include with `caller scope + lexical visible names at the call + literal with keys`. It follows a static extends parent with the child's visible declarations. A component is evaluated closed over its props and the model. A call that repeats a template already being rendered is reported as a cycle.
+6. The evaluate pass checks direct reads with a source-order flow snapshot. `if` and `switch` branches join by intersection. It follows a static include with `caller scope + lexical visible names at the call + literal with keys`, and a static extends parent with the child's visible declarations. A component is evaluated closed over its props and the model. A call that repeats a template already being rendered is reported as a cycle.
 7. Include, extends, and component cycles are errors. A dynamic include target is checked for its target-variable read but is not followed. A dynamic `with` map or dynamic `with` key makes the affected child scope incomplete, so missing-variable errors are suppressed for that call site and a warning explains why.
-8. Local declarations include root and block `set` names, `for` variables, `loop`, `with` map keys, macro arguments, and component props. Reads owned by an overridden block are skipped.
-9. A parent block that a child overrides never executes. Its declarations are excluded from the child's visible names. A parent root declaration is visible to a child block, and a child root declaration is visible to the parent. Presence-based analysis still applies to ordering.
+8. Local declarations include root and block `set` names, `for` variables, `loop`, `with` map keys, macro arguments, and component props. A read must be definitely visible at its source point. Loop, with, and macro locals do not escape after their construct. Reads owned by an overridden block are skipped.
+9. A parent block that a child overrides never executes. Its declarations are excluded from the child's visible names. A parent root declaration is visible to a child block, and a child root declaration is visible to the parent. Cross-template extends propagation remains presence-based.
 
 Parsed templates are cached per run. Diagnostic order is deterministic.
 
@@ -132,21 +132,24 @@ Components stay closed over props and the model. The renderer shares the caller 
 
 ## Known limits
 
-- Direct reads use a presence-based declared-name set, not flow-sensitive analysis. A variable assigned later in a template satisfies an earlier read.
-- Include visibility uses a lexical snapshot at the include point. Loop variables, `with` keys, and macro arguments stop being visible when their construct ends.
-- `set` declarations inside `if` or `switch` are added to the current block or root scope. Block declarations are ownership-tagged, but ordering inside a block is not flow-sensitive.
+- Direct reads use source-order flow. A read before a `set`, in a sibling branch, or after a loop/with/macro scope is reported.
+- `if` and `switch` joins use intersection. A `switch` without a `default` always keeps the no-match path, so a set in every case can still be reported as missing.
+- A loop body is conservatively treated as running zero or more times, so a body-only set is not visible after the loop.
+- A root read can see a declaration from a non-overridden block of the same template regardless of source position.
+- Include visibility uses a lexical snapshot at the include point. It is not propagated through branch joins.
+- Cross-template extends summaries publish branch and loop declarations that are not definitely visible. A child conditional set can satisfy a parent read.
 - Extends parent reads are reported at the parent template and line. Load and parse failures at the extends edge include an extends path. Parent-body read errors do not repeat the whole chain.
 - A dynamic or missing parent suppresses scope-dependent missing reads owned by blocks because the parent declarations are unknown. Model reads inside the child block are still checked.
-- Block ownership is presence-based, not order-sensitive. A block declaration can satisfy a later read in the same block or a later parent content read. Nested blocks are not modeled individually.
-- A `set` inside `if` or `switch` remains flow-insensitive.
+- Cross-template block ownership is presence-based. A block declaration can satisfy a later parent content read. Intra-block direct reads are flow-sensitive. Nested blocks are not modeled individually.
 - Dynamic include targets and dynamic `with` keys are warnings. A dynamic target whose base expression is a model read still checks that base.
 - A partial reached only through a dynamic include is inferred as a root unless it is listed in `partialTemplates`.
 - Components do not see caller locals at check time, even though runtime `includeTemplate` shares the scope chain.
 - A bare dynamic include target is checked as a model read. A compound target checks its base expression. Neither can be followed to a template.
 - A nested template under the component root is a partial unless a static component call targets it or `rootTemplates` forces it.
 - A component cycle is reported at the call line. Component analysis is closed, so a component that intentionally reads caller state still fails.
-- A `with` block must use a map literal for its keys to be visible to the checker. A dynamic map produces incomplete scope information.
-- `with only` isolation is not modeled. A variable visible outside the block can satisfy a read inside it.
+- A `with` block must use a map literal for its keys to be visible to the checker. A dynamic map suppresses direct-read errors for the block.
+- `with only` hides outer locals and is a closed scope. Pebble internal names such as `__slots`, `__component`, `locale`, and `template` are not modeled as visible and can produce false positives.
+- A macro body is a closed scope with its arguments. It does not see outer template locals. A macro body reading component props can false-positive.
 - Macros imported from another template are not expanded.
 - Only the common Pebble node types are traversed. `embed` and `cache` bodies are not fully analyzed yet.
 - Type checking is out of scope for this slice.
@@ -155,7 +158,7 @@ Components stay closed over props and the model. The renderer shares the caller 
 
 ## Next slices
 
-- Flow-sensitive ordering inside blocks and branches.
+- Flow-sensitive cross-template include and extends summaries.
 - JSON or YAML schema loaded by the Gradle plugin.
 - Flow-sensitive local variable analysis.
 - Type checks for component props and model variables.

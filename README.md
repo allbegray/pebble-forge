@@ -18,7 +18,7 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 
 The current snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal`.
 
-308 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
+337 tests cover the core, contracts, diagnostics, the Gradle plugin, Spring Security helpers, the Boot auto-configuration, and one MockMvc request that renders a component through the official Pebble view resolver.
 
 ## Modules
 
@@ -27,7 +27,7 @@ The current snapshot can be installed into the local Maven repository with `./gr
 | `pebble-forge-core` | Components, sandbox, language extensions, and the `PebbleForge.engine()` builder |
 | `pebble-forge-contracts` | Build-time model variable and component prop checks |
 | `pebble-forge-diagnostics` | Source frames and include/extends traces for template errors |
-| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle task |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` and `renderPebbleTemplate` Gradle tasks |
 | `pebble-forge-spring` | Spring Security template functions and sandbox allowlist helpers |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 auto-configuration, properties, and servlet integration |
 | `pebble-forge-demo` | Runnable component and sandbox demo |
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### Contract checks
 
-The contracts module parses templates at build time and checks model variable reads and component props. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, and block ownership.
+The contracts module parses templates at build time and checks model variable reads and component props. Direct reads are flow-sensitive inside a template. Static includes and extends parents are followed with the caller or child scope, literal `with` keys, and block ownership.
 
 ```kotlin
 plugins {
@@ -199,6 +199,23 @@ layout.peb:2
 ```
 
 The Pebble Forge include and extends nodes record the chain by default. Wrap the entire `evaluate` call in `TemplateTrace.run` so an error in a parent body carries the extends frame. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+
+The Gradle plugin also provides a render task.
+
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.diagnostics")
+}
+
+pebbleForgeDiagnostics {
+    templateName.set("page")
+    model.put("page", mapOf("title" to "Account"))
+}
+```
+
+```shell
+./gradlew renderPebbleTemplate --template=page
+```
 
 ### Development mode
 

@@ -18,7 +18,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 
 현재 스냅샷은 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
 
-테스트는 308개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
+테스트는 337개입니다. 코어, 계약 검사, 진단, Gradle 플러그인, Spring Security 헬퍼, Boot 자동 설정을 검증하고, 공식 Pebble 뷰 리졸버를 통과하는 MockMvc 요청도 확인합니다.
 
 ## 모듈
 
@@ -27,7 +27,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 | `pebble-forge-core` | 컴포넌트, 샌드박스, 언어 확장, `PebbleForge.engine()` 빌더 |
 | `pebble-forge-contracts` | 빌드 시 모델 변수와 컴포넌트 props 검사 |
 | `pebble-forge-diagnostics` | 템플릿 오류의 소스 프레임과 include/extends 추적 |
-| `pebble-forge-gradle-plugin` | `checkPebbleTemplates` Gradle 태스크 |
+| `pebble-forge-gradle-plugin` | `checkPebbleTemplates`와 `renderPebbleTemplate` Gradle 태스크 |
 | `pebble-forge-spring` | Spring Security 템플릿 함수와 샌드박스 허용 목록 헬퍼 |
 | `pebble-forge-spring-boot-4-starter` | Spring Boot 4 자동 설정, 프로퍼티, 서블릿 뷰 연동 |
 | `pebble-forge-demo` | 컴포넌트와 샌드박스를 실행하는 데모 |
@@ -132,7 +132,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ### 계약 검사
 
-`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 정적 include와 extends 부모를 호출자 또는 자식 스코프, 리터럴 `with` 키, 블록 소유권으로 따라갑니다.
+`pebble-forge-contracts`는 빌드 시점에 템플릿을 파싱해서 모델 변수와 컴포넌트 props를 검사합니다. 템플릿 내부 직접 읽기는 소스 순서에 따라 검사합니다. 정적 include와 extends 부모는 호출자 또는 자식 스코프, 리터럴 `with` 키, 블록 소유권으로 따라갑니다.
 
 ```kotlin
 plugins {
@@ -199,6 +199,23 @@ layout.peb:2
 ```
 
 Pebble Forge의 include와 extends 노드가 기본으로 체인을 기록합니다. 부모 본문에서 난 오류까지 extends 프레임을 얻으려면 `evaluate` 전체를 `TemplateTrace.run`으로 감싸세요. 자세한 내용은 [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md)를 참고하세요.
+
+Gradle 플러그인은 렌더 태스크도 제공합니다.
+
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.diagnostics")
+}
+
+pebbleForgeDiagnostics {
+    templateName.set("page")
+    model.put("page", mapOf("title" to "Account"))
+}
+```
+
+```shell
+./gradlew renderPebbleTemplate --template=page
+```
 
 ### 개발 모드
 

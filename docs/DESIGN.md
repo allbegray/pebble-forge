@@ -97,7 +97,8 @@ pebble-forge-diagnostics
 └── DiagnosticReport           structured frames and terminal formatting
 
 pebble-forge-gradle-plugin
-└── CheckPebbleTemplatesTask walks once, applies root/partial policy, and calls checkAll
+├── CheckPebbleTemplatesTask  walks once, applies root/partial policy, and calls checkAll
+└── RenderPebbleTemplateTask  renders one template with a model and prints diagnostics
 
 pebble-forge-spring
 ├── SpringWebFunctions       sandbox allowlist for Pebble's Spring functions
@@ -207,7 +208,7 @@ Pebble Forge adds these language features that Pebble does not ship.
 
 The contracts module parses each template once into context-free facts. A node visitor records root and block reads, local declarations, component calls, and include and extends edges. An include edge carries the literal and resolved target, resolution errors, literal `with` keys, dynamic flags, the include line, and a lexical snapshot of the caller's declared names. An extends edge carries the resolved parent and the owning line.
 
-A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and follows static extends parents with the child's visible declarations. A component is evaluated closed over props and the model. Block ownership excludes declarations from a parent block that a child overrides, while root declarations flow both ways. Evaluation is memoized by template, scope, and overridden block set. The current policy is presence-based, not order-sensitive.
+A check session has three phases. It parses every requested template, analyzes every parsed template for structural errors, and evaluates roots under a `Scope`. Evaluation checks reads with a source-order flow snapshot, follows static includes with `caller scope + lexical visible names at the call + literal with keys`, and follows static extends parents with the child's visible declarations. `if` and `switch` branches join by intersection. A component is evaluated closed over props and the model. Block ownership excludes declarations from a parent block that a child overrides, while root declarations flow both ways. Evaluation is memoized by template, scope, and overridden block set. Cross-template propagation remains presence-based.
 
 A template with no incoming static include or extends edge is a root. Direct component entry points and static component call targets are roots. A nested template under the component root that is only included is a partial. Explicit `rootTemplates` force root status; `partialTemplates` remove a template from root inference. A non-component, non-partial template that no root reaches is checked as a fallback root. Include, extends, and component cycles are errors. Dynamic include targets and dynamic `with` keys warn, and a dynamic with key makes the child scope incomplete.
 
@@ -328,7 +329,7 @@ Version 0.1 contains these features and the tests that prove them.
 5. Safe Spring Security functions and sandbox allowlist helpers.
 6. A runnable demo that renders a component, a sandbox rejection, and the language tags.
 
-The next releases add flow-sensitive contract analysis, JSON or YAML schemas, diagnostics CLI and Gradle tasks, and context-aware escaping. Natural HTML authoring is a separate dialect loader. It does not belong in the first release because it needs a real HTML parser and a source map back to the original template.
+The next releases add JSON or YAML schemas, a diagnostics CLI, and context-aware escaping. Natural HTML authoring is a separate dialect loader. It does not belong in the first release because it needs a real HTML parser and a source map back to the original template.
 
 The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKLOG.md).
 
@@ -341,9 +342,9 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Iteration budget | 3 | Sequential loops, nested loops, per-render reset |
 | For compatibility | 9 | Forge `for` output compared with plain Pebble across iterables and loop variables |
 | Dev mode | 4 | File edits, includes, sandbox, and cache-off comparison |
-| Contracts | 89 | Model variables, lexical include and extends scopes, block ownership, root policy, fallback roots, component props, dynamic names, cycles, missing targets |
+| Contracts | 112 | Model variables, source-order flow, lexical include and extends scopes, block ownership, root policy, fallback roots, component props, dynamic names, cycles, missing targets |
 | Diagnostics | 16 | Source frames, include and extends stacks, nested chains, parse errors, missing source, cycle and stale-frame handling |
-| Gradle plugin | 14 | TestKit projects cover partials, true roots, components, dynamic includes, root/partial overrides, unknown names, and direct task registration |
+| Gradle plugin | 20 | TestKit projects cover contracts policy, render diagnostics, model values, frames, and direct task registration |
 | Sandbox | 22 | Real templates, real engine, whole-render assertions, loop limit |
 | Include depth | 4 | Limit enforcement, zero limit, unlimited mode |
 | File loader | 6 | Root reads, traversal, absolute paths, symlinks inside and outside |
@@ -382,9 +383,10 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
-| Contracts | Build-time presence checks with include and extends scope propagation | Catches common errors without a full Java type checker. Static includes and parents use lexical scopes; block ownership is tracked; components stay closed. |
+| Contracts | Build-time checks with source-order flow and include/extends scope propagation | Catches common errors without a full Java type checker. Direct reads are flow-sensitive inside a template; cross-template propagation is presence-based; components stay closed. |
 | Diagnostics | Unified include/extends trace plus a source-frame formatter | Captures the runtime chain without replacing the renderer |
 | Boot diagnostics | View decorator plus optional `ErrorAttributes` adapter | Turns render failures into a 500 dispatch without owning the error page |
+| Gradle diagnostics | Separate `renderPebbleTemplate` task | Renders a model without a JSON dependency and prints source frames on failure |
 | Dev mode | Content hash in the loader cache key | Reloads edited templates without rebuilding the engine |
 | Language follow-ups | Comma-separated case values, key/value destructuring, local-only with | Fits the existing tags without a new expression language |
 | Template limits | Resolver by exact name and longest prefix | Different trust levels can share one engine with different resource budgets |
@@ -406,7 +408,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The path jail is lexical and does not resolve symlinks.
 - The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
-- Contract checks follow static includes and extends parents with lexical snapshots. Direct reads still use presence-based declarations, so ordering inside a block or an `if` branch is not modeled.
+- Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template include/extends propagation remains presence-based, and a root read can see a non-overridden block declaration regardless of position.
 - A non-component, non-partial template that is not reachable from a root is checked as a fallback root. A nested template under the component root that is only included is treated as a partial.
 - Components stay closed over props and the model at check time, even though runtime `includeTemplate` shares the caller scope chain.
 - A partial reached only through a dynamic include has no static incoming edge and is inferred as a root unless it is listed in `partialTemplates`.

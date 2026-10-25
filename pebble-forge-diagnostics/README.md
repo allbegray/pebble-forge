@@ -19,6 +19,6 @@ try {
 }
 ```
 
-The Pebble Forge include and extends nodes record their paths by default. `TemplateDiagnostics` renders the failing template source with a caret and the include or extends chain.
+The Pebble Forge include and extends nodes record their paths by default. `TemplateDiagnostics` renders the failing template source with a caret and the include or extends chain. The `renderPebbleTemplate` Gradle task wraps a single render and prints the same report.
 
 Wrap the whole `evaluate` call in `TemplateTrace.run` so an error in an extended parent body carries the extends frame. The Spring Boot starter does this for its official view resolver. See [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md) for the full behavior and limits.

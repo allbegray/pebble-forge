@@ -55,6 +55,38 @@ layout.peb:2
 
 `IncludeTrace` remains available as a compatibility façade that returns only include frames.
 
+## Gradle task
+
+```kotlin
+plugins {
+    id("io.github.allbegray.pebbleforge.diagnostics")
+}
+
+pebbleForgeDiagnostics {
+    templateName.set("pages/account")
+    model.put("page", mapOf("title" to "Account"))
+    model.put("items", listOf(mapOf("name" to "One")))
+}
+```
+
+```shell
+./gradlew renderPebbleTemplate
+# or override the configured template
+./gradlew renderPebbleTemplate --template=pages/account
+```
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `templatesDirectory` | `src/main/resources/templates` | Template root |
+| `templateSuffix` | `.peb` | Loader suffix |
+| `templateName` | none | Template name without suffix |
+| `model` | empty | Render model, JSON-like values only |
+| `componentRoot` | `components` | Component directory |
+| `strictVariables` | `true` | Fail on missing variables |
+| `contextLines` | `2` | Source lines around the error |
+
+The task is not part of `check`. On success it logs the rendered text. On a render failure it logs the source-frame report and fails the build. A missing top-level template is a configuration error; a missing include or extends target is a render diagnostic. Model values are supplied through the Gradle extension, so no JSON dependency is needed.
+
 ## Spring Boot 4
 
 The starter defines `TemplateDiagnostics` from the raw `pebbleLoader` bean and wraps the official Pebble view. A render failure becomes a real servlet 500 error dispatch, and the application error page can read:
@@ -84,6 +116,6 @@ pebble.forge.diagnostics.expose-in-error-attributes=false
 
 ## Next
 
-- Add a CLI and Gradle task for rendering a template with diagnostics.
+- Add a CLI for rendering a template with diagnostics.
 - Add source maps for generated templates.
 - Add structured frame kinds instead of English labels.
