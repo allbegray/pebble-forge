@@ -1,4 +1,4 @@
-package io.github.allbegray.pebbleforge.diagnostics;
+package io.github.allbegray.pebbleforge.include;
 
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.extension.NodeVisitor;
@@ -14,18 +14,20 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Include node that records the include path when a nested render fails.
+ * Include node with depth limiting and failure tracing.
  */
-final class DiagnosticsIncludeNode extends AbstractRenderableNode {
+final class ForgeIncludeNode extends AbstractRenderableNode {
 
     private final Expression<?> includeExpression;
     private final MapExpression mapExpression;
+    private final int maxDepth;
 
-    DiagnosticsIncludeNode(int lineNumber, Expression<?> includeExpression,
-            MapExpression mapExpression) {
+    ForgeIncludeNode(int lineNumber, Expression<?> includeExpression,
+            MapExpression mapExpression, int maxDepth) {
         super(lineNumber);
         this.includeExpression = includeExpression;
         this.mapExpression = mapExpression;
+        this.maxDepth = maxDepth;
     }
 
     @Override
@@ -41,20 +43,28 @@ final class DiagnosticsIncludeNode extends AbstractRenderableNode {
                     self.getName());
         }
 
+        if (maxDepth >= 0 && IncludeTrace.depth() >= maxDepth) {
+            throw new PebbleException(
+                    null,
+                    "Include depth limit of " + maxDepth + " reached",
+                    getLineNumber(),
+                    self.getName());
+        }
+
         Map<?, ?> map = Collections.emptyMap();
         if (mapExpression != null) {
             map = mapExpression.evaluate(self, context);
         }
 
-        DiagnosticsContext.push(new DiagnosticsContext.Frame(self.getName(), getLineNumber(),
+        IncludeTrace.push(new IncludeTrace.IncludeFrame(self.getName(), getLineNumber(),
                 templateName));
         try {
             self.includeTemplate(writer, context, templateName, map);
         } catch (RuntimeException error) {
-            DiagnosticsContext.attach(error);
+            IncludeTrace.attach(error);
             throw error;
         } finally {
-            DiagnosticsContext.pop();
+            IncludeTrace.pop();
         }
     }
 

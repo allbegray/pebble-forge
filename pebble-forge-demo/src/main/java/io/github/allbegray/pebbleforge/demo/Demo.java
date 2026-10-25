@@ -2,7 +2,6 @@ package io.github.allbegray.pebbleforge.demo;
 
 import io.github.allbegray.pebbleforge.PebbleForge;
 import io.github.allbegray.pebbleforge.component.Components;
-import io.github.allbegray.pebbleforge.diagnostics.DiagnosticsExtension;
 import io.github.allbegray.pebbleforge.diagnostics.TemplateDiagnostics;
 import io.github.allbegray.pebbleforge.sandbox.SandboxPolicy;
 import io.pebbletemplates.pebble.PebbleEngine;
@@ -33,7 +32,6 @@ public final class Demo {
                         .allowFilters("escape", "length", "upper")
                         .maxRenderedChars(200_000)
                         .build())
-                .extension(new DiagnosticsExtension())
                 .build();
 
         Map<String, Object> page = Map.of(

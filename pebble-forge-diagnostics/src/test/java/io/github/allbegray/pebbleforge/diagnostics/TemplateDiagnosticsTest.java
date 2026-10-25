@@ -21,7 +21,7 @@ class TemplateDiagnosticsTest {
                 second
                 {{ missing }}
                 """);
-        PebbleException error = renderError(templates, false);
+        PebbleException error = renderError(templates);
 
         DiagnosticReport report = diagnostics(templates).render(error);
 
@@ -43,7 +43,7 @@ class TemplateDiagnosticsTest {
                         card
                         {{ missing }}
                         """);
-        PebbleException error = renderError(templates, true);
+        PebbleException error = renderError(templates);
 
         DiagnosticReport report = diagnostics(templates).render(error);
 
@@ -61,7 +61,7 @@ class TemplateDiagnosticsTest {
                 "page.peb", "{% include \"a.peb\" %}",
                 "a.peb", "{% include \"b.peb\" %}",
                 "b.peb", "{{ missing }}");
-        PebbleException error = renderError(templates, true);
+        PebbleException error = renderError(templates);
 
         DiagnosticReport report = diagnostics(templates).render(error);
 
@@ -70,23 +70,10 @@ class TemplateDiagnosticsTest {
     }
 
     @Test
-    void includeStackNeedsTheDiagnosticsExtension() {
-        Map<String, String> templates = Map.of(
-                "page.peb", "{% include \"components/card.peb\" %}",
-                "components/card.peb", "{{ missing }}");
-        PebbleException error = renderError(templates, false);
-
-        DiagnosticReport report = diagnostics(templates).render(error);
-
-        assertThat(report.frames()).extracting(DiagnosticFrame::template)
-                .containsExactly("components/card.peb");
-    }
-
-    @Test
     void rendersSourceFrameForParseError() {
         Map<String, String> templates = Map.of("page.peb", "{% if %}");
         PebbleException error = catchThrowableOfType(
-                PebbleException.class, () -> engine(templates, false).getTemplate("page.peb"));
+                PebbleException.class, () -> engine(templates).getTemplate("page.peb"));
 
         DiagnosticReport report = diagnostics(templates).render(error);
 
@@ -106,7 +93,7 @@ class TemplateDiagnosticsTest {
     @Test
     void handlesMissingSource() {
         Map<String, String> templates = Map.of("page.peb", "{{ missing }}");
-        PebbleException error = renderError(templates, false);
+        PebbleException error = renderError(templates);
         DiagnosticReport report = TemplateDiagnostics.builder()
                 .loader(new MapLoader(Map.of()))
                 .build()
@@ -125,7 +112,7 @@ class TemplateDiagnosticsTest {
                 five
                 six
                 """);
-        PebbleException error = renderError(templates, false);
+        PebbleException error = renderError(templates);
         DiagnosticReport report = TemplateDiagnostics.builder()
                 .loader(new MapLoader(templates))
                 .contextLines(0)
@@ -144,23 +131,18 @@ class TemplateDiagnosticsTest {
                 .build();
     }
 
-    private static PebbleException renderError(Map<String, String> templates,
-            boolean diagnosticsExtension) {
+    private static PebbleException renderError(Map<String, String> templates) {
         return catchThrowableOfType(
                 PebbleException.class,
-                () -> engine(templates, diagnosticsExtension)
+                () -> engine(templates)
                         .getTemplate("page.peb")
                         .evaluate(new StringWriter()));
     }
 
-    private static PebbleEngine engine(Map<String, String> templates,
-            boolean diagnosticsExtension) {
-        PebbleForge.Builder builder = PebbleForge.engine()
+    private static PebbleEngine engine(Map<String, String> templates) {
+        return PebbleForge.engine()
                 .loader(new MapLoader(templates))
-                .strictVariables(true);
-        if (diagnosticsExtension) {
-            builder.extension(new DiagnosticsExtension());
-        }
-        return builder.build();
+                .strictVariables(true)
+                .build();
     }
 }

@@ -1,4 +1,4 @@
-package io.github.allbegray.pebbleforge.diagnostics;
+package io.github.allbegray.pebbleforge.include;
 
 import io.pebbletemplates.pebble.error.ParserException;
 import io.pebbletemplates.pebble.lexer.Token;
@@ -9,7 +9,13 @@ import io.pebbletemplates.pebble.node.expression.MapExpression;
 import io.pebbletemplates.pebble.parser.Parser;
 import io.pebbletemplates.pebble.tokenParser.TokenParser;
 
-final class DiagnosticsIncludeTokenParser implements TokenParser {
+final class ForgeIncludeTokenParser implements TokenParser {
+
+    private final int maxDepth;
+
+    ForgeIncludeTokenParser(int maxDepth) {
+        this.maxDepth = maxDepth;
+    }
 
     @Override
     public RenderableNode parse(Token token, Parser parser) {
@@ -36,7 +42,7 @@ final class DiagnosticsIncludeTokenParser implements TokenParser {
         }
 
         stream.expect(Token.Type.EXECUTE_END);
-        return new DiagnosticsIncludeNode(lineNumber, includeExpression, mapExpression);
+        return new ForgeIncludeNode(lineNumber, includeExpression, mapExpression, maxDepth);
     }
 
     @Override

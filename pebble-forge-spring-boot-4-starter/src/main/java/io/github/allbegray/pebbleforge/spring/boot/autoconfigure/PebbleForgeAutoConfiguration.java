@@ -109,6 +109,8 @@ public class PebbleForgeAutoConfiguration {
         PebbleForgeProperties.Sandbox sandbox = properties.getSandbox();
         SandboxPolicy.Builder builder = SandboxPolicy.builder()
                 .maxRenderedChars(sandbox.getMaxRenderedChars())
+                .maxLoopIterations(sandbox.getMaxLoopIterations())
+                .maxIncludeDepth(sandbox.getMaxIncludeDepth())
                 .forceAutoEscaping(sandbox.isForceAutoEscaping())
                 .allowComponents()
                 .allowTags("extends", "block");

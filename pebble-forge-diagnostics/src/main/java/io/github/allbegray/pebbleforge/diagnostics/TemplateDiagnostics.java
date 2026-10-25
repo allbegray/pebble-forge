@@ -1,5 +1,6 @@
 package io.github.allbegray.pebbleforge.diagnostics;
 
+import io.github.allbegray.pebbleforge.include.IncludeTrace;
 import io.pebbletemplates.pebble.error.PebbleException;
 import io.pebbletemplates.pebble.loader.Loader;
 
@@ -35,7 +36,7 @@ public final class TemplateDiagnostics {
         }
 
         List<DiagnosticFrame> frames = new ArrayList<>();
-        for (DiagnosticsContext.Frame frame : DiagnosticsContext.frames(error)) {
+        for (IncludeTrace.IncludeFrame frame : IncludeTrace.frames(error)) {
             frames.add(frameFor(frame.caller(), frame.line(),
                     "includes " + frame.target()));
         }

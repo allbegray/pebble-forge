@@ -1,4 +1,4 @@
-package io.github.allbegray.pebbleforge.diagnostics;
+package io.github.allbegray.pebbleforge.include;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -6,20 +6,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-final class DiagnosticsContext {
+/**
+ * Tracks nested include frames and attaches them to render failures.
+ */
+public final class IncludeTrace {
 
-    private static final ThreadLocal<Deque<Frame>> STACK =
+    private static final ThreadLocal<Deque<IncludeFrame>> STACK =
             ThreadLocal.withInitial(ArrayDeque::new);
 
-    private DiagnosticsContext() {
+    private IncludeTrace() {
     }
 
-    static void push(Frame frame) {
+    static void push(IncludeFrame frame) {
         STACK.get().addLast(frame);
     }
 
     static void pop() {
-        Deque<Frame> frames = STACK.get();
+        Deque<IncludeFrame> frames = STACK.get();
         if (!frames.isEmpty()) {
             frames.removeLast();
         }
@@ -28,18 +31,22 @@ final class DiagnosticsContext {
         }
     }
 
+    static int depth() {
+        return STACK.get().size();
+    }
+
     static void attach(RuntimeException error) {
         if (findTrace(error, new HashSet<>()) != null) {
             return;
         }
-        Deque<Frame> frames = STACK.get();
+        Deque<IncludeFrame> frames = STACK.get();
         if (frames.isEmpty()) {
             return;
         }
         error.addSuppressed(new Trace(List.copyOf(frames)));
     }
 
-    static List<Frame> frames(Throwable error) {
+    public static List<IncludeFrame> frames(Throwable error) {
         Trace trace = findTrace(error, new HashSet<>());
         return trace == null ? List.of() : trace.frames;
     }
@@ -63,14 +70,14 @@ final class DiagnosticsContext {
         return null;
     }
 
-    record Frame(String caller, int line, String target) {
+    public record IncludeFrame(String caller, int line, String target) {
     }
 
-    static final class Trace extends RuntimeException {
+    private static final class Trace extends RuntimeException {
 
-        private final List<Frame> frames;
+        private final List<IncludeFrame> frames;
 
-        private Trace(List<Frame> frames) {
+        private Trace(List<IncludeFrame> frames) {
             super(null, null, false, false);
             this.frames = List.copyOf(frames);
         }

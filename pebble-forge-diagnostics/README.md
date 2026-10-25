@@ -5,7 +5,6 @@ Source-frame diagnostics and include traces for Pebble Forge.
 ```java
 PebbleEngine engine = PebbleForge.engine()
         .loader(loader)
-        .extension(new DiagnosticsExtension())
         .build();
 
 TemplateDiagnostics diagnostics = TemplateDiagnostics.builder()
@@ -20,6 +19,6 @@ try {
 }
 ```
 
-`DiagnosticsExtension` records the include path. `TemplateDiagnostics` renders the failing template source with a caret and the include chain.
+The Pebble Forge include node records the include path by default. `TemplateDiagnostics` renders the failing template source with a caret and the include chain.
 
 The extends chain is not captured yet. See [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md) for the full behavior and limits.
