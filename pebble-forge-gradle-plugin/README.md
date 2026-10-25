@@ -12,6 +12,7 @@ pebbleForgeContracts {
     variables.add("page")
     variables.add("items")
     componentRoot.set("components")
+    componentRoots.put("ui", "ui-components")
 
     rootTemplates.add("pages/account")
     partialTemplates.add("fragments/row")
@@ -24,7 +25,9 @@ pebbleForgeContracts {
 
 `schemaFile` is an optional JSON or YAML file with `variables` and `allowAnyVariable`. It merges with the DSL `variables` set.
 
-The task walks every `.peb` file under `src/main/resources/templates` once. A template with no incoming static include edge is a root. Direct components and statically called component templates are roots. A nested template under the component root that is only included is a partial. Partials are checked through the includes that reach them. A non-partial template that no root reaches is checked as a fallback root. `rootTemplates` forces root status; `partialTemplates` excludes a fragment from root inference. Names are relative to the template root with the suffix removed.
+`componentRoot` is the default component root. `componentRoots` adds named roots keyed by namespace. A page calls `{% component "ui:card" %}` and the plugin resolves it to `ui-components/card.peb`. Names without a namespace use `componentRoot`. A namespace must match `[A-Za-z][A-Za-z0-9_-]*`, and two namespaces cannot share a root.
+
+The task walks every `.peb` file under `src/main/resources/templates` once. A template with no incoming static include edge is a root. Direct components and statically called component templates are roots. A nested template under a component root that is only included is a partial. Partials are checked through the includes that reach them. A non-partial template that no root reaches is checked as a fallback root. `rootTemplates` forces root status; `partialTemplates` excludes a fragment from root inference. Names are relative to the template root with the suffix removed.
 
 Missing model variables, missing include targets, include cycles, and required component props fail the build. Unknown props, dynamic names, and dynamic include targets produce warnings.
 
@@ -47,6 +50,19 @@ pebbleForgeDiagnostics {
 
 The task renders one template and logs the result. On failure it logs the include/extends source-frame report and fails the build. Model values are JSON-like Gradle values. The task is not part of `check`.
 
-The plugins are not on the Gradle Plugin Portal yet. Use the included build or publish them locally.
+## Plugin IDs
+
+- `io.github.allbegray.pebbleforge.contracts`
+- `io.github.allbegray.pebbleforge.diagnostics`
+
+## Publish to the Gradle Plugin Portal
+
+The build applies `com.gradle.plugin-publish`. Put the Portal API key in `~/.gradle/gradle.properties`, or set `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET`. Then run:
+
+```shell
+./gradlew :pebble-forge-gradle-plugin:publishPlugins
+```
+
+The Portal rejects `SNAPSHOT` versions, so set a release version in the root `build.gradle.kts` first. A new plugin ID needs manual approval the first time. The release checklist is in [docs/RELEASING.md](../docs/RELEASING.md).
 
 See [docs/CONTRACTS.md](../docs/CONTRACTS.md) and [docs/DIAGNOSTICS.md](../docs/DIAGNOSTICS.md).

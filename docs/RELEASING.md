@@ -1,12 +1,13 @@
 # Releasing Pebble Forge
 
-This document is the release checklist. It covers the six published modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-gradle-plugin`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
+This document is the release checklist. It covers the six published Maven Central modules: core, natural-html, contracts, diagnostics, spring, and the Boot 4 starter. The Gradle plugins publish separately to the Gradle Plugin Portal. `pebble-forge-cli`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, and `pebble-forge-fuzz` are not published yet.
 
 ## Prerequisites
 
 - JDK 21.
 - A Maven Central account with the `io.github.allbegray` namespace verified.
 - A GPG key for signing artifacts.
+- A Gradle Plugin Portal account with an API key.
 - Access to push tags to `https://github.com/allbegray/pebble-forge`.
 
 ## 1. Prepare the version
@@ -61,7 +62,19 @@ The project uses `publishingType = USER_MANAGED`. The upload creates a deploymen
 
 If validation fails, fix the POM or signature, bump the version if the deployment already consumed it, and upload again.
 
-## 5. Tag and publish the GitHub release
+## 5. Publish the Gradle plugins
+
+The Gradle plugin module publishes to the Gradle Plugin Portal, not Maven Central. The Portal rejects `SNAPSHOT` versions, so use a release version.
+
+Set `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET`, or put the same values in `~/.gradle/gradle.properties`. Then run:
+
+```shell
+./gradlew :pebble-forge-gradle-plugin:publishPlugins
+```
+
+A new plugin ID needs manual approval in the Portal the first time. The root build file excludes this project from the Maven Central aggregation, so the plugins publish only to the Portal.
+
+## 6. Tag and publish the GitHub release
 
 ```shell
 git tag -a v0.1.0 -m "Pebble Forge 0.1.0"
@@ -70,7 +83,7 @@ git push origin v0.1.0
 
 Create a GitHub release from the tag. Use the matching `CHANGELOG.md` section as the release notes.
 
-## 6. Verify the published artifacts
+## 7. Verify the published artifacts
 
 Wait for Maven Central to index the release, then check the coordinates.
 
@@ -85,7 +98,14 @@ https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/pebble-forge-spri
 
 Resolve the published artifacts in a fresh sample project. Do not rely on the local Maven repository for this check.
 
-## 7. Start the next development version
+The Gradle plugins are listed at:
+
+```text
+https://plugins.gradle.org/plugin/io.github.allbegray.pebbleforge.contracts
+https://plugins.gradle.org/plugin/io.github.allbegray.pebbleforge.diagnostics
+```
+
+## 8. Start the next development version
 
 Set the root version to the next snapshot, for example `0.2.0-SNAPSHOT`, and commit it.
 
@@ -108,6 +128,8 @@ Add a new `Unreleased` section to `CHANGELOG.md`.
 - [ ] Signing properties are present.
 - [ ] Central Portal upload succeeds.
 - [ ] Deployment released in the portal.
+- [ ] `./gradlew :pebble-forge-gradle-plugin:publishPlugins` succeeds.
+- [ ] Both plugin IDs resolve on the Gradle Plugin Portal.
 - [ ] Tag pushed.
 - [ ] GitHub release published.
 - [ ] Maven Central coordinates resolve.
