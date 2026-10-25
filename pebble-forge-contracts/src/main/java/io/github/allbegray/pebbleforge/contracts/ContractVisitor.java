@@ -7,6 +7,7 @@ import io.github.allbegray.pebbleforge.language.ForNode;
 import io.github.allbegray.pebbleforge.language.WithNode;
 import io.pebbletemplates.pebble.extension.AbstractNodeVisitor;
 import io.pebbletemplates.pebble.node.ArgumentsNode;
+import io.pebbletemplates.pebble.node.BlockNode;
 import io.pebbletemplates.pebble.node.BodyNode;
 import io.pebbletemplates.pebble.node.ExtendsNode;
 import io.pebbletemplates.pebble.node.MacroNode;
@@ -43,6 +44,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
     private final TemplateScan scan;
     private final Set<Node> consumed = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Deque<ScopeFrame> scopes = new ArrayDeque<>();
+    private final Deque<String> blocks = new ArrayDeque<>();
 
     ContractVisitor(TemplateScan scan, PebbleTemplateImpl template) {
         super(template);
@@ -79,20 +81,34 @@ final class ContractVisitor extends AbstractNodeVisitor {
     }
 
     @Override
+    public void visit(BlockNode node) {
+        blocks.addLast(node.getName());
+        scan.blockDeclarations.computeIfAbsent(node.getName(),
+                name -> new LinkedHashSet<>());
+        scanBody(node.getBody());
+        blocks.removeLast();
+        consumed.add(node.getBody());
+    }
+
+    @Override
     public void visit(ExtendsNode node) {
         Expression<?> parent = node.getParentExpression();
         String literal = parent instanceof LiteralStringExpression expression
                 ? expression.getValue()
                 : null;
+        String resolved = null;
         String resolutionError = null;
         if (literal != null) {
             try {
-                getTemplate().resolveRelativePath(literal);
+                resolved = getTemplate().resolveRelativePath(literal);
             } catch (RuntimeException error) {
                 resolutionError = PebbleErrors.messageOf(error);
             }
+            if (resolved == null) {
+                resolved = literal;
+            }
         }
-        scan.parent = new TemplateScan.ParentCall(literal, resolutionError,
+        scan.parent = new TemplateScan.ParentCall(literal, resolved, resolutionError,
                 literal == null, node.getLineNumber());
         super.visit(node);
     }
@@ -108,7 +124,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
         }
         if (node instanceof ContextVariableExpression variable) {
             scan.reads.add(new TemplateScan.VariableRead(variable.getName(),
-                    variable.getLineNumber()));
+                    variable.getLineNumber(), currentBlock()));
             return;
         }
         if (node instanceof GetAttributeExpression attribute) {
@@ -273,7 +289,7 @@ final class ContractVisitor extends AbstractNodeVisitor {
 
         scan.includes.add(new TemplateScan.IncludeEdge(includeTarget, literal,
                 resolutionError, withKeys, dynamicWithKeys, visibleAtCall,
-                scopeIncomplete, include.getLineNumber()));
+                scopeIncomplete, include.getLineNumber(), currentBlock()));
     }
 
     private void recordComponent(ComponentNode component) {
@@ -294,12 +310,21 @@ final class ContractVisitor extends AbstractNodeVisitor {
             }
         }
         scan.componentCalls.add(new TemplateScan.ComponentCall(staticName, Set.copyOf(props),
-                staticName == null, dynamicProps, component.getLineNumber()));
+                staticName == null, dynamicProps, component.getLineNumber(), currentBlock()));
     }
 
     private void declare(String name) {
-        scan.declaredVariables.add(name);
+        if (blocks.isEmpty()) {
+            scan.rootDeclarations.add(name);
+        } else {
+            scan.blockDeclarations.computeIfAbsent(blocks.getLast(),
+                    block -> new LinkedHashSet<>()).add(name);
+        }
         scopes.getLast().names.add(name);
+    }
+
+    private String currentBlock() {
+        return blocks.isEmpty() ? null : blocks.getLast();
     }
 
     private Set<String> currentVisibleNames() {

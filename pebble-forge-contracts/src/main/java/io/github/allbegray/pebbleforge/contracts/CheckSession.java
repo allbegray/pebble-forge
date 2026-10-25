@@ -137,6 +137,13 @@ final class CheckSession {
                         }
                     }
                 }
+                String parent = staticParent(scan);
+                if (parent != null) {
+                    Set<String> ancestor = relevant.get(parent);
+                    if (ancestor != null && names.addAll(ancestor)) {
+                        changed = true;
+                    }
+                }
             }
         }
         relevantNames = relevant;
@@ -159,7 +166,19 @@ final class CheckSession {
         return reachable;
     }
 
+    private static String staticParent(TemplateScan scan) {
+        TemplateScan.ParentCall parent = scan.parent;
+        if (parent == null || parent.dynamicTarget() || parent.resolutionError() != null) {
+            return null;
+        }
+        return parent.resolvedTarget();
+    }
+
     private void forEachStaticTarget(TemplateScan scan, Consumer<String> target) {
+        String parent = staticParent(scan);
+        if (parent != null) {
+            target.accept(parent);
+        }
         for (TemplateScan.IncludeEdge edge : scan.includes) {
             if (edge.resolutionError() == null
                     && edge.target() instanceof TemplateScan.StaticTarget include) {
@@ -183,6 +202,10 @@ final class CheckSession {
     private SortedSet<String> inferRoots(SortedSet<String> universe) {
         Set<String> incoming = new HashSet<>();
         for (TemplateScan scan : scans.values()) {
+            String parent = staticParent(scan);
+            if (parent != null) {
+                incoming.add(parent);
+            }
             for (TemplateScan.IncludeEdge edge : scan.includes) {
                 if (edge.resolutionError() == null
                         && edge.target() instanceof TemplateScan.StaticTarget target) {
@@ -251,7 +274,7 @@ final class CheckSession {
         return scan;
     }
 
-    private void analyze(TemplateScan scan, IncludeSite site) {
+    private void analyze(TemplateScan scan, Site site) {
         if (scan.failure instanceof TemplateScan.LoadFailure) {
             reportFailure(scan, site);
             return;
@@ -273,6 +296,29 @@ final class CheckSession {
         for (TemplateScan.ComponentCall call : scan.componentCalls) {
             analyzeComponentCall(scan, call);
         }
+        analyzeParent(scan, site);
+    }
+
+    private void analyzeParent(TemplateScan scan, Site site) {
+        TemplateScan.ParentCall parent = scan.parent;
+        if (parent == null) {
+            return;
+        }
+        if (parent.dynamicTarget()) {
+            warning(scan.templateName, parent.line(),
+                    "Extends target is dynamic and cannot be checked");
+            return;
+        }
+        if (parent.resolutionError() != null) {
+            return;
+        }
+        String target = parent.resolvedTarget();
+        if (target == null) {
+            return;
+        }
+        ExtendsSite parentSite = new ExtendsSite(scan.templateName, parent.line(),
+                append(site, scan.templateName, parent.line()));
+        analyze(scan(target), parentSite);
     }
 
     private void reportInvalidParent(TemplateScan scan) {
@@ -284,14 +330,14 @@ final class CheckSession {
                 + parent.literalTarget() + "] is invalid: " + parent.resolutionError());
     }
 
-    private void reportFailure(TemplateScan scan, IncludeSite site) {
+    private void reportFailure(TemplateScan scan, Site site) {
         if (scan.failure instanceof TemplateScan.LoadFailure load) {
             if (site == null) {
                 error(scan.templateName, 0, "Could not load template: " + load.message());
             } else {
-                error(site.callerTemplate(), site.line(), "Included template ["
+                error(site.callerTemplate(), site.line(), site.relation() + " template ["
                         + scan.templateName + "] was not found: " + load.message()
-                        + chainSuffix(site.chain()));
+                        + chainSuffix(site.chain(), site.chainLabel()));
             }
             return;
         }
@@ -300,14 +346,13 @@ final class CheckSession {
             error(scan.templateName, parse.line(),
                     "Could not parse template: " + parse.message());
         } else {
-            error(scan.templateName, parse.line(), "Included template ["
+            error(scan.templateName, parse.line(), site.relation() + " template ["
                     + scan.templateName + "] could not be parsed: " + parse.message()
-                    + chainSuffix(site.chain()));
+                    + chainSuffix(site.chain(), site.chainLabel()));
         }
     }
 
-    private void analyzeInclude(TemplateScan scan, TemplateScan.IncludeEdge edge,
-            IncludeSite site) {
+    private void analyzeInclude(TemplateScan scan, TemplateScan.IncludeEdge edge, Site site) {
         if (edge.target() instanceof TemplateScan.DynamicTarget) {
             warning(scan.templateName, edge.line(),
                     "Include target is dynamic and cannot be checked");
@@ -384,7 +429,12 @@ final class CheckSession {
         analyze(component, null);
     }
 
-    private void evaluate(TemplateScan scan, Scope scope, IncludeSite site) {
+    private void evaluate(TemplateScan scan, Scope scope, Site site) {
+        evaluate(scan, scope, site, Set.of());
+    }
+
+    private void evaluate(TemplateScan scan, Scope scope, Site site,
+            Set<String> overriddenBlocks) {
         if (scan.failure != null) {
             return;
         }
@@ -395,9 +445,11 @@ final class CheckSession {
 
         Scope effective = scope.retain(
                 relevantNames.getOrDefault(scan.templateName, scope.names()));
-        checkReads(scan, effective, site);
+        Set<String> ancestorNames = ancestorVisibleDeclarations(scan, overriddenBlocks);
+        checkReads(scan, effective, site, overriddenBlocks, ancestorNames);
+        Set<String> overrides = Set.copyOf(overriddenBlocks);
         if (!evaluated.add(new ContextKey(scan.templateName, effective.names(),
-                effective.complete()))) {
+                effective.complete(), overrides))) {
             return;
         }
         int contexts = contextCounts.merge(scan.templateName, 1, Integer::sum);
@@ -409,27 +461,44 @@ final class CheckSession {
         }
         evaluatedTemplates.add(scan.templateName);
 
+        Scope blockScope = effective.plus(ancestorNames);
         includeStack.addLast(scan.templateName);
         try {
             analyze(scan, site);
             for (TemplateScan.IncludeEdge edge : scan.includes) {
-                evaluateInclude(scan, edge, effective, site);
+                if (edge.block() != null && overrides.contains(edge.block())) {
+                    continue;
+                }
+                evaluateInclude(scan, edge, edge.block() == null ? effective : blockScope, site);
             }
             for (TemplateScan.ComponentCall call : scan.componentCalls) {
+                if (call.block() != null && overrides.contains(call.block())) {
+                    continue;
+                }
                 evaluateComponent(scan, call);
             }
-            evaluateParent(scan, scope);
+            evaluateParent(scan, effective, overrides);
         } finally {
             includeStack.removeLast();
         }
     }
 
-    private void checkReads(TemplateScan scan, Scope scope, IncludeSite site) {
+    private void checkReads(TemplateScan scan, Scope scope, Site site,
+            Set<String> overriddenBlocks, Set<String> ancestorNames) {
         if (model.allowsAny() || !scope.complete()) {
             return;
         }
+        boolean unknownParent = hasUnknownParentScope(scan);
         for (TemplateScan.VariableRead read : scan.reads) {
-            if (scan.declaredVariables.contains(read.name())
+            if (read.block() != null && overriddenBlocks.contains(read.block())) {
+                continue;
+            }
+            if (read.block() != null && unknownParent) {
+                // The parent may declare this name in its root body or in an
+                // overridden block, so the read cannot be decided statically.
+                continue;
+            }
+            if (isLocallyDeclared(scan, read, ancestorNames)
                     || model.allows(read.name())
                     || scope.names().contains(read.name())) {
                 continue;
@@ -438,7 +507,7 @@ final class CheckSession {
                 error(scan.templateName, read.line(), "Variable [" + read.name()
                         + "] is not declared in the model schema");
             } else {
-                error(site.callerTemplate(), site.line(), "Included template ["
+                error(site.callerTemplate(), site.line(), site.relation() + " template ["
                         + scan.templateName + ":" + read.line() + "] reads ["
                         + read.name() + "], which is not declared in the model schema "
                         + "or visible at this include" + nestedChainSuffix(site.chain()));
@@ -446,8 +515,46 @@ final class CheckSession {
         }
     }
 
+    private boolean isLocallyDeclared(TemplateScan scan, TemplateScan.VariableRead read,
+            Set<String> ancestorNames) {
+        if (scan.rootDeclarations.contains(read.name())) {
+            return true;
+        }
+        if (read.block() == null) {
+            return false;
+        }
+        if (scan.blockDeclarations.getOrDefault(read.block(), Set.of()).contains(read.name())) {
+            return true;
+        }
+        return ancestorNames.contains(read.name());
+    }
+
+    private boolean hasUnknownParentScope(TemplateScan scan) {
+        Set<String> visited = new HashSet<>();
+        TemplateScan current = scan;
+        while (visited.add(current.templateName)) {
+            TemplateScan.ParentCall parent = current.parent;
+            if (parent == null) {
+                return false;
+            }
+            if (parent.dynamicTarget() || parent.resolutionError() != null) {
+                return true;
+            }
+            String target = parent.resolvedTarget();
+            if (target == null) {
+                return true;
+            }
+            TemplateScan parentScan = scan(target);
+            if (parentScan.failure != null) {
+                return true;
+            }
+            current = parentScan;
+        }
+        return false;
+    }
+
     private void evaluateInclude(TemplateScan caller, TemplateScan.IncludeEdge edge,
-            Scope callerScope, IncludeSite site) {
+            Scope callerScope, Site site) {
         if (!(edge.target() instanceof TemplateScan.StaticTarget target)
                 || edge.resolutionError() != null) {
             return;
@@ -491,11 +598,84 @@ final class CheckSession {
         evaluate(component, Scope.EMPTY, null);
     }
 
-    private void evaluateParent(TemplateScan scan, Scope scope) {
-        // EXTENDS SEAM: ParentCall is recorded, but parent propagation lands here.
+    private void evaluateParent(TemplateScan scan, Scope scope, Set<String> overriddenBlocks) {
+        TemplateScan.ParentCall parent = scan.parent;
+        if (parent == null || parent.dynamicTarget() || parent.resolutionError() != null) {
+            return;
+        }
+        String target = parent.resolvedTarget();
+        if (target == null) {
+            return;
+        }
+        TemplateScan parentScan = scan(target);
+        if (parentScan.failure != null) {
+            return;
+        }
+        if (includeStack.contains(target)) {
+            reportExtendsCycle(scan.templateName, parent.line(), target);
+            return;
+        }
+
+        Scope parentScope = scope.plus(visibleDeclarations(scan, overriddenBlocks));
+        Set<String> parentOverrides = new LinkedHashSet<>(overriddenBlocks);
+        parentOverrides.addAll(scan.blockDeclarations.keySet());
+        evaluate(parentScan, parentScope, null, parentOverrides);
     }
 
-    private void reportCycle(String target, IncludeSite site, String kind) {
+    private static Set<String> visibleDeclarations(TemplateScan scan,
+            Set<String> overriddenBlocks) {
+        Set<String> names = new LinkedHashSet<>(scan.rootDeclarations);
+        for (Map.Entry<String, Set<String>> block : scan.blockDeclarations.entrySet()) {
+            if (!overriddenBlocks.contains(block.getKey())) {
+                names.addAll(block.getValue());
+            }
+        }
+        return names;
+    }
+
+    private Set<String> ancestorVisibleDeclarations(TemplateScan scan,
+            Set<String> overriddenBlocks) {
+        Set<String> names = new LinkedHashSet<>();
+        Set<String> overridden = new LinkedHashSet<>(overriddenBlocks);
+        overridden.addAll(scan.blockDeclarations.keySet());
+        Set<String> visited = new HashSet<>();
+        visited.add(scan.templateName);
+        TemplateScan current = scan;
+        while (true) {
+            String target = staticParent(current);
+            if (target == null || !visited.add(target)) {
+                return names;
+            }
+            TemplateScan parent = scan(target);
+            if (parent.failure != null) {
+                return names;
+            }
+            names.addAll(parent.rootDeclarations);
+            for (Map.Entry<String, Set<String>> block : parent.blockDeclarations.entrySet()) {
+                if (!overridden.contains(block.getKey())) {
+                    names.addAll(block.getValue());
+                }
+            }
+            overridden.addAll(parent.blockDeclarations.keySet());
+            current = parent;
+        }
+    }
+
+    private void reportExtendsCycle(String caller, int line, String target) {
+        List<String> path = new ArrayList<>(includeStack);
+        int index = path.indexOf(target);
+        if (index < 0) {
+            return;
+        }
+        List<String> cycle = new ArrayList<>(path.subList(index, path.size()));
+        cycle.add(target);
+        String canonical = canonicalCycle(cycle);
+        if (reportedCycles.add("extends:" + canonical)) {
+            error(caller, line, "Extends cycle: " + canonical);
+        }
+    }
+
+    private void reportCycle(String target, Site site, String kind) {
         if (site == null) {
             return;
         }
@@ -507,7 +687,7 @@ final class CheckSession {
         List<String> cycle = new ArrayList<>(path.subList(index, path.size()));
         cycle.add(target);
         String canonical = canonicalCycle(cycle);
-        if (reportedCycles.add(canonical)) {
+        if (reportedCycles.add(kind + ":" + canonical)) {
             error(site.callerTemplate(), site.line(), kind + " cycle: " + canonical);
         }
     }
@@ -550,11 +730,30 @@ final class CheckSession {
                             cyclePath.subList(index, cyclePath.size()));
                     cycle.add(target.name());
                     String canonical = canonicalCycle(cycle);
-                    if (reportedCycles.add(canonical)) {
+                    if (reportedCycles.add("Include:" + canonical)) {
                         error(name, edge.line(), "Include cycle: " + canonical);
                     }
                 } else if (!visited.contains(target.name())) {
                     detectCycles(target.name(), visited, path);
+                }
+            }
+            String parent = staticParent(scan);
+            if (parent != null) {
+                TemplateScan parentScan = scan(parent);
+                if (parentScan.failure == null) {
+                    if (path.contains(parent)) {
+                        List<String> cyclePath = new ArrayList<>(path);
+                        int index = cyclePath.indexOf(parent);
+                        List<String> cycle = new ArrayList<>(
+                                cyclePath.subList(index, cyclePath.size()));
+                        cycle.add(parent);
+                        String canonical = canonicalCycle(cycle);
+                        if (reportedCycles.add("extends:" + canonical)) {
+                            error(name, scan.parent.line(), "Extends cycle: " + canonical);
+                        }
+                    } else if (!visited.contains(parent)) {
+                        detectCycles(parent, visited, path);
+                    }
                 }
             }
         } finally {
@@ -585,7 +784,7 @@ final class CheckSession {
         return edge.literalTarget() == null ? "<dynamic>" : edge.literalTarget();
     }
 
-    private static List<IncludeFrame> append(IncludeSite site, String template, int line) {
+    private static List<IncludeFrame> append(Site site, String template, int line) {
         List<IncludeFrame> chain = new ArrayList<>(
                 site == null ? List.of() : site.chain());
         chain.add(new IncludeFrame(template, line));
@@ -593,14 +792,14 @@ final class CheckSession {
     }
 
     private static String nestedChainSuffix(List<IncludeFrame> chain) {
-        return chain.size() > 1 ? chainSuffix(chain) : "";
+        return chain.size() > 1 ? chainSuffix(chain, "include") : "";
     }
 
-    private static String chainSuffix(List<IncludeFrame> chain) {
+    private static String chainSuffix(List<IncludeFrame> chain, String label) {
         if (chain.isEmpty()) {
             return "";
         }
-        return " (include path: " + chain.stream()
+        return " (" + label + " path: " + chain.stream()
                 .map(frame -> frame.template() + ":" + frame.line())
                 .collect(Collectors.joining(" -> ")) + ")";
     }
@@ -626,14 +825,58 @@ final class CheckSession {
         }
     }
 
-    private record IncludeSite(String callerTemplate, int line, List<IncludeFrame> chain) {
+    private sealed interface Site permits IncludeSite, ExtendsSite {
+
+        String callerTemplate();
+
+        int line();
+
+        List<IncludeFrame> chain();
+
+        String relation();
+
+        String chainLabel();
+    }
+
+    private record IncludeSite(String callerTemplate, int line, List<IncludeFrame> chain)
+            implements Site {
 
         IncludeSite {
             Objects.requireNonNull(callerTemplate, "callerTemplate");
             chain = List.copyOf(chain);
         }
+
+        @Override
+        public String relation() {
+            return "Included";
+        }
+
+        @Override
+        public String chainLabel() {
+            return "include";
+        }
     }
 
-    private record ContextKey(String template, Set<String> names, boolean complete) {
+    private record ExtendsSite(String callerTemplate, int line, List<IncludeFrame> chain)
+            implements Site {
+
+        ExtendsSite {
+            Objects.requireNonNull(callerTemplate, "callerTemplate");
+            chain = List.copyOf(chain);
+        }
+
+        @Override
+        public String relation() {
+            return "Extended";
+        }
+
+        @Override
+        public String chainLabel() {
+            return "extends";
+        }
+    }
+
+    private record ContextKey(String template, Set<String> names, boolean complete,
+                              Set<String> overriddenBlocks) {
     }
 }

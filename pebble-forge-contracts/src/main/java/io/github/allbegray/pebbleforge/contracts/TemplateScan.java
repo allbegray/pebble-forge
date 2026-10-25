@@ -13,7 +13,8 @@ import java.util.Set;
 final class TemplateScan {
 
     final String templateName;
-    final Set<String> declaredVariables = new LinkedHashSet<>();
+    final Set<String> rootDeclarations = new LinkedHashSet<>();
+    final Map<String, Set<String>> blockDeclarations = new LinkedHashMap<>();
     final List<VariableRead> reads = new ArrayList<>();
     final List<ComponentCall> componentCalls = new ArrayList<>();
     final List<IncludeEdge> includes = new ArrayList<>();
@@ -25,11 +26,11 @@ final class TemplateScan {
         this.templateName = templateName;
     }
 
-    record VariableRead(String name, int line) {
+    record VariableRead(String name, int line, String block) {
     }
 
     record ComponentCall(String name, Set<String> props, boolean dynamicName,
-                         boolean dynamicProps, int line) {
+                         boolean dynamicProps, int line, String block) {
     }
 
     sealed interface IncludeTarget permits StaticTarget, DynamicTarget {
@@ -46,7 +47,8 @@ final class TemplateScan {
 
     record IncludeEdge(IncludeTarget target, String literalTarget,
                        String resolutionError, Set<String> withKeys, boolean dynamicWithKeys,
-                       Set<String> visibleAtCall, boolean scopeIncomplete, int line) {
+                       Set<String> visibleAtCall, boolean scopeIncomplete, int line,
+                       String block) {
         IncludeEdge {
             Objects.requireNonNull(target, "target");
             withKeys = Set.copyOf(withKeys);
@@ -57,7 +59,7 @@ final class TemplateScan {
         }
     }
 
-    record ParentCall(String literalTarget, String resolutionError,
+    record ParentCall(String literalTarget, String resolvedTarget, String resolutionError,
                       boolean dynamicTarget, int line) {
         ParentCall {
             if (line < 0) {

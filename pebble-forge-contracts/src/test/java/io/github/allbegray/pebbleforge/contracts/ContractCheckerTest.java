@@ -823,7 +823,7 @@ class ContractCheckerTest {
     }
 
     @Test
-    void extendsParentIsNotFollowedInThisSlice() {
+    void parentBodyMissingReadIsReported() {
         ContractResult result = checker(
                 Map.of(
                         "page.peb", """
@@ -833,7 +833,11 @@ class ContractCheckerTest {
                 ModelSchema.builder().build())
                 .check("page.peb");
 
-        assertThat(result.isClean()).isTrue();
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[missing]");
+        });
     }
 
     @Test
@@ -1114,6 +1118,330 @@ class ContractCheckerTest {
             assertThat(error.template()).isEqualTo("page.peb");
             assertThat(error.line()).isEqualTo(2);
             assertThat(error.message()).contains("Extends target [../..] is invalid");
+        });
+    }
+
+    @Test
+    void childRootSetFeedsParent() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% set title = "Hello" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", "<h1>{{ title }}</h1>"),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void parentRootSetFeedsChildBlock() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block body %}<h1>{{ title }}</h1>{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% set title = "Hello" %}
+                                """),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void parentBlockReadsChildRootSet() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% set title = "Hello" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block sidebar %}<h1>{{ title }}</h1>{% endblock %}
+                                """),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void extendsTargetResolvesRelativeToChild() {
+        ContractResult result = checker(
+                Map.of(
+                        "pages/page.peb", """
+                                {% extends "./layout.peb" %}{% block body %}{{ title }}{% endblock %}
+                                """,
+                        "pages/layout.peb", """
+                                {% set title = "Hello" %}
+                                """),
+                ModelSchema.builder().build())
+                .check("pages/page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void missingExtendsParentIsReportedAtTheExtendsLine() {
+        ContractResult result = checker(
+                Map.of("page.peb", """
+                        first line
+                        {% extends "missing.peb" %}{% block body %}{{ item }}{% endblock %}
+                        """),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.warnings()).isEmpty();
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(2);
+            assertThat(error.message())
+                    .contains("Extended template [missing.peb] was not found");
+        });
+    }
+
+    @Test
+    void extendsParentParseFailureKeepsItsLineAndChain() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                first line
+                                {% extends "broken.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "broken.peb", "{% if %}"),
+                ModelSchema.any())
+                .check("page.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("broken.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Extended template [broken.peb]")
+                    .contains("page.peb:2");
+        });
+    }
+
+    @Test
+    void extendsCycleAndSelfExtendsAreReportedOnce() {
+        ContractResult mutual = checker(
+                Map.of(
+                        "a.peb", """
+                                {% extends "b.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "b.peb", """
+                                {% extends "a.peb" %}{% block body %}{% endblock %}
+                                """),
+                ModelSchema.builder().build())
+                .check("a.peb");
+
+        assertThat(mutual.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("b.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Extends cycle: a.peb -> b.peb -> a.peb");
+        });
+
+        ContractResult self = checker(
+                Map.of("a.peb", """
+                        {% extends "a.peb" %}{% block body %}{% endblock %}
+                        """),
+                ModelSchema.builder().build())
+                .check("a.peb");
+
+        assertThat(self.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("a.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Extends cycle: a.peb -> a.peb");
+        });
+    }
+
+    @Test
+    void unreachableExtendsCycleIsReportedOnce() {
+        ContractResult result = checkerBuilder(
+                Map.of(
+                        "a.peb", """
+                                {% extends "b.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "b.peb", """
+                                {% extends "a.peb" %}{% block body %}{% endblock %}
+                                """),
+                ModelSchema.any())
+                .partialTemplates(List.of("a.peb", "b.peb"))
+                .build()
+                .checkAll(List.of("a.peb", "b.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("b.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("Extends cycle: a.peb -> b.peb -> a.peb");
+        });
+    }
+
+    @Test
+    void checkAllDoesNotInferExtendedParentAsRoot() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% extends "layout.peb" %}{% set item = "x" %}{% block body %}{% endblock %}
+                        """,
+                "layout.peb", "{{ item }}");
+
+        ContractResult result = checker(templates, ModelSchema.builder().build())
+                .checkAll(List.of("page.peb", "layout.peb"));
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void explicitRootParentIsCheckedStandalone() {
+        Map<String, String> templates = Map.of(
+                "page.peb", """
+                        {% extends "layout.peb" %}{% set item = "x" %}{% block body %}{% endblock %}
+                        """,
+                "layout.peb", "{{ item }}");
+
+        ContractResult result = checkerBuilder(templates, ModelSchema.builder().build())
+                .rootTemplates(List.of("layout.peb"))
+                .build()
+                .checkAll(List.of("page.peb", "layout.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.message()).contains("[item]");
+        });
+    }
+
+    @Test
+    void twoChildrenWithDifferentScopesDoNotDedupe() {
+        ContractResult result = checker(
+                Map.of(
+                        "a.peb", """
+                                {% extends "layout.peb" %}{% set item = "x" %}{% block body %}{% endblock %}
+                                """,
+                        "b.peb", """
+                                {% extends "layout.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% include "partial.peb" %}
+                                """,
+                        "partial.peb", "{{ item }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("a.peb", "b.peb", "layout.peb", "partial.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[item]");
+        });
+    }
+
+    @Test
+    void onlyNonOverridingChildChecksParentBlock() {
+        ContractResult result = checker(
+                Map.of(
+                        "good.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% endblock %}
+                                """,
+                        "bad.peb", """
+                                {% extends "layout.peb" %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% include "partial.peb" %}{% endblock %}
+                                """,
+                        "partial.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("good.peb", "bad.peb", "layout.peb", "partial.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("layout.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message())
+                    .contains("partial.peb:1")
+                    .contains("[missing]");
+        });
+    }
+
+    @Test
+    void overriddenParentBlockLocalIsNotVisibleInChildBlock() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{{ parentLocal }}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% set parentLocal = "x" %}{% endblock %}
+                                """),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("page.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[parentLocal]");
+        });
+    }
+
+    @Test
+    void childBlockLocalFeedsLaterParentContent() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block content %}{% set fromChild = "x" %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% block content %}{% endblock %}{{ fromChild }}
+                                """),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.isClean()).isTrue();
+    }
+
+    @Test
+    void dynamicExtendsParentWarnsAndKeepsBaseRead() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends layout %}{% block body %}{{ maybeParent }}{% endblock %}
+                                """,
+                        "layout.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .check("page.peb");
+
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.template()).isEqualTo("page.peb");
+            assertThat(warning.line()).isEqualTo(1);
+            assertThat(warning.message()).contains("Extends target is dynamic");
+        });
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.message()).contains("[layout]");
+            assertThat(result.format()).doesNotContain("[maybeParent]");
+        });
+    }
+
+    @Test
+    void parentOutsideUniverseIsDiscovered() {
+        ContractResult result = checker(
+                Map.of(
+                        "page.peb", """
+                                {% extends "layout.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "layout.peb", """
+                                {% extends "base.peb" %}{% block body %}{% endblock %}
+                                """,
+                        "base.peb", "{{ missing }}"),
+                ModelSchema.builder().build())
+                .checkAll(List.of("page.peb"));
+
+        assertThat(result.errors()).singleElement().satisfies(error -> {
+            assertThat(error.template()).isEqualTo("base.peb");
+            assertThat(error.line()).isEqualTo(1);
+            assertThat(error.message()).contains("[missing]");
         });
     }
 
