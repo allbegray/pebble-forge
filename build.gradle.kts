@@ -1,3 +1,4 @@
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.tasks.Sync
 
 plugins {
@@ -16,6 +17,13 @@ allprojects {
 
 subprojects {
     apply(plugin = "pebble-forge.quality")
+}
+
+configurations.named("nmcpAggregation") {
+    withDependencies {
+        // The Gradle plugin publishes to the Plugin Portal, not Maven Central.
+        removeAll { it is ProjectDependency && it.path == ":pebble-forge-gradle-plugin" }
+    }
 }
 
 val docsModules = listOf(

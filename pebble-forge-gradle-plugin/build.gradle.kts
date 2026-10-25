@@ -1,5 +1,6 @@
 plugins {
     `java-gradle-plugin`
+    id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 description = "Gradle plugin for Pebble Forge template contract checks."
@@ -23,14 +24,22 @@ dependencies {
 }
 
 gradlePlugin {
+    website.set("https://github.com/allbegray/pebble-forge")
+    vcsUrl.set("https://github.com/allbegray/pebble-forge")
     plugins {
         create("pebbleForgeContracts") {
             id = "io.github.allbegray.pebbleforge.contracts"
             implementationClass = "io.github.allbegray.pebbleforge.gradle.PebbleForgeContractsPlugin"
+            displayName = "Pebble Forge contracts"
+            description = "Checks Pebble templates against a model schema and component contracts."
+            tags.set(listOf("pebble", "templates", "template-engine", "contracts", "static-analysis"))
         }
         create("pebbleForgeDiagnostics") {
             id = "io.github.allbegray.pebbleforge.diagnostics"
             implementationClass = "io.github.allbegray.pebbleforge.gradle.PebbleForgeDiagnosticsPlugin"
+            displayName = "Pebble Forge diagnostics"
+            description = "Renders Pebble templates and reports source-mapped diagnostics."
+            tags.set(listOf("pebble", "templates", "template-engine", "diagnostics", "rendering"))
         }
     }
 }
