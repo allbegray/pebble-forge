@@ -477,7 +477,7 @@ The security extension exposes safe functions. It never hands an `Authentication
 
 When the sandbox is enabled, the Boot starter adds these functions to the policy. A hand-written policy calls `SpringSecurityFunctions.allow(builder)`.
 
-The extension registers only when Spring Security Core, Spring Security Web, Spring Web, and the servlet API are present. The servlet stack is tested. WebFlux is not verified in 0.1.
+The extension registers only when Spring Security Core, Spring Security Web, Spring Web, and the servlet API are present. WebMVC on the servlet stack is the only supported web integration. WebFlux is not supported.
 
 ## Demo
 

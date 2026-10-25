@@ -300,7 +300,7 @@ The starter targets Spring Boot 4.0.6, Spring Framework 7.0.7, Spring Security 7
 implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
 ```
 
-`PebbleForgeAutoConfiguration` is ordered before Pebble's `PebbleAutoConfiguration`. It defines a `pebbleEngine` bean with `PebbleForge`, so the official engine bean backs off. It reuses `PebbleProperties`, the `pebbleLoader` bean, the `SpringExtension` bean, every `Extension` bean, and the official servlet or reactive view resolvers.
+`PebbleForgeAutoConfiguration` is ordered before Pebble's `PebbleAutoConfiguration`. It defines a `pebbleEngine` bean with `PebbleForge`, so the official engine bean backs off. It reuses `PebbleProperties`, the `pebbleLoader` bean, the `SpringExtension` bean, every `Extension` bean, and the official servlet view resolver. WebMVC is the only supported web stack.
 
 Properties:
 
@@ -360,7 +360,7 @@ The security extension exposes safe functions. It never hands an `Authentication
 </form>
 ```
 
-The Boot starter registers the extension only when Spring Security Core, Spring Security Web, Spring Web, and the servlet API are present. The servlet stack is tested with MockMvc and the official Pebble view resolver. WebFlux is not verified in 0.1.
+The Boot starter registers the extension only when Spring Security Core, Spring Security Web, Spring Web, and the servlet API are present. WebMVC on the servlet stack is tested with MockMvc and the official Pebble view resolver. WebFlux is not supported.
 
 When the sandbox is enabled, the Boot starter adds `SpringSecurityFunctions` to the policy. A hand-written policy calls `SpringSecurityFunctions.allow(builder)`.
 
@@ -403,7 +403,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - Replacing Pebble's parser.
 - Java code generation for every template.
 - A promise that in-process sandboxing stops CPU exhaustion.
-- A WebFlux security integration in 0.1.
+- WebFlux support. WebMVC on the servlet stack is the only supported web integration.
 
 ## Decisions
 
@@ -422,6 +422,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 | Method safety | Class, package, name, and return-type rules | The default blacklist is too small |
 | Spring Boot | Replace the `pebbleEngine` bean before the official auto-configuration | Reuses official properties, extensions, and view resolvers |
 | Spring Security | Safe functions over `SecurityContextHolder` and the CSRF request attribute | Templates never receive an `Authentication` object |
+| Web stack | WebMVC on the servlet stack only | WebFlux is permanently out of scope |
 | Contracts | Build-time checks with source-order flow, definite cross-template summaries, and typed JSON/YAML shapes | Catches common errors without a full Java type checker. Direct reads and extends summaries are flow-sensitive; include propagation is a call-site snapshot; components stay closed. Types are attribute shapes, not expression types. |
 | Escaping | Explicit context strategies plus pinned Pebble built-ins | Keeps the template author in control and lets Natural HTML choose the sink without replacing Pebble's parser |
 | Natural HTML | Loader that rewrites expressions, then Pebble parses | Browser-openable source, context safety, and line-preserving diagnostics without a parser fork |
@@ -452,7 +453,7 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The output limit, autoescaping, and global variables remain engine-wide. The output limit is the strictest finite policy limit, autoescaping is on if any policy forces it, and globals are exposed only when every policy allows them.
 - The output limit caps written output. Slot capture has a separate per-component budget, and captured content is counted again when written to the main output.
 - The path jail is lexical and does not resolve symlinks.
-- The Spring Security extension requires the servlet stack. Core-only or WebFlux security is not covered.
+- The Spring Security extension requires WebMVC on the servlet stack. WebFlux is not supported.
 - Per-template limits cover loops, include depth, and slot capture through `SandboxLimitsResolver`. If no resolver is supplied, each policy's limits are used. See [TEMPLATE-POLICIES.md](TEMPLATE-POLICIES.md).
 - Contract checks use source-order flow inside a template. Direct reads before a set, in sibling branches, or after loop/with/macro scopes are rejected. Cross-template extends summaries publish only names definitely visible at the end of the root or block flow. Include propagation is a call-site snapshot. A root read can still see a non-overridden block declaration regardless of position.
 - The typed JSON/YAML contract schema describes object properties and array item shapes. It has no union, optional, or nullability types. `required` is parsed but not enforced. Attribute checks stop at arrays and skip dynamic or numeric index segments. `$schema` is accepted and ignored.
@@ -488,14 +489,10 @@ The work queue, acceptance criteria, and release gates are in [BACKLOG.md](BACKL
 - The stock Gradle task now exposes named component roots.
 - Should Natural HTML grow control flow and cross-template composition, and how should it declare a partial's sink context?
 - Should `url` percent-encode and reject protocol-relative URLs, or leave open-redirect policy to the application?
-- Should the two Gradle plugin IDs be published to the Plugin Portal together?
 - Should contract components see caller locals, matching runtime `includeTemplate`, or stay closed over props?
-- Should the Gradle plugin be published to the Plugin Portal?
 - Should the output limit and global variables become per-template? Current answer is no. The engine-wide values are conservative.
 - Should method access use an explicit render-scoped value instead of a thread-local template name?
+- When should the first Gradle Plugin Portal release happen?
 - Should the sandbox replace the built-in `include` tag with a depth-guarded version? The output limit covers the easy bomb, not recursive CPU.
-- Should the component root be one directory or a list of loaders? A list is needed for shared component libraries.
 - Should component depth use per-engine state instead of a static thread-local?
-- Should the Spring integration cover WebFlux and reactive CSRF?
 - Should parent read diagnostics include the full extends chain? Current messages point at the parent line.
-- Should diagnostic frames expose a structured kind instead of labels like `extends` and `includes`?

@@ -1,6 +1,6 @@
 # Pebble Forge 백로그
 
-> English summary: This file tracks only active work and a compact ledger of completed work. P0, P1, and P2 are closed except the held WebFlux item and the follow-ups listed below.
+> English summary: This file tracks only active work and a compact ledger of completed work. P0, P1, and P2 are closed. Follow-ups are listed separately.
 
 이 문서는 남은 작업을 추적한다. 완료된 항목은 상세 절을 지우고 아래 완료 원장에 한 줄로 남긴다. 계획이지 약속이 아니다. 기술 식별자는 영어로 두고 설명은 한국어로 적는다.
 
@@ -17,7 +17,7 @@
 - 버전은 `0.1.0-SNAPSHOT`이고 아직 배포하지 않았다.
 - 테스트는 675개다. core 215, contracts 151, diagnostics 23, natural-html 130, Gradle 플러그인 45, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-cli`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
-- P0, P1, P2는 완료했다. P1의 PF-106 WebFlux만 보류다.
+- P0, P1, P2는 완료했다. WebFlux는 지원하지 않으며 WebMVC만 지원한다.
 - PF-101과 PF-202.1은 완료로 닫았고, 아래 `완료 항목의 후속`에 남은 범위를 따로 적는다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
 - 라이선스, CI, Maven Central 배포 설정, Gradle Plugin Portal 설정은 들어가 있다. 원격 push 뒤 CI 초록색과 실제 배포를 확인해야 한다.
@@ -27,24 +27,13 @@
 
 | 등급 | 의미 |
 | --- | --- |
-| P1 | 0.2 개발 경험과 안전성 작업이다. PF-106만 남았다. |
+| P1 | 0.2 개발 경험과 안전성 작업이다. 완료했다. |
 | P2 | 0.3 출력 형식과 통합 작업이다. 완료했다. |
 | P3 | 지금은 하지 않는다. 필요해지면 다시 판단한다. |
 
 ## 남은 작업
 
-| ID | 우선순위 | 작업 | 크기 | 상태 | 의존 |
-| --- | --- | --- | --- | --- | --- |
-| PF-106 | P1 | WebFlux 지원 | M | 보류 | 없음 |
-
-### PF-106 WebFlux 지원
-
-- 크기: M
-- 상태: 보류
-- 문제: Boot 4 스타터는 서블릿 뷰 리졸버만 검증했다. 리액티브 앱에서는 샌드박스 로더의 prefix 문제와 CSRF 접근이 다르다.
-- 범위: 리액티브 뷰 리졸버의 prefix 정규화, `ServerWebExchange`에서 CSRF 토큰을 읽는 함수, WebTestClient 테스트.
-- 완료 기준: WebFlux 앱이 템플릿을 렌더하고 CSRF 토큰을 출력한다. 기존 서블릿 테스트는 그대로 통과한다.
-- 의존: PF-107의 함수 구조를 재사용할 수 있다.
+현재 활성 항목은 없다. 아래 `완료 항목의 후속`은 완료한 범위에서 의도적으로 남긴 확장 지점이다.
 
 ## 완료 항목의 후속
 
@@ -66,6 +55,7 @@
 
 ## P3. 지금 하지 않는 것
 
+- WebFlux 지원. PF-106은 영구 비목표이며 WebMVC만 지원한다.
 - 클라이언트 런타임과 islands.
 - 새로운 표현식 언어.
 - Pebble 파서 전체 교체.
@@ -104,7 +94,6 @@
 
 1. 첫 배포 대상을 Maven Central로 할지 GitHub Packages로 할지.
 2. PF-101의 다음 스키마 범위. 표현식 타입, union, optional, `required` 강제를 어디까지 넣을지.
-3. PF-106 WebFlux를 언제 시작할지. 현재 보류.
 4. PF-108의 메서드 컨텍스트를 스레드 로컬 대신 명시적 렌더 컨텍스트로 바꿀지.
 5. Natural HTML의 제어 흐름과 cross-template 문맥을 어떻게 설계할지.
 6. URL 전략이 percent-encoding과 protocol-relative URL 거부까지 맡을지.
@@ -117,4 +106,4 @@
 | 0.1.0 | P0 | Maven Central 배포, CI 초록색, 라이선스와 릴리스 노트 |
 | 0.2.0 | PF-101, PF-102, PF-103, PF-104, PF-105, PF-107, PF-108 | 계약 검사, 진단, 핫 리로드, 언어 후속, 샌드박스 강화, 보안 함수 확장 |
 | 0.3.0 | PF-201부터 PF-208까지 | 컨텍스트 이스케이프, Natural HTML PF-202.1, 컴포넌트 루트, 벤치마크, 퍼징, Javadoc/API 사이트, 코드 품질, Spring Boot 데모 앱 |
-| 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드, WebFlux 결정 |
+| 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |

@@ -479,7 +479,7 @@ pebble.forge.dev-mode=false
 
 샌드박스가 켜져 있으면 Boot 스타터가 이 함수들을 정책에 추가합니다. 정책을 직접 만들 때는 `SpringSecurityFunctions.allow(builder)`를 호출하세요.
 
-보안 확장은 Spring Security Core, Spring Security Web, Spring Web, 서블릿 API가 모두 있을 때만 등록됩니다. 0.1 버전은 서블릿 스택만 검증했습니다. WebFlux는 검증하지 않았습니다.
+보안 확장은 Spring Security Core, Spring Security Web, Spring Web, 서블릿 API가 모두 있을 때만 등록됩니다. 지원하는 웹 통합은 서블릿 스택의 WebMVC뿐입니다. WebFlux는 지원하지 않습니다.
 
 ## 데모
 
