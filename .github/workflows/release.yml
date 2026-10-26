@@ -56,10 +56,27 @@ jobs:
           fingerprint="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { print $5; exit }')"
           test -n "$fingerprint"
           printf 'Pebble Forge signing probe\n' > "$RUNNER_TEMP/signing-probe.txt"
-          gpg --batch --yes --pinentry-mode loopback --passphrase "$SIGNING_PASSWORD" \
-            --local-user "$fingerprint" --armor --detach-sign \
-            --output "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"
+          raw="$SIGNING_PASSWORD"
+          trimmed="${raw%$'\n'}"
+          trimmed="${trimmed%$'\r'}"
+          stripped="$(printf '%s' "$raw" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          working=""
+          for candidate in "$raw" "$trimmed" "$stripped"; do
+            if gpg --batch --yes --pinentry-mode loopback --passphrase "$candidate" \
+              --local-user "$fingerprint" --armor --detach-sign \
+              --output "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"; then
+              working="$candidate"
+              break
+            fi
+          done
+          test -n "$working"
+          echo "signing_password_candidate_length ${#working}"
           gpg --batch --verify "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"
+          {
+            echo 'ORG_GRADLE_PROJECT_signingPassword<<SIGNING_PASSWORD_EOF'
+            printf '%s\n' "$working"
+            echo 'SIGNING_PASSWORD_EOF'
+          } >> "$GITHUB_ENV"
           {
             echo 'ORG_GRADLE_PROJECT_signingKey<<SIGNING_KEY_EOF'
             cat "$RUNNER_TEMP/signing-key.asc"
@@ -74,7 +91,6 @@ jobs:
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
 
       - name: Publish to Gradle Plugin Portal
         run: ./gradlew :pebble-forge-gradle-plugin:publishPlugins --no-daemon
