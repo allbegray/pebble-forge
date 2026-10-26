@@ -1,0 +1,40 @@
+name: Release deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_id:
+        description: Central Portal deployment ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-deployment-${{ inputs.deployment_id }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: 배포
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Release Central deployment
+        run: ./gradlew nmcpPublishDeployment -PnmcpDeploymentId="$DEPLOYMENT_ID" --no-daemon
+        env:
+          DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
