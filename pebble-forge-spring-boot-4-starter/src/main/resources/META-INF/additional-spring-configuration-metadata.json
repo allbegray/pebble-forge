@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "pebble.prefix",
+      "type": "java.lang.String",
+      "description": "Prefix to apply to template names.",
+      "defaultValue": "/templates/"
+    },
+    {
+      "name": "pebble.suffix",
+      "type": "java.lang.String",
+      "description": "Suffix to apply to template names.",
+      "defaultValue": ".peb"
+    }
+  ]
+}

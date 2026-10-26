@@ -40,6 +40,10 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+tasks.named<JavaCompile>("compileJava") {
+    inputs.files(tasks.named("processResources"))
+}
+
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
