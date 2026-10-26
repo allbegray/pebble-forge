@@ -33,8 +33,39 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Release Central deployment
-        run: ./gradlew nmcpPublishDeployment -PnmcpDeploymentId="$DEPLOYMENT_ID" --no-daemon
         env:
           DEPLOYMENT_ID: ${{ inputs.deployment_id }}
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+        run: |
+          set -euo pipefail
+          token="$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 | tr -d '\n')"
+          status_url="https://central.sonatype.com/api/v1/publisher/status?id=$DEPLOYMENT_ID"
+          release_url="https://central.sonatype.com/api/v1/publisher/deployment/$DEPLOYMENT_ID"
+          status="$(curl -fsS -X POST -H "Authorization: Bearer $token" "$status_url")"
+          echo "$status" | jq '{deploymentId, deploymentState, errors}'
+          state="$(printf '%s' "$status" | jq -r '.deploymentState')"
+          if [ "$state" = "PUBLISHED" ]; then
+            echo "Deployment is already published."
+            exit 0
+          fi
+          if [ "$state" != "VALIDATED" ]; then
+            echo "Deployment state [$state] is not releasable."
+            exit 1
+          fi
+          curl -fsS -X POST -H "Authorization: Bearer $token" "$release_url"
+          for attempt in $(seq 1 60); do
+            status="$(curl -fsS -X POST -H "Authorization: Bearer $token" "$status_url")"
+            state="$(printf '%s' "$status" | jq -r '.deploymentState')"
+            echo "deployment_state=$state attempt=$attempt"
+            if [ "$state" = "PUBLISHED" ]; then
+              exit 0
+            fi
+            if [ "$state" = "FAILED" ]; then
+              echo "$status" | jq '{deploymentId, deploymentState, errors}'
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for PUBLISHED."
+          exit 1
