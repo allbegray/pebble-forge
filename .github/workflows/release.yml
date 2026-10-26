@@ -53,6 +53,7 @@ jobs:
           PY
           gpg --batch --import "$RUNNER_TEMP/signing-key.asc"
           gpg --list-packets "$RUNNER_TEMP/signing-key.asc" | awk '/:secret key packet:/ { print; exit }'
+          gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { print "secret_key_bits", $3, "algorithm", $4; exit }'
           fingerprint="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { print $5; exit }')"
           test -n "$fingerprint"
           printf 'Pebble Forge signing probe\n' > "$RUNNER_TEMP/signing-probe.txt"
@@ -61,15 +62,17 @@ jobs:
           trimmed="${trimmed%$'\r'}"
           stripped="$(printf '%s' "$raw" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           working=""
-          for candidate in "$raw" "$trimmed" "$stripped"; do
+          found=0
+          for candidate in "$raw" "$trimmed" "$stripped" ""; do
             if gpg --batch --yes --pinentry-mode loopback --passphrase "$candidate" \
               --local-user "$fingerprint" --armor --detach-sign \
               --output "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"; then
               working="$candidate"
+              found=1
               break
             fi
           done
-          test -n "$working"
+          test "$found" -eq 1
           echo "signing_password_candidate_length ${#working}"
           gpg --batch --verify "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"
           {
