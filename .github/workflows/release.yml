@@ -52,7 +52,14 @@ jobs:
               handle.write(key)
           PY
           gpg --batch --import "$RUNNER_TEMP/signing-key.asc"
-          gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { found = 1 } END { exit found ? 0 : 1 }'
+          gpg --list-packets "$RUNNER_TEMP/signing-key.asc" | awk '/:secret key packet:/ { print; exit }'
+          fingerprint="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { print $5; exit }')"
+          test -n "$fingerprint"
+          printf 'Pebble Forge signing probe\n' > "$RUNNER_TEMP/signing-probe.txt"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$SIGNING_PASSWORD" \
+            --local-user "$fingerprint" --armor --detach-sign \
+            --output "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"
+          gpg --batch --verify "$RUNNER_TEMP/signing-probe.asc" "$RUNNER_TEMP/signing-probe.txt"
           {
             echo 'ORG_GRADLE_PROJECT_signingKey<<SIGNING_KEY_EOF'
             cat "$RUNNER_TEMP/signing-key.asc"
