@@ -52,7 +52,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `break` and `continue` are validated lexically.
 - The sandbox does not provide a CPU quota. The default `SandboxedLoader` is lexical; use `SandboxedFileLoader` when symlinks are possible.
 - Per-template policies share one engine. The parser is the union of all policies. The output limit, autoescaping, and global variables remain engine-wide.
-- Contract checks use source-order flow for direct reads and definite end-of-flow summaries for extends parents. Includes use lexical scope snapshots. Root-read block ordering is local; cross-template block execution order is not modeled. Typed JSON/YAML schemas check attribute shapes, not expression types; `required` is parsed but not enforced. The Gradle plugins are configured for the Plugin Portal but have not been uploaded.
+- Contract checks use source-order flow for direct reads and definite end-of-flow summaries for extends parents. Includes use lexical scope snapshots. Root-read block ordering is local; cross-template block execution order is not modeled. Typed JSON/YAML schemas check attribute shapes, not expression types; `required` is parsed but not enforced. The Gradle plugins are submitted to the Plugin Portal and await first-time approval.
 - Diagnostics for errors inside an extended parent need `TemplateTrace.run` around the whole template evaluation. The Boot starter applies this wrapper.
 - Spring Security and web integration cover WebMVC on the servlet stack only. WebFlux is not supported.
 - The CLI is a trusted-template development tool. It has no sandbox; top-level template names are jailed, but includes and extends are not.

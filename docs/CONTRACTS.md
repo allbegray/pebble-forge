@@ -18,7 +18,7 @@ It does not check Java types, method signatures, or expression semantics.
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.contracts")
+    id("io.github.allbegray.pebbleforge.contracts") version "0.4.0"
 }
 
 pebbleForgeContracts {

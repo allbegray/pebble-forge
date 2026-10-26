@@ -14,13 +14,13 @@
 
 ## 현재 상태
 
-- 버전은 `0.3.0` GitHub release다. main은 `0.4.0`이고 Maven Central과 Gradle Plugin Portal 배포는 보류 중이다.
+- 버전은 `0.4.0`이다. Maven Central 6개 모듈을 릴리스했고, Gradle Plugin Portal 플러그인 2개는 첫 승인을 기다린다.
 - 테스트는 702개다. core 215, contracts 178, diagnostics 23, natural-html 130, Gradle 플러그인 45, CLI 14, Spring Security 10, Boot 39, benchmarks 5, demo app 8, fuzz 35.
 - 모듈은 `pebble-forge-core`, `pebble-forge-natural-html`, `pebble-forge-contracts`, `pebble-forge-diagnostics`, `pebble-forge-gradle-plugin`, `pebble-forge-cli`, `pebble-forge-spring`, `pebble-forge-spring-boot-4-starter`, `pebble-forge-demo`, `pebble-forge-demo-app`, `pebble-forge-benchmarks`, `pebble-forge-fuzz`다.
 - P0, P1, P2는 완료했다. WebFlux는 지원하지 않으며 WebMVC만 지원한다.
 - PF-101과 PF-202.1은 완료로 닫았고, 아래 `완료 항목의 후속`에 남은 범위를 따로 적는다.
 - Maven group과 Java 패키지는 `io.github.allbegray.pebbleforge`다.
-- 라이선스, CI, Maven Central 배포 설정, Gradle Plugin Portal 설정은 들어가 있다. 원격 push 뒤 CI 초록색과 실제 배포를 확인해야 한다.
+- 라이선스, CI, Maven Central 배포, Gradle Plugin Portal 제출은 끝났다. 남은 확인은 Plugin Portal 승인 뒤 두 ID가 resolve하는지다.
 - 알려진 한계는 [DESIGN.md](DESIGN.md)의 Accepted limits에 정리되어 있다.
 
 ## 우선순위
@@ -33,7 +33,9 @@
 
 ## 남은 작업
 
-현재 활성 항목은 없다. 아래 `완료 항목의 후속`은 완료한 범위에서 의도적으로 남긴 확장 지점이다.
+Gradle Plugin Portal 신규 플러그인 2개(`contracts`, `diagnostics`)의 첫 승인을 기다린다. 승인 뒤 `0.4.0` marker가 resolve하는지 확인하고, 누락된 ID가 있으면 다시 제출한다.
+
+아래 `완료 항목의 후속`은 완료한 범위에서 의도적으로 남긴 확장 지점이다.
 
 ## 완료 항목의 후속
 
@@ -44,7 +46,6 @@
 - 표현식 수준 타입 검사, union, optional, nullability, 컴포넌트 prop 타입.
 - `required` 속성 강제. 현재는 스키마에서 파싱만 한다.
 - inline suppression comments.
-- 실제 Gradle Plugin Portal 업로드. 설정과 메타데이터는 들어갔고, 릴리스 버전과 자격 증명이 필요하다.
 
 ### PF-202.1 Natural HTML
 
@@ -96,12 +97,11 @@
 4. PF-108의 메서드 컨텍스트를 스레드 로컬 대신 명시적 렌더 컨텍스트로 바꿀지.
 5. Natural HTML의 제어 흐름과 cross-template 문맥을 어떻게 설계할지.
 6. URL 전략이 percent-encoding과 protocol-relative URL 거부까지 맡을지.
-7. Gradle Plugin Portal 첫 배포 시점과 릴리스 버전.
 
 ## 릴리스 기준
 
 | 릴리스 | 포함 | 완료 조건 |
 | --- | --- | --- |
-| 0.3.0 | P0, P1, P2 | Maven Central 6개 모듈, Gradle Plugin Portal 2개 플러그인, CI 초록색, Javadoc Pages, 라이선스와 릴리스 노트 |
-| 0.4.0 | 완료 항목의 후속 | 표현식 타입, `required` 강제, Natural HTML 확장, inline suppression |
+| 0.3.0 | P0, P1, P2 | GitHub 소스 릴리스 |
+| 0.4.0 | 블록 선언 순서 수정 2건 | Maven Central 6개 모듈, Gradle Plugin Portal 2개 플러그인 승인, CI 초록색, 릴리스 노트 |
 | 1.0.0 | 안정 API | 공개 API 동결, 성능 기준, 문서 사이트, 마이그레이션 가이드 |

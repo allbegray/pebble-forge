@@ -297,7 +297,7 @@ Resource limits can vary by template name through `SandboxLimitsResolver`. Exact
 The starter targets Spring Boot 4.0.6, Spring Framework 7.0.7, Spring Security 7.0.8, and Pebble's `pebble-spring-boot-starter:4.1.2`. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.3.0")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.4.0")
 ```
 
 `PebbleForgeAutoConfiguration` is ordered before Pebble's `PebbleAutoConfiguration`. It defines a `pebbleEngine` bean with `PebbleForge`, so the official engine bean backs off. It reuses `PebbleProperties`, the `pebbleLoader` bean, the `SpringExtension` bean, every `Extension` bean, and the official servlet view resolver. WebMVC is the only supported web stack.

@@ -14,9 +14,9 @@ The Maven group and Java package are `io.github.allbegray.pebbleforge`. They mat
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- Version 0.3.0, GitHub release. Main is 0.4.0. Maven Central and Gradle Plugin Portal publication are pending.
+- Version 0.4.0, released on Maven Central. The Gradle plugin IDs are submitted to the Plugin Portal and await first-time approval.
 
-The source release is at <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>. The snapshot can be installed into the local Maven repository with `./gradlew publishToMavenLocal` until Maven Central is available.
+The source release is at <https://github.com/allbegray/pebble-forge/releases/tag/v0.4.0>. The Maven Central coordinates are under <https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/>.
 
 702 tests cover the core, contracts, diagnostics, Natural HTML, the Gradle plugin, the CLI, Spring Security helpers, the Boot auto-configuration, benchmarks, fuzzing, and a Spring Boot demo app.
 
@@ -40,7 +40,7 @@ The source release is at <https://github.com/allbegray/pebble-forge/releases/tag
 ## Core
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.3.0")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.4.0")
 ```
 
 ```java
@@ -180,7 +180,7 @@ The contracts module parses templates at build time and checks model variable re
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.contracts")
+    id("io.github.allbegray.pebbleforge.contracts") version "0.4.0"
 }
 
 pebbleForgeContracts {
@@ -224,7 +224,7 @@ variables:
 
 Set `allowAnyVariable` to `true` to check only components.
 
-The Gradle plugin is configured for the Plugin Portal but has not been uploaded yet. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
+The Gradle plugin is submitted to the Plugin Portal and awaits first-time approval for the `contracts` and `diagnostics` IDs. The `pebble-forge-contracts` module can also be used directly from Java. Use `check(name)` for one root or `checkAll(names)` for a template set. See [docs/CONTRACTS.md](docs/CONTRACTS.md) for the API and [known limits](docs/CONTRACTS.md#known-limits).
 
 ### Natural HTML
 
@@ -283,7 +283,7 @@ The Gradle plugin also provides a render task.
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.diagnostics")
+    id("io.github.allbegray.pebbleforge.diagnostics") version "0.4.0"
 }
 
 pebbleForgeDiagnostics {
@@ -406,7 +406,7 @@ If no limits resolver is supplied, each policy's own limits are used.
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.3.0")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.4.0")
 ```
 
 The starter targets Spring Boot 4.0.6. The module directory and artifact name include `boot-4` so the major version boundary is explicit. A Spring Boot 3 integration would need a separate module.

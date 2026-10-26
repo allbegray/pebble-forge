@@ -14,9 +14,9 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 - Pebble 4.1.2
 - Spring Boot 4.0.6
 - Spring Security 7.0.8
-- 버전 0.3.0, GitHub release. main은 0.4.0입니다. Maven Central과 Gradle Plugin Portal 배포는 보류 중입니다.
+- 버전 0.4.0. Maven Central에 릴리스했다. Gradle 플러그인 ID는 Plugin Portal에 제출했고 첫 승인을 기다린다.
 
-소스 릴리스는 <https://github.com/allbegray/pebble-forge/releases/tag/v0.3.0>에 있습니다. Maven Central이 준비되기 전까지는 `./gradlew publishToMavenLocal`로 로컬 Maven 저장소에 설치할 수 있습니다.
+소스 릴리스는 <https://github.com/allbegray/pebble-forge/releases/tag/v0.4.0>에 있습니다. Maven Central 좌표는 <https://repo1.maven.org/maven2/io/github/allbegray/pebbleforge/>에서 받을 수 있습니다.
 
 테스트는 702개입니다. 코어, 계약 검사, 진단, Natural HTML, Gradle 플러그인, CLI, Spring Security 헬퍼, Boot 자동 설정, 벤치마크, 퍼징, Spring Boot 데모 앱을 검증합니다.
 
@@ -40,7 +40,7 @@ Maven 그룹과 Java 패키지는 `io.github.allbegray.pebbleforge`입니다. Gi
 ## 코어
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.3.0")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-core:0.4.0")
 ```
 
 ```java
@@ -178,7 +178,7 @@ PebbleForge.engine().languageExtensions(false)
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.contracts")
+    id("io.github.allbegray.pebbleforge.contracts") version "0.4.0"
 }
 
 pebbleForgeContracts {
@@ -222,7 +222,7 @@ variables:
 
 `allowAnyVariable`을 `true`로 두면 모델 변수 검사를 끄고 컴포넌트만 검사합니다.
 
-Gradle 플러그인은 Plugin Portal 배포 설정을 마쳤지만 아직 업로드하지 않았습니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
+Gradle 플러그인은 Plugin Portal에 제출했고 `contracts`와 `diagnostics` ID의 첫 승인을 기다립니다. `pebble-forge-contracts` 모듈을 Java에서 직접 사용할 수도 있습니다. 루트 하나는 `check(name)`, 템플릿 집합은 `checkAll(names)`를 사용합니다. 자세한 내용은 [docs/CONTRACTS.md](docs/CONTRACTS.md)를 참고하세요.
 
 ### Natural HTML
 
@@ -281,7 +281,7 @@ Gradle 플러그인은 렌더 태스크도 제공합니다.
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.diagnostics")
+    id("io.github.allbegray.pebbleforge.diagnostics") version "0.4.0"
 }
 
 pebbleForgeDiagnostics {
@@ -408,7 +408,7 @@ PebbleEngine engine = PebbleForge.engine()
 ## Spring Boot 4
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.3.0")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.4.0")
 ```
 
 이 스타터는 Spring Boot 4.0.6을 대상으로 합니다. 모듈 디렉터리와 아티팩트 이름에 `boot-4`를 넣어 메이저 버전 경계를 분명히 했습니다. Spring Boot 3 연동이 필요하면 별도 모듈로 만들어야 합니다.

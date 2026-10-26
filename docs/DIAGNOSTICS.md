@@ -66,7 +66,7 @@ for (DiagnosticFrame frame : report.frames()) {
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.diagnostics")
+    id("io.github.allbegray.pebbleforge.diagnostics") version "0.4.0"
 }
 
 pebbleForgeDiagnostics {

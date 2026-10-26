@@ -4,7 +4,7 @@ Gradle plugins for contract checks and render diagnostics.
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.contracts")
+    id("io.github.allbegray.pebbleforge.contracts") version "0.4.0"
 }
 
 pebbleForgeContracts {
@@ -35,7 +35,7 @@ Missing model variables, missing include targets, include cycles, and required c
 
 ```kotlin
 plugins {
-    id("io.github.allbegray.pebbleforge.diagnostics")
+    id("io.github.allbegray.pebbleforge.diagnostics") version "0.4.0"
 }
 
 pebbleForgeDiagnostics {
@@ -54,6 +54,8 @@ The task renders one template and logs the result. On failure it logs the includ
 
 - `io.github.allbegray.pebbleforge.contracts`
 - `io.github.allbegray.pebbleforge.diagnostics`
+
+Version 0.4.0 is submitted to the Portal and awaits first-time approval for both IDs. The coordinates start resolving after approval.
 
 ## Publish to the Gradle Plugin Portal
 
