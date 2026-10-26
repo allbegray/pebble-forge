@@ -9,7 +9,7 @@ The `boot-4` in the directory and artifact name is intentional. Pebble Forge doe
 ## Dependency
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-spring-boot-4-starter:0.4.0")
 ```
 
 ## What it does

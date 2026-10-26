@@ -3,7 +3,7 @@
 Browser-openable `.html` templates with context-aware Pebble escaping.
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-natural-html:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-natural-html:0.4.0")
 ```
 
 ```java

@@ -15,7 +15,7 @@ The module parses templates with a normal Pebble Forge engine and checks:
 ## Dependency
 
 ```kotlin
-implementation("io.github.allbegray.pebbleforge:pebble-forge-contracts:0.1.0-SNAPSHOT")
+implementation("io.github.allbegray.pebbleforge:pebble-forge-contracts:0.4.0")
 ```
 
 ## API
