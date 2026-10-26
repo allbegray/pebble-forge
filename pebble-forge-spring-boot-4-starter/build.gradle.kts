@@ -16,9 +16,9 @@ dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure:4.0.6")
 
     compileOnly("org.springframework.boot:spring-boot-webmvc:4.0.6")
-    compileOnly("org.springframework:spring-context:7.0.7")
-    compileOnly("org.springframework:spring-web:7.0.7")
-    compileOnly("org.springframework:spring-webmvc:7.0.7")
+    compileOnly("org.springframework:spring-context:7.0.10")
+    compileOnly("org.springframework:spring-web:7.0.10")
+    compileOnly("org.springframework:spring-webmvc:7.0.10")
     compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
     compileOnly("org.springframework.security:spring-security-core:7.0.8")
     compileOnly("org.springframework.security:spring-security-web:7.0.8")
