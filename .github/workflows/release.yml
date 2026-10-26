@@ -30,6 +30,35 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Validate signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import os
+
+          key = os.environ.get("SIGNING_KEY", "").strip()
+          print("signing_key_length", len(key))
+          print("signing_key_newlines", key.count("\n"))
+          print("signing_key_literal_backslash_n", key.count("\\n"))
+          print("signing_key_has_begin", key.startswith("-----BEGIN PGP PRIVATE KEY BLOCK-----"))
+          print("signing_key_has_end", key.rstrip().endswith("-----END PGP PRIVATE KEY BLOCK-----"))
+          print("signing_password_length", len(os.environ.get("SIGNING_PASSWORD", "")))
+          if key.startswith("\"") and key.endswith("\""):
+              key = key[1:-1]
+          key = key.replace("\\n", "\n").replace("\r\n", "\n").strip() + "\n"
+          with open(os.environ["RUNNER_TEMP"] + "/signing-key.asc", "w") as handle:
+              handle.write(key)
+          PY
+          gpg --batch --import "$RUNNER_TEMP/signing-key.asc"
+          gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "sec" { found = 1 } END { exit found ? 0 : 1 }'
+          {
+            echo 'ORG_GRADLE_PROJECT_signingKey<<SIGNING_KEY_EOF'
+            cat "$RUNNER_TEMP/signing-key.asc"
+            echo 'SIGNING_KEY_EOF'
+          } >> "$GITHUB_ENV"
+
       - name: Build and verify
         run: ./gradlew clean build javadoc --no-daemon
 
@@ -38,7 +67,6 @@ jobs:
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
 
       - name: Publish to Gradle Plugin Portal
